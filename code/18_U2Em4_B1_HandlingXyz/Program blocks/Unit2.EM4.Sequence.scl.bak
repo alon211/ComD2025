@@ -1,0 +1,939 @@
+﻿NAMESPACE Unit2.EM4
+FUNCTION_BLOCK Sequence
+TITLE = EquipmentC_StateActions
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+VERSION : 0.1
+//State model of equipment module following the OMAC standard.
+   VAR 
+      statSelectedJobNumber { ExternalWritable := 'False'} : DInt;   // Evaluated Job Number
+      instSequenceSCLControl { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LAF_ControlSclSequence;
+      instSequenceSCLStatus { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LAF_StatusSclSequence;
+      statVfdSportsInc { ExternalWritable := 'False'; S7_SetPoint := 'True'} : Int;
+      statVfdSportsIncEnable { ExternalWritable := 'False'} : Bool;
+      statCylinderOnHome { ExternalWritable := 'False'; S7_SetPoint := 'True'} : Bool;
+      statAxisOnHome { ExternalWritable := 'False'} : Bool;
+      statCycleMovexPos { ExternalWritable := 'False'} : Bool;   // 
+      timeDelayTrigger {InstructionName := 'TON_TIME'; LibVersion := '1.0'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : Array[0..1] of TON_TIME;
+      statAxisPosHomeDone { ExternalWritable := 'False'; S7_SetPoint := 'True'} : Bool;
+      statCylinderHomeDone { ExternalWritable := 'False'} : Bool;
+      statCylinderWorkDone { ExternalWritable := 'False'} : Bool;
+      statRowTwoOn { ExternalWritable := 'False'} : Bool;
+      statXyzTransferEnable { ExternalWritable := 'False'} : Bool;
+      statxDistanceIndex { ExternalWritable := 'False'} : Int;
+      statyDistanceIndex { ExternalWritable := 'False'} : Int;
+      statScratchCellsInfo { ExternalWritable := 'False'} : Array[0..3] of Bool;
+      statCurrentScratchCellIndexOnRow { ExternalWritable := 'False'} : Int;   // 
+      statCurrentScratchCellIndex { ExternalWritable := 'False'} : Int;   // 
+      statLastScratch { ExternalWritable := 'False'} : Bool; // statPlasticStepEnable { ExternalWritable := 'False'} : Bool;   // ok
+      statNgConveyorEnable { ExternalWritable := 'False'} : Bool; // ng
+      statRecoverOn { ExternalWritable := 'False'} : Bool;
+      statRecoverStep { ExternalWritable := 'False'} : DInt;
+      statCurrentStepPrevious { ExternalWritable := 'False'} : DInt;
+      statStepFirstCall { ExternalWritable := 'False'} : Bool;
+      statPlasticNextScratchCellIndex : Int;
+      instRecordRecoverStep { ExternalWritable := 'False'} : EXCHANGETRAY_RecordRecoverStep;
+   END_VAR
+
+   VAR_TEMP 
+      tempCm1PosDone : Bool;
+      tempCm2PosDone : Bool;
+      tempCm3PosDone : Bool;
+      tempCellSize : Int;
+      tempHalfCellSize : Int;
+      tempCurrentPosIndex : Int; // POS
+      tempNextPosIndex : Int;
+      tempConstraintNextScratchCellIndex : Int;
+      tempWithorWithoutCellDetections : Array[0..3] of Bool;
+      tempLoopIndex : Int;
+      tempValidCellIndex : Int;
+      tempCellsInfo : Array[0..99] of Bool;
+      tempPlasticStep : Bool;
+      tempNgConveyorStep : Bool;
+      tempRowNumber : Int;
+      tempCm4Enable : Bool;
+      tempCm5Enable : Bool;
+      tempCm6Enable : Bool;
+      tempCm7Enable : Bool;
+      tempCm4CylinderRecoverStatus : _.LBC_Simple_typeTwoWayActuatorControlNodeMonitoring;
+      tempCm4CylinderRecoverCommand : _.LBC_Simple_typeTwoWayActuatorControlNodeCommands;
+      tempCm5CylinderRecoverStatus : _.LBC_Simple_typeTwoWayActuatorControlNodeMonitoring;
+      tempCm5CylinderRecoverCommand : _.LBC_Simple_typeTwoWayActuatorControlNodeCommands;
+      tempCm6CylinderRecoverStatus : _.LBC_Simple_typeTwoWayActuatorControlNodeMonitoring;
+      tempCm6CylinderRecoverCommand : _.LBC_Simple_typeTwoWayActuatorControlNodeCommands;
+      tempCm7CylinderRecoverStatus : _.LBC_Simple_typeTwoWayActuatorControlNodeMonitoring;
+      tempCm7CylinderRecoverCommand : _.LBC_Simple_typeTwoWayActuatorControlNodeCommands;
+      tempCm1AxisRecoverCommandConfiguration : _.LBC_typeAxisSimpleControlCommandConfiguration_1;
+      tempCm2AxisRecoverCommandConfiguration : _.LBC_typeAxisSimpleControlCommandConfiguration_1;
+      tempCm3AxisRecoverCommandConfiguration : _.LBC_typeAxisSimpleControlCommandConfiguration_1;
+   END_VAR
+
+   VAR CONSTANT 
+      STEP_IDLE : DInt := 1;   // Idle Step
+      STEP_101 : DInt := 101;
+      STEP_102 : DInt := 102;   // Template Step
+      STEP_103 : DInt := 103;   // Template Step
+      STEP_104 : DInt := 104;
+      STEP_105 : DInt := 105;
+      STEP_106 : DInt := 106;
+      STEP_107 : DInt := 108;
+      STEP_109 : DInt := 109;
+      STEP_110 : DInt := 110;
+      STEP_111 : DInt := 111;
+      STEP_120 : DInt := 120;
+      STEP_112 : DInt := 112;
+      STEP_113 : DInt := 113;
+      STEP_114 : DInt := 114;
+      STEP_115 : DInt := 115;
+      STEP_1202 : DInt := 1202;
+      STEP_121 : DInt := 121;
+      STEP_122 : DInt := 122;
+      STEP_123 : DInt := 123;
+      STEP_124 : DInt := 124;
+      STEP_130 : DInt := 130;
+      STEP_131 : DInt := 131;
+      STEP_132 : DInt := 132;
+      STEP_201 : DInt := 201;
+      STEP_301 : DInt := 301;
+      STEP_401 : DInt := 401;
+      STEP_501 : DInt := 501;
+      STEP_701 : DInt := 701;
+      STEP_601 : DInt := 601;
+      STEP_602 : DInt := 602;
+      STEP_IMMEDIATE_STOP : DInt := 901;   // Step executed when an immediate stop command is triggered for the sequence (i.e. when unit is in state aborting)
+      TO_DO_INSERT_CONDITION_FOR_TRANSITION_HERE : Bool := TRUE;   // Template : Add conditions
+      VFD_CW : DInt := 1;
+      VFD_CCW : DInt := -1;
+      "24SIZE" : Int := 24;
+      "36SIZE" : Int := 36;
+      WITHORWITHOUTDETECT1ERROR : Int := 36;
+      WITHORWITHOUTDETECT2ERROR : Int := 37;
+      WITHORWITHOUTDETECT3ERROR : Int := 38;
+      WITHORWITHOUTDETECT4ERROR : Int := 39;
+      RECOVERERROR : Int := 40;
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // (company)/ (c)Copyright (year)
+	    //-------------------------------------------------------------------------------
+	    // Title:            (Title of this block)
+	    // Comment/Function: (that is implemented in the block)
+	    // Library/Family:   (that the source is dedicated to)
+	    // Author:           (department / person in charge / contact)
+	    // Tested with:      (test system with FW version)
+	    // Engineering:      TIA Portal (SW version)
+	    // Restrictions:     (OB types, etc.)
+	    // Requirements:     (hardware, technological package, etc.)
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | dd.mm.yyyy | (name of expert)        | First released version
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(/*
+	This is a template block provided by the Automation Framework. It can be used to create an own project.
+	The Block Info Header is prepared to put in your own data.
+	Description of the block could be added here and the docu created by Code2Docu.
+	*/)
+	END_REGION DESCRIPTION
+	REGION intput
+	    #tempCellSize := _.Global.Data.parameter.material.Unit2.contraint.parameters.specification[_.Global.Data.parameter.material.Unit2.contraint.parameters.selectSpecification].traySize;
+	    #tempConstraintNextScratchCellIndex := _.Global.Data.material.Unit2.contraint.monitor.cellsInfo.nextScratchCellIndex;
+	    #tempWithorWithoutCellDetections[0] := _.Unit2.EM4.ControlNodes.cm8SignalTM.monitoring.withOrWithoutCellDetectionU2EM4_1;
+	    #tempWithorWithoutCellDetections[1] := _.Unit2.EM4.ControlNodes.cm8SignalTM.monitoring.withOrWithoutCellDetectionU2EM4_2;
+	    #tempWithorWithoutCellDetections[2] := _.Unit2.EM4.ControlNodes.cm8SignalTM.monitoring.withOrWithoutCellDetectionU2EM4_3;
+	    #tempWithorWithoutCellDetections[3] := _.Unit2.EM4.ControlNodes.cm8SignalTM.monitoring.withOrWithoutCellDetectionU2EM4_4;
+	    #tempCellsInfo := _.Global.Data.material.Unit2.contraint.monitor.cellsInfo.cellsResult;
+	    #tempHalfCellSize := #tempCellSize;
+	    
+	END_REGION
+	IF HmiInterface.sequence.commands.setSingleStepMode THEN
+	    IF NOT HmiInterface.sequence.commands.nextStep THEN
+	        ControlNodes.sequence.status.nextStep := ControlNodes.sequence.status.currentStep;
+	    END_IF;
+	END_IF;
+	
+	REGION Sequence control
+	    // General control of the sequence
+	    #instSequenceSCLControl(idleStep := #STEP_IDLE,
+	                            stoppedStep := #STEP_IMMEDIATE_STOP,
+	                            resetJobs => ControlNodes.jobs.commands.reset,
+	                            hmiInterface := HmiInterface.sequence,
+	                            sequence := ControlNodes.sequence);
+	END_REGION Sequence control
+	
+	IF #statCurrentStepPrevious <> ControlNodes.sequence.status.currentStep THEN
+	    #statStepFirstCall := FALSE;
+	END_IF;
+	#statCurrentStepPrevious := ControlNodes.sequence.status.currentStep;
+	
+	
+	REGION Steps
+	    // Only execute sequence if active
+	    IF ControlNodes.sequence.status.seqActive THEN
+	        
+	        // Determine the current step
+	        CASE ControlNodes.sequence.status.currentStep OF
+	                
+	            #STEP_IDLE:
+	                // If a new job is activated, move to the first step of that job                   
+	                IF ControlNodes.sequence.status.executionEnabled THEN
+	                    CASE ControlNodes.jobs.commands.setJobNumber OF
+	                        _.U2EM4_JOB_EXECUTE:
+	                            ControlNodes.sequence.status.nextStep := #STEP_101;
+	                        _.U2EM4_JOB_STOPPING:
+	                            ControlNodes.sequence.status.nextStep := #STEP_201;
+	                        _.U2EM4_JOB_HOLODING:
+	                            ControlNodes.sequence.status.nextStep := #STEP_301;
+	                        _.U2EM4_JOB_UNHOLODING:
+	                            ControlNodes.sequence.status.nextStep := #STEP_401;
+	                        _.U2EM4_JOB_RESTING:
+	                            ControlNodes.sequence.status.nextStep := #STEP_501;
+	                        _.U2EM4_JOB_STARTING:
+	                            ControlNodes.sequence.status.nextStep := #STEP_601;
+	                        _.U2EM4_JOB_RECOVER:
+	                            ControlNodes.sequence.status.nextStep := #STEP_701;
+	                    END_CASE;
+	                    
+	                END_IF;
+	                (* ControlNodes.cm1Vfd206.sinaControlNode.commandConfiguration.referenceSpeed :=
+	                 HmiInterface.cm1Vfd206.commandConfiguration.referenceSpeed := "_".Global.Data.parameter.U2EM2.cm1Vfd206.general.refSpeed; *)
+	                REGION ########JOB_STARTING_Step600
+	                    
+	                    
+	                END_REGION
+	            #STEP_601:
+	                REGION STARTING_initSimSignal_Step601
+	                    ControlNodes.cm8SignalTM.reset := true;
+	                    ControlNodes.sequence.status.nextStep := #STEP_602;
+	                END_REGION ;
+	            #STEP_602:
+	                REGION #STEP_602
+	                    IF NOT _.Global.Data.unit[1].specialFunctions.specialFunction10 THEN
+	                        #statCylinderHomeDone := false;
+	                        EXCHANGETRAY_Em4CylindersOperate(goHome := NOT #statCylinderHomeDone,
+	                                                         goWork := false,
+	                                                         cm4Enable := 1,
+	                                                         cm5Enable := 1,
+	                                                         cm6Enable := 1,
+	                                                         cm7Enable := 1,
+	                                                         homeDone => #statCylinderHomeDone,
+	                                                         workDone => #statCylinderWorkDone);
+	                        EXCHANGETRAY_Em4AxisGoHome(homeDone => #statAxisOnHome);
+	                        IF #statAxisOnHome AND #statCylinderHomeDone THEN
+	                            ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                        END_IF;
+	                        #statRowTwoOn := FALSE;
+	                    ELSE
+	                        ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                    END_IF;
+	                    
+	                END_REGION
+	                
+	                REGION ########JOB_RESTING_Step500
+	                    
+	                    
+	                END_REGION
+	            #STEP_501:
+	                ControlNodes.cm8SignalTM.reset := true;
+	                ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	            #STEP_401:
+	                REGION UNHOLODING_Step401
+	                    
+	                    
+	                    ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                END_REGION ;
+	                REGION ########JOB_HOLODING_Step300
+	                    
+	                    
+	                END_REGION
+	            #STEP_301:
+	                REGION HOLODING_Step301
+	                    #statStepFirstCall := FALSE;
+	                    
+	                    
+	                    ;
+	                END_REGION ;
+	                REGION ########JOB_STOPPING_Step200
+	                    
+	                    
+	                END_REGION
+	            #STEP_201:
+	                REGION STEP_201 stopping
+	                    #statStepFirstCall := FALSE;
+	                    ControlNodes.cm1AxisControl.commands.stop := TRUE;
+	                    ControlNodes.cm2AxisControl.commands.stop := TRUE;
+	                    ControlNodes.cm3AxisControl.commands.stop := TRUE;
+	                    IF ControlNodes.jobs.commands.setJobNumber = _.U2EM4_JOB_EXECUTE THEN
+	                        #instRecordRecoverStep.step := ControlNodes.sequence.previousSteps[2].step;
+	                        #instRecordRecoverStep.saveRecord := true;
+	                    END_IF;
+	                    IF #instRecordRecoverStep.saveDone THEN
+	                        #instRecordRecoverStep.saveRecord := FALSE;
+	                        ;
+	                    END_IF;
+	                    
+	                    IF ControlNodes.cm1AxisControl.monitoring.statusWord.bit06_Done
+	                        AND
+	                        ControlNodes.cm1AxisControl.monitoring.statusWord.bit06_Done
+	                        AND
+	                        ControlNodes.cm1AxisControl.monitoring.statusWord.bit06_Done
+	                    THEN
+	                        ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                        ;
+	                    END_IF;
+	                    
+	                END_REGION
+	                
+	                REGION ########RECOVERING_JOB
+	                END_REGION
+	            #STEP_701:
+	                REGION Step_701
+	                    // Statement section REGION
+	                    #tempCm4CylinderRecoverStatus := #instRecordRecoverStep.outCm4Cylinder.monitoring;
+	                    #tempCm4CylinderRecoverCommand := #instRecordRecoverStep.outCm4Cylinder.commands;
+	                    #tempCm5CylinderRecoverStatus := #instRecordRecoverStep.outCm5Cylinder.monitoring;
+	                    #tempCm5CylinderRecoverCommand := #instRecordRecoverStep.outCm5Cylinder.commands;
+	                    #tempCm6CylinderRecoverStatus := #instRecordRecoverStep.outCm6Cylinder.monitoring;
+	                    #tempCm6CylinderRecoverCommand := #instRecordRecoverStep.outCm6Cylinder.commands;
+	                    #tempCm7CylinderRecoverStatus := #instRecordRecoverStep.outCm7Cylinder.monitoring;
+	                    #tempCm7CylinderRecoverCommand := #instRecordRecoverStep.outCm7Cylinder.commands;
+	                    #tempCm1AxisRecoverCommandConfiguration := #instRecordRecoverStep.outCm1AxisControl.commandConfiguration;
+	                    #tempCm2AxisRecoverCommandConfiguration := #instRecordRecoverStep.outCm2AxisControl.commandConfiguration;
+	                    #tempCm3AxisRecoverCommandConfiguration := #instRecordRecoverStep.outCm3AxisControl.commandConfiguration;
+	                    
+	                    IF #tempCm4CylinderRecoverStatus.inHomePos <> ControlNodes.cm4Cylinder.monitoring.inHomePos
+	                        OR
+	                        #tempCm5CylinderRecoverStatus.inHomePos <> ControlNodes.cm5Cylinder.monitoring.inHomePos
+	                        OR
+	                        #tempCm6CylinderRecoverStatus.inHomePos <> ControlNodes.cm6Cylinder.monitoring.inHomePos
+	                        OR
+	                        #tempCm7CylinderRecoverStatus.inHomePos <> ControlNodes.cm7Cylinder.monitoring.inHomePos
+	                        OR
+	                        #tempCm4CylinderRecoverStatus.inWorkPos <> ControlNodes.cm4Cylinder.monitoring.inWorkPos
+	                        OR
+	                        #tempCm5CylinderRecoverStatus.inWorkPos <> ControlNodes.cm5Cylinder.monitoring.inWorkPos
+	                        OR
+	                        #tempCm6CylinderRecoverStatus.inWorkPos <> ControlNodes.cm6Cylinder.monitoring.inWorkPos
+	                        OR
+	                        #tempCm7CylinderRecoverStatus.inWorkPos <> ControlNodes.cm7Cylinder.monitoring.inWorkPos
+	                        OR
+	                        NOT _.LGF_CompareLReal(valueA := #tempCm1AxisRecoverCommandConfiguration.posAbsolute.position, valueB := ControlNodes.cm1AxisControl.monitoring.position)
+	                        OR
+	                        NOT _.LGF_CompareLReal(valueA := #tempCm2AxisRecoverCommandConfiguration.posAbsolute.position, valueB := ControlNodes.cm2AxisControl.monitoring.position)
+	                        OR
+	                        NOT _.LGF_CompareLReal(valueA := #tempCm3AxisRecoverCommandConfiguration.posAbsolute.position, valueB := ControlNodes.cm3AxisControl.monitoring.position)
+	                        
+	                    THEN
+	                        _.Unit2.Alarms.errorStop[#RECOVERERROR] := TRUE;
+	                        #statRecoverOn := FALSE;
+	                        #statRecoverStep := #STEP_IDLE;
+	                    ELSE
+	                        #statRecoverOn := TRUE;
+	                        #statRecoverStep := #instRecordRecoverStep.step;
+	                        ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                    END_IF;
+	                    _.Global.Data.unit[1].specialFunctions.specialFunction10 := FALSE;
+	                END_REGION ;
+	                
+	                REGION ########JOB_EXECUTE_Step100
+	                    
+	                END_REGION
+	            #STEP_101:
+	                REGION STEP_101 initPara
+	                    IF #statRecoverOn THEN
+	                        ControlNodes.sequence.status.nextStep := #statRecoverStep;
+	                        #statRecoverOn := false;
+	                    ELSE
+	                        #statRowTwoOn := FALSE;
+	                        #tempConstraintNextScratchCellIndex:=
+	                        #statPlasticNextScratchCellIndex := 0;
+	                        ControlNodes.sequence.status.nextStep := #STEP_102;
+	                    END_IF;
+	                    
+	                END_REGION
+	                
+	            #STEP_102:
+	                REGION STEP_102 update position
+	                    
+	                    
+	                        REGION get cells information
+	                            // 
+	                            #statCurrentScratchCellIndex := #tempConstraintNextScratchCellIndex;
+	                            #statLastScratch := #tempConstraintNextScratchCellIndex + 4 >= #tempCellSize;
+	                            //
+	                            IF NOT #statRowTwoOn THEN
+	                                #statCurrentScratchCellIndexOnRow := #tempConstraintNextScratchCellIndex / 8;
+	                            END_IF; // 14
+	                            #statxDistanceIndex := #statCurrentScratchCellIndexOnRow; // 24
+	                            REGION 24 size setting
+	                                // "24SIZE"
+	                                IF #tempCellSize = #"24SIZE" THEN
+	                                    // 
+	                                    REGION position Settins
+	                                        // Y
+	                                        //y
+	                                        //
+	                                        
+	                                        _.Unit2.EM4.ControlNodes.cm2AxisControl.commandConfiguration.posAbsolute.position :=
+	                                        Config.em4Parameters.cm2Axis120.production.distanceList[0 + #statyDistanceIndex].position;
+	                                        _.Unit2.EM4.ControlNodes.cm2AxisControl.commandConfiguration.posAbsolute.velocity :=
+	                                        Config.em4Parameters.cm2Axis120.production.distanceList[0].velocity; // Z
+	                                        //z
+	                                        _.Unit2.EM4.ControlNodes.cm3AxisControl.commandConfiguration.posAbsolute.position :=
+	                                        Config.em4Parameters.cm3Axis121.production.distanceList[0].position;
+	                                        _.Unit2.EM4.ControlNodes.cm3AxisControl.commandConfiguration.posAbsolute.velocity :=
+	                                        Config.em4Parameters.cm3Axis121.production.distanceList[0].velocity; // X30 + 
+	                                        //x
+	                                        _.Unit2.EM4.ControlNodes.cm1AxisControl.commandConfiguration.posAbsolute.position :=
+	                                        Config.em4Parameters.cm1Axis119.production.distanceList[30 + #statxDistanceIndex].position;
+	                                        _.Unit2.EM4.ControlNodes.cm1AxisControl.commandConfiguration.posAbsolute.velocity :=
+	                                        Config.em4Parameters.cm1Axis119.production.distanceList[0].velocity;
+	                                        
+	                                    END_REGION
+	                                END_IF;
+	                                
+	                            END_REGION
+	                            
+	                            REGION 36 size setting
+	                                IF #tempCellSize = #"36SIZE" THEN
+	                                    REGION position settings
+	                                        //y
+	                                        _.Unit2.EM4.ControlNodes.cm2AxisControl.commandConfiguration.posAbsolute.position :=
+	                                        Config.em4Parameters.cm2Axis120.production.distanceList[3 + #statyDistanceIndex].position;
+	                                        _.Unit2.EM4.ControlNodes.cm2AxisControl.commandConfiguration.posAbsolute.velocity :=
+	                                        Config.em4Parameters.cm2Axis120.production.distanceList[3].velocity;
+	                                        //z
+	                                        _.Unit2.EM4.ControlNodes.cm3AxisControl.commandConfiguration.posAbsolute.position :=
+	                                        Config.em4Parameters.cm3Axis121.production.distanceList[3].position;
+	                                        _.Unit2.EM4.ControlNodes.cm3AxisControl.commandConfiguration.posAbsolute.velocity :=
+	                                        Config.em4Parameters.cm3Axis121.production.distanceList[3].velocity;
+	                                        //x
+	                                        _.Unit2.EM4.ControlNodes.cm1AxisControl.commandConfiguration.posAbsolute.position :=
+	                                        Config.em4Parameters.cm1Axis119.production.distanceList[40 + #statxDistanceIndex].position;
+	                                        _.Unit2.EM4.ControlNodes.cm1AxisControl.commandConfiguration.posAbsolute.velocity :=
+	                                        Config.em4Parameters.cm1Axis119.production.distanceList[0].velocity;
+	                                    END_REGION
+	                                    
+	                                END_IF;
+	                            END_REGION
+	                            
+	                        END_REGION
+	                        ControlNodes.sequence.status.nextStep := #STEP_103;
+	                   
+	                    
+	                    
+	                END_REGION ;
+	                
+	                
+	                
+	            #STEP_103:
+	                REGION STEP_103 X_Y_GOTO_READY_POSITION
+	                    ControlNodes.cm1AxisControl.commands.posAbsolute := TRUE;
+	                    ControlNodes.cm2AxisControl.commands.posAbsolute := TRUE;
+	                    #tempCm1PosDone := _.LGF_CompareLReal(valueA := ControlNodes.cm1AxisControl.commandConfiguration.posAbsolute.position, valueB := ControlNodes.cm1AxisControl.monitoring.position);
+	                    #tempCm2PosDone := _.LGF_CompareLReal(valueA := ControlNodes.cm2AxisControl.commandConfiguration.posAbsolute.position, valueB := ControlNodes.cm2AxisControl.monitoring.position);
+	                    IF #tempCm1PosDone AND #tempCm2PosDone THEN
+	                        ControlNodes.sequence.status.nextStep := #STEP_104;
+	                        ;
+	                    END_IF;
+	                    
+	                    ;
+	                END_REGION
+	                
+	                ;
+	                
+	                
+	            #STEP_104:
+	                REGION STEP_104 wait_catch_cells
+	                    IF _.Unit2.EmNodes.emRelations.EM4.recieve.constraintRoller.req.transferEnable THEN
+	                        REGION import cells Infor result 
+	                            IF #tempCellSize = #"24SIZE" THEN
+	                                // 244
+	                                FOR #tempLoopIndex := 0 TO 3 DO
+	                                    #statScratchCellsInfo[#tempLoopIndex] :=
+	                                    #tempCellsInfo[#tempLoopIndex + #statCurrentScratchCellIndex];
+	                                END_FOR;
+	                                //#statLastScratch := #tempNextScratchCellIndex + 4 >= #tempCellSize;
+	                            END_IF;
+	                            IF #tempCellSize = #"36SIZE" THEN
+	                                // 3618(5)åªèƒ½æ‹¿2ä¸ª
+	                                IF #tempConstraintNextScratchCellIndex + 4 < #tempCellSize THEN
+	                                    FOR #tempLoopIndex := 0 TO 3 DO
+	                                        #statScratchCellsInfo[#tempLoopIndex] :=
+	                                        #tempCellsInfo[#tempLoopIndex + #statCurrentScratchCellIndex];
+	                                    END_FOR;
+	                                    //#statLastScratch := FALSE;
+	                                ELSE
+	                                    FOR #tempLoopIndex := 0 TO 1 DO
+	                                        #statScratchCellsInfo[#tempLoopIndex] :=
+	                                        #tempCellsInfo[#tempLoopIndex + #statCurrentScratchCellIndex];
+	                                    END_FOR;
+	                                    //#statLastScratch := TRUE;
+	                                END_IF;
+	                                
+	                            END_IF;
+	                            
+	                            
+	                            
+	                        END_REGION
+	                        
+	                        
+	                        REGION z_move_liftdown
+	                            ControlNodes.cm3AxisControl.commands.posAbsolute := TRUE;
+	                            IF _.LGF_CompareLReal(valueA := ControlNodes.cm3AxisControl.commandConfiguration.posAbsolute.position, valueB := ControlNodes.cm3AxisControl.monitoring.position) THEN
+	                                
+	                                ControlNodes.sequence.status.nextStep := #STEP_105;
+	                            END_IF;
+	                        END_REGION
+	                        
+	                        ;
+	                    END_IF;
+	                    
+	                    
+	                    
+	                    
+	                    ;
+	                END_REGION ;
+	                ;
+	                
+	            #STEP_105:
+	                REGION STEP_105 Cylinder_OnWork
+	                    #statCylinderWorkDone := false;
+	                    EXCHANGETRAY_Em4CylindersOperate(goHome := false,
+	                                                     goWork := NOT #statCylinderWorkDone,
+	                                                     cm4Enable := 1,
+	                                                     cm5Enable := 1,
+	                                                     cm6Enable := 1,
+	                                                     cm7Enable := 1,
+	                                                     homeDone => #statCylinderHomeDone,
+	                                                     workDone => #statCylinderWorkDone);
+	                    
+	                END_REGION
+	                
+	                IF #statCylinderWorkDone THEN
+	                    REGION check_catchcells_count
+	                        
+	                        REGION raise_error by withorwithout
+	                            _.Unit2.Alarms.errorStop[#WITHORWITHOUTDETECT1ERROR] := NOT #tempWithorWithoutCellDetections[0];
+	                            _.Unit2.Alarms.errorStop[#WITHORWITHOUTDETECT2ERROR] := NOT #tempWithorWithoutCellDetections[1];
+	                            IF #statLastScratch AND #tempCellSize = #"36SIZE" THEN
+	                                _.Unit2.Alarms.errorStop[#WITHORWITHOUTDETECT3ERROR] := FALSE;
+	                                _.Unit2.Alarms.errorStop[#WITHORWITHOUTDETECT4ERROR] := FALSE;
+	                                #tempWithorWithoutCellDetections[2] := TRUE;
+	                                #tempWithorWithoutCellDetections[3] := TRUE;
+	                            ELSE
+	                                _.Unit2.Alarms.errorStop[#WITHORWITHOUTDETECT3ERROR] := NOT #tempWithorWithoutCellDetections[2];
+	                                _.Unit2.Alarms.errorStop[#WITHORWITHOUTDETECT4ERROR] := NOT #tempWithorWithoutCellDetections[3];
+	                                
+	                            END_IF;
+	                            
+	                        END_REGION
+	                        IF #tempWithorWithoutCellDetections[0]
+	                            AND
+	                            #tempWithorWithoutCellDetections[1]
+	                            AND
+	                            #tempWithorWithoutCellDetections[2]
+	                            AND
+	                            #tempWithorWithoutCellDetections[3]
+	                        THEN
+	                            ControlNodes.sequence.status.nextStep := #STEP_106;
+	                        END_IF;
+	                        
+	                    END_REGION
+	                    
+	                END_IF;
+	                
+	            #STEP_106:
+	                REGION STEP_106 Z_move_liftup
+	                    ControlNodes.cm3AxisControl.commandConfiguration.posAbsolute.position := 0;
+	                    ControlNodes.cm3AxisControl.commands.posAbsolute := TRUE;
+	                    IF _.LGF_CompareLReal(valueA := ControlNodes.cm3AxisControl.commandConfiguration.posAbsolute.position, valueB := ControlNodes.cm3AxisControl.monitoring.position) THEN
+	                        ControlNodes.sequence.status.nextStep := #STEP_107;
+	                    END_IF;
+	                END_REGION
+	                
+	            #STEP_107:
+	                REGION STEP107 TransferEnable to em2 
+	
+	                    REGION add ScratchCellIndex
+	                        
+	                            IF NOT #statStepFirstCall THEN
+	                                
+	                                IF #tempCellSize = #"36SIZE" AND #tempConstraintNextScratchCellIndex = 32 THEN
+	                                    //3622ä¸ª
+	                                    #tempConstraintNextScratchCellIndex := #tempConstraintNextScratchCellIndex + 2;
+	                                ELSE
+	                                    #tempConstraintNextScratchCellIndex := #tempConstraintNextScratchCellIndex + 4;
+	                                    ;
+	                                END_IF;
+	                                
+	                                
+	                            END_IF;
+	
+	                        _.Unit2.EmNodes.emRelations.EM4.deliver.constraintRoller.req.transferEnable := TRUE;
+	                        #statStepFirstCall := true;
+	                        
+	                    END_REGION
+	                    
+	                    REGION plastic step OR ng conveyor step enable check
+	                        #statPlasticStepEnable := FALSE;
+	                        #statNgConveyorEnable := FALSE;
+	                        IF #tempCellSize = #"36SIZE" AND #statLastScratch THEN
+	                            #tempValidCellIndex := 3;
+	                        ELSE
+	                            #tempValidCellIndex := 1;
+	                        END_IF;
+	                        
+	                        FOR #tempLoopIndex := 0 TO #tempValidCellIndex DO
+	                            #statPlasticStepEnable := #statPlasticStepEnable OR #statScratchCellsInfo[#tempLoopIndex];
+	                            IF #statPlasticStepEnable THEN
+	                                EXIT;
+	                                ;
+	                            END_IF;
+	                        END_FOR;
+	                        FOR #tempLoopIndex := 0 TO #tempValidCellIndex DO
+	                            #statNgConveyorEnable := #statNgConveyorEnable OR NOT #statScratchCellsInfo[#tempLoopIndex];
+	                            IF #statNgConveyorEnable THEN
+	                                EXIT;
+	                                ;
+	                            END_IF;
+	                        END_FOR;
+	                        
+	                        IF #statPlasticStepEnable THEN
+	                            ControlNodes.sequence.status.nextStep := #STEP_110;
+	                            
+	                        END_IF;
+	                        IF #statNgConveyorEnable AND NOT #statPlasticStepEnable THEN
+	                            ControlNodes.sequence.status.nextStep := #STEP_120;
+	                            
+	                        END_IF;
+	                        
+	                    END_REGION
+	                    
+	                    
+	                END_REGION
+	                
+	                
+	                REGION ##########Plastic
+	                    // Statement section REGION
+	                    
+	                END_REGION
+	                
+	            #STEP_110:
+	                REGION STEP_110 PalsticMoving
+	                    REGION position update
+	                        REGION 24 size setting
+	                            IF #tempCellSize = #"24SIZE" THEN
+	                                REGION position Settins
+	                                    //y
+	                                    _.Unit2.EM4.ControlNodes.cm2AxisControl.commandConfiguration.posAbsolute.position :=
+	                                    Config.em4Parameters.cm2Axis120.production.distanceList[10 + #statyDistanceIndex].position;
+	                                    //z
+	                                    _.Unit2.EM4.ControlNodes.cm3AxisControl.commandConfiguration.posAbsolute.position :=
+	                                    Config.em4Parameters.cm3Axis121.production.distanceList[10].position;
+	                                    //x
+	                                    _.Unit2.EM4.ControlNodes.cm1AxisControl.commandConfiguration.posAbsolute.position :=
+	                                    Config.em4Parameters.cm1Axis119.production.distanceList[50 + #statxDistanceIndex].position;
+	                                    
+	                                END_REGION
+	                                
+	                            END_IF;
+	                            
+	                        END_REGION
+	                        
+	                        REGION 36 size setting
+	                            IF #tempCellSize = #"36SIZE" THEN
+	                                REGION position settings
+	                                    //y
+	                                    _.Unit2.EM4.ControlNodes.cm2AxisControl.commandConfiguration.posAbsolute.position :=
+	                                    Config.em4Parameters.cm2Axis120.production.distanceList[13 + #statyDistanceIndex].position;
+	                                    //z
+	                                    _.Unit2.EM4.ControlNodes.cm3AxisControl.commandConfiguration.posAbsolute.position :=
+	                                    Config.em4Parameters.cm3Axis121.production.distanceList[13].position;
+	                                    //x
+	                                    _.Unit2.EM4.ControlNodes.cm1AxisControl.commandConfiguration.posAbsolute.position :=
+	                                    Config.em4Parameters.cm1Axis119.production.distanceList[60 + #statxDistanceIndex].position;
+	                                    
+	                                END_REGION
+	                                
+	                                
+	                            END_IF;
+	                        END_REGION
+	                        
+	                    END_REGION
+	                    REGION cms cmd
+	                        ControlNodes.cm1AxisControl.commands.posAbsolute := true;
+	                        ControlNodes.cm2AxisControl.commands.posAbsolute := true;
+	                        #tempCm1PosDone := _.LGF_CompareLReal(valueA := ControlNodes.cm1AxisControl.commandConfiguration.posAbsolute.position, valueB := ControlNodes.cm1AxisControl.monitoring.position);
+	                        #tempCm2PosDone := _.LGF_CompareLReal(valueA := ControlNodes.cm2AxisControl.commandConfiguration.posAbsolute.position, valueB := ControlNodes.cm2AxisControl.monitoring.position);
+	                        IF #tempCm1PosDone AND #tempCm2PosDone THEN
+	                            ControlNodes.sequence.status.nextStep := #STEP_111;
+	                        END_IF;
+	                    END_REGION
+	                END_REGION
+	            #STEP_111:
+	                REGION STEP_111 waiting em5 transferEnable
+	                    IF _.Unit2.EmNodes.emRelations.EM4.recieve.plasticRoller.req.transferEnable THEN
+	                        REGION z_move_liftdown
+	                            
+	                            ControlNodes.cm3AxisControl.commands.posAbsolute := TRUE;
+	                            IF _.LGF_CompareLReal(valueA := ControlNodes.cm3AxisControl.commandConfiguration.posAbsolute.position, valueB := ControlNodes.cm3AxisControl.monitoring.position) THEN
+	                                ControlNodes.sequence.status.nextStep := #STEP_112;
+	                            END_IF;
+	                        END_REGION
+	                        
+	                        ;
+	                    END_IF;
+	                    
+	                    
+	                END_REGION ;
+	            #STEP_112:
+	                REGION STEP_112 put down cells, the Cylinder go On Home
+	                    //OK
+	                    #tempCm4Enable := #statScratchCellsInfo[0];
+	                    #tempCm5Enable := #statScratchCellsInfo[1]; // 362
+	                    IF #tempCellSize = #"36SIZE" AND #statLastScratch THEN
+	                        #tempCm6Enable := FALSE;
+	                        #tempCm7Enable := FALSE;
+	                    ELSE
+	                        #tempCm6Enable := #statScratchCellsInfo[2];
+	                        #tempCm7Enable := #statScratchCellsInfo[3];
+	                    END_IF;
+	                    #statCylinderHomeDone := false;
+	                    EXCHANGETRAY_Em4CylindersOperate(goHome := NOT #statCylinderHomeDone,
+	                                                     goWork := FALSE,
+	                                                     cm4Enable := #tempCm4Enable,
+	                                                     cm5Enable := #tempCm5Enable,
+	                                                     cm6Enable := #tempCm6Enable,
+	                                                     cm7Enable := #tempCm7Enable,
+	                                                     homeDone => #statCylinderHomeDone,
+	                                                     workDone => #statCylinderWorkDone);
+	                    
+	                END_REGION
+	                IF #statCylinderHomeDone THEN
+	                    ControlNodes.sequence.status.nextStep := #STEP_113;
+	                    ;
+	                END_IF;
+	                ;
+	            #STEP_113:
+	                REGION STEP_113 Z move liftup
+	                    ControlNodes.cm3AxisControl.commandConfiguration.posAbsolute.position := 0;
+	                    ControlNodes.cm3AxisControl.commands.posAbsolute := TRUE;
+	                    
+	                    IF _.LGF_CompareLReal(valueA := ControlNodes.cm3AxisControl.commandConfiguration.posAbsolute.position, valueB := ControlNodes.cm3AxisControl.monitoring.position) THEN
+	                        REGION add plasticScratchCellIndex
+	                            
+	                                IF NOT #statStepFirstCall THEN
+	                                    #statRowTwoOn := NOT #statRowTwoOn;
+	                                    IF #tempCellSize = #"36SIZE" AND #statPlasticNextScratchCellIndex >= 32 THEN
+	                                        //3622ä¸ª
+	                                        #statPlasticNextScratchCellIndex := #statPlasticNextScratchCellIndex + 2;
+	                                    ELSE
+	                                        #statPlasticNextScratchCellIndex := #statPlasticNextScratchCellIndex + 4;
+	                                        ;
+	                                    END_IF;
+	                                    
+	                                    
+	                                END_IF;
+	
+	                            
+	                            #statStepFirstCall := true;
+	                            
+	                        END_REGION
+	                        
+	                        IF #statNgConveyorEnable THEN
+	                            ControlNodes.sequence.status.nextStep := #STEP_120;
+	
+	                        ELSE
+	                            ControlNodes.sequence.status.nextStep := #STEP_130;
+	
+	                        END_IF;
+	                    END_IF;
+	                END_REGION
+	                
+	                REGION ######NG conveyor
+	                    // Statement section REGION
+	                    
+	                END_REGION
+	                
+	                
+	            #STEP_120:
+	                REGION STEP_120 Ngconveyor Moving
+	                    REGION position update
+	                        //y
+	                        _.Unit2.EM4.ControlNodes.cm2AxisControl.commandConfiguration.posAbsolute.position :=
+	                        Config.em4Parameters.cm2Axis120.production.distanceList[20].position;
+	                        //z
+	                        _.Unit2.EM4.ControlNodes.cm3AxisControl.commandConfiguration.posAbsolute.position :=
+	                        Config.em4Parameters.cm3Axis121.production.distanceList[20].position;
+	                        //x
+	                        _.Unit2.EM4.ControlNodes.cm1AxisControl.commandConfiguration.posAbsolute.position :=
+	                        Config.em4Parameters.cm1Axis119.production.distanceList[20].position;
+	                        
+	                    END_REGION
+	                    REGION cms cmd
+	                        ControlNodes.cm1AxisControl.commands.posAbsolute := true;
+	                        ControlNodes.cm2AxisControl.commands.posAbsolute := true;
+	                        #tempCm1PosDone := _.LGF_CompareLReal(valueA := ControlNodes.cm1AxisControl.commandConfiguration.posAbsolute.position, valueB := ControlNodes.cm1AxisControl.monitoring.position);
+	                        #tempCm2PosDone := _.LGF_CompareLReal(valueA := ControlNodes.cm2AxisControl.commandConfiguration.posAbsolute.position, valueB := ControlNodes.cm2AxisControl.monitoring.position);
+	                        IF #tempCm1PosDone AND #tempCm2PosDone THEN
+	                            ControlNodes.sequence.status.nextStep := #STEP_121;
+	                        END_IF;
+	                    END_REGION
+	                END_REGION
+	            #STEP_121:
+	                REGION STEP_121 waiting ngconveyor transferEnable
+	                    IF _.Unit2.EmNodes.emRelations.EM4.recieve.NgConvyorRoller.req.transferEnable THEN
+	                        REGION z_move_liftdown
+	                            
+	                            ControlNodes.cm3AxisControl.commands.posAbsolute := TRUE;
+	                            IF _.LGF_CompareLReal(valueA := ControlNodes.cm3AxisControl.commandConfiguration.posAbsolute.position, valueB := ControlNodes.cm3AxisControl.monitoring.position) THEN
+	                                ControlNodes.sequence.status.nextStep := #STEP_122;
+	                            END_IF;
+	                        END_REGION
+	                        
+	                        ;
+	                    END_IF;
+	                    
+	                    
+	                END_REGION ;
+	            #STEP_122:
+	                REGION STEP_122 waiting put down cells ,the Cylinder go On Home
+	                    //OK
+	                    #tempCm4Enable := NOT #statScratchCellsInfo[0];
+	                    #tempCm5Enable := NOT #statScratchCellsInfo[1]; // 362
+	                    IF #tempCellSize = #"36SIZE" AND #statLastScratch THEN
+	                        #tempCm6Enable := FALSE;
+	                        #tempCm7Enable := FALSE;
+	                    ELSE
+	                        #tempCm6Enable := NOT #statScratchCellsInfo[2];
+	                        #tempCm7Enable := NOT #statScratchCellsInfo[3];
+	                    END_IF;
+	                    #statCylinderHomeDone := false;
+	                    EXCHANGETRAY_Em4CylindersOperate(goHome := NOT #statCylinderHomeDone,
+	                                                     goWork := FALSE,
+	                                                     cm4Enable := #tempCm4Enable,
+	                                                     cm5Enable := #tempCm5Enable,
+	                                                     cm6Enable := #tempCm6Enable,
+	                                                     cm7Enable := #tempCm7Enable,
+	                                                     homeDone => #statCylinderHomeDone,
+	                                                     workDone => #statCylinderWorkDone);
+	                    IF #statCylinderHomeDone THEN
+	                        ControlNodes.sequence.status.nextStep := #STEP_123;
+	                        ;
+	                    END_IF;
+	                    
+	                END_REGION
+	                
+	                
+	            #STEP_123:
+	                REGION STEP_123 Z move liftup
+	                    ControlNodes.cm3AxisControl.commandConfiguration.posAbsolute.position := 0;
+	                    ControlNodes.cm3AxisControl.commands.posAbsolute := TRUE;
+	                    IF _.LGF_CompareLReal(valueA := ControlNodes.cm3AxisControl.commandConfiguration.posAbsolute.position, valueB := ControlNodes.cm3AxisControl.monitoring.position) THEN
+	                        
+	                        ControlNodes.sequence.status.nextStep := #STEP_130;
+	                    END_IF;
+	                END_REGION
+	                
+	            #STEP_130:
+	                REGION STEP_130
+	                    IF #tempConstraintNextScratchCellIndex >= #tempCellSize
+	                        
+	                    THEN
+	                        _.Unit2.EmNodes.emRelations.EM4.deliver.plasticRoller.req.transferEnable := TRUE;
+	                        ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                    ELSE
+	                        
+	                        ControlNodes.sequence.status.nextStep := #STEP_102;
+	                    END_IF;
+	                    
+	                END_REGION
+	                ;
+	                
+	                
+	                REGION ########STEP_IMMEDIATE_STOP
+	                    // Statement section REGION
+	                    
+	                END_REGION
+	                
+	            #STEP_IMMEDIATE_STOP:
+	                #statStepFirstCall := FALSE;
+	                ControlNodes.cm1AxisControl.commands.stop := TRUE;
+	                ControlNodes.cm2AxisControl.commands.stop := TRUE;
+	                ControlNodes.cm3AxisControl.commands.stop := TRUE;
+	                IF ControlNodes.jobs.commands.setJobNumber = _.U2EM4_JOB_EXECUTE THEN
+	                    #instRecordRecoverStep.step := ControlNodes.sequence.previousSteps[2].step;
+	                    #instRecordRecoverStep.saveRecord := true;
+	                END_IF;
+	                IF #instRecordRecoverStep.saveDone THEN
+	                    #instRecordRecoverStep.saveRecord := FALSE;
+	                END_IF;
+	                
+	                IF ControlNodes.cm1AxisControl.monitoring.statusWord.bit06_Done
+	                    AND
+	                    ControlNodes.cm1AxisControl.monitoring.statusWord.bit06_Done
+	                    AND
+	                    ControlNodes.cm1AxisControl.monitoring.statusWord.bit06_Done
+	                THEN
+	                    ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                    ;
+	                END_IF;
+	                
+	        END_CASE;
+	    END_IF;
+	END_REGION Steps
+	
+	REGION Status updates      
+	    REGION Sequence Status
+	        // Update the status
+	        #instSequenceSCLStatus(parentReferenceDesignator := Config.em.referenceDesignator.combined,
+	                               idleStep := #STEP_IDLE,
+	                               stoppedStep := #STEP_IMMEDIATE_STOP,
+	                               setJobNumber := ControlNodes.jobs.commands.setJobNumber,
+	                               activeJobNumber => ControlNodes.jobs.status.activeJobNumber,
+	                               previousCycleJobNumber => ControlNodes.jobs.status.previousCycleJobNumber,
+	                               hmiInterface := HmiInterface.sequence,
+	                               sequence := ControlNodes.sequence);
+	    END_REGION Sequence Status
+	    
+	    
+	    REGION Update Job History
+	        // Update the History of jobs if a new job was started
+	        IF (ControlNodes.jobs.status.activeJobNumber <> ControlNodes.jobs.status.previousCycleJobNumber) THEN
+	            _.LAF_UpdateJobHistory(jobs := ControlNodes.jobs);
+	        END_IF;
+	    END_REGION
+	    
+	    REGION Output steps as String
+	        // Write outputs as strings 
+	        ControlNodes.sequence.status.currentStepSTRING := StepToString(ControlNodes.sequence.status.currentStep);
+	        ControlNodes.sequence.status.previousStepSTRING := StepToString(ControlNodes.sequence.status.previousStep);
+	        ControlNodes.sequence.status.nextStepSTRING := StepToString(ControlNodes.sequence.status.nextStep);
+	    END_REGION Output steps as String   
+	    
+	    REGION output
+	        _.Global.Data.material.Unit2.contraint.monitor.cellsInfo.nextScratchCellIndex := #tempConstraintNextScratchCellIndex;
+	        #instRecordRecoverStep(step := ControlNodes.sequence.status.currentStep,
+	                               cm1AxisControl := ControlNodes.cm1AxisControl,
+	                               cm2AxisControl := ControlNodes.cm1AxisControl,
+	                               cm3AxisControl := ControlNodes.cm1AxisControl,
+	                               cm4Cylinder := ControlNodes.cm4Cylinder,
+	                               cm5Cylinder := ControlNodes.cm4Cylinder,
+	                               cm6Cylinder := ControlNodes.cm4Cylinder,
+	                               cm7Cylinder := ControlNodes.cm4Cylinder);
+	        _.Unit2.EmNodes.emRelations.EM4.deliver.NgConvyorRoller.req.transferEnable := _.LGF_CompareLReal(valueA:=ControlNodes.cm3AxisControl.monitoring.position, valueB:=0.0);
+	        
+	    END_REGION
+	    
+	END_REGION Status updates
+	
+END_FUNCTION_BLOCK
+END_NAMESPACE
+

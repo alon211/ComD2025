@@ -1,0 +1,640 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Document>
+  <Engineering version="V19" />
+  <SW.Blocks.FC ID="0">
+    <AttributeList>
+      <Interface><Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v5">
+  <Section Name="Input">
+    <Member Name="torqueSwitch" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">扭力切换 OFF:低 ON : 高</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="speedSwitch" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">速度切换 OFF:低速 ON : 高速</MultiLanguageText>
+      </Comment>
+    </Member>
+  </Section>
+  <Section Name="Output" />
+  <Section Name="InOut">
+    <Member Name="axisCommandConfiguration" Datatype="&quot;typeAxisSimpleControlCommandConfiguration2&quot;" />
+    <Member Name="velList" Datatype="Array[*] of &quot;LAF_typeAxisMotionParameters&quot;" />
+  </Section>
+  <Section Name="Temp" />
+  <Section Name="Constant" />
+  <Section Name="Return">
+    <Member Name="Ret_Val" Datatype="Void" />
+  </Section>
+</Sections></Interface>
+      <Name>EXCHANGETRAY_AxisTorUpdate</Name>
+      <Namespace>Unit2.EM3</Namespace>
+      <Number>89</Number>
+      <ProgrammingLanguage>LAD</ProgrammingLanguage>
+      <SetENOAutomatically>false</SetENOAutomatically>
+    </AttributeList>
+    <ObjectList>
+      <MultilingualText ID="1" CompositionName="Comment">
+        <ObjectList>
+          <MultilingualTextItem ID="2" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text> //===============================================================================
+    // LGF / (c)Copyright 2024
+    //-------------------------------------------------------------------------------
+    // Title:            Servo Axis Torque Configuration Control
+    // Comment/Function: Configure SV112 and SV113 servo axis parameters for different modes
+    // Library/Family:   Unit2 Servo Control
+    // Author:           Automation Department / Servo Control Team
+    // Tested with:      SIMATIC S7-1500 FW V2.9
+    // Engineering:      TIA Portal V17
+    // Restrictions:     Must be called in OB1
+    // Requirements:     SV112 and SV113 servo drives configured
+    //-------------------------------------------------------------------------------
+    // Change log table:
+    // Version  | Date       | Expert in charge        | Changes applied
+    //----------|------------|-------------------------|-----------------------------
+    // 01.00.00 | 2024-01-17 | Servo Control Team      | First released version
+    //===============================================================================</Text>
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="3" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="4" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="5" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+      <SW.Blocks.CompileUnit ID="6" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource><FlgNet xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/FlgNet/v5">
+  <Parts>
+    <Access Scope="LocalVariable" UId="21">
+      <Symbol>
+        <Component Name="torqueSwitch" />
+      </Symbol>
+    </Access>
+    <Access Scope="LiteralConstant" UId="22">
+      <Constant>
+        <ConstantType>LReal</ConstantType>
+        <ConstantValue>2.0</ConstantValue>
+      </Constant>
+    </Access>
+    <Access Scope="LocalVariable" UId="23">
+      <Symbol>
+        <Component Name="axisCommandConfiguration" />
+        <Component Name="torqueLimit" />
+        <Component Name="limit" />
+      </Symbol>
+    </Access>
+    <Access Scope="LiteralConstant" UId="24">
+      <Constant>
+        <ConstantType>LReal</ConstantType>
+        <ConstantValue>2.0</ConstantValue>
+      </Constant>
+    </Access>
+    <Access Scope="LocalVariable" UId="25">
+      <Symbol>
+        <Component Name="axisCommandConfiguration" />
+        <Component Name="jog" />
+        <Component Name="velocity" />
+      </Symbol>
+    </Access>
+    <Access Scope="LiteralConstant" UId="26">
+      <Constant>
+        <ConstantType>LReal</ConstantType>
+        <ConstantValue>1.0</ConstantValue>
+      </Constant>
+    </Access>
+    <Access Scope="LocalVariable" UId="27">
+      <Symbol>
+        <Component Name="axisCommandConfiguration" />
+        <Component Name="torqueLimit" />
+        <Component Name="limit" />
+      </Symbol>
+    </Access>
+    <Access Scope="LiteralConstant" UId="28">
+      <Constant>
+        <ConstantType>LReal</ConstantType>
+        <ConstantValue>2.0</ConstantValue>
+      </Constant>
+    </Access>
+    <Access Scope="LocalVariable" UId="29">
+      <Symbol>
+        <Component Name="axisCommandConfiguration" />
+        <Component Name="torqueLimit" />
+        <Component Name="limit" />
+      </Symbol>
+    </Access>
+    <Part Name="Contact" UId="30" />
+    <Part Name="Move" UId="31" DisabledENO="true">
+      <TemplateValue Name="Card" Type="Cardinality">1</TemplateValue>
+    </Part>
+    <Part Name="Move" UId="32" DisabledENO="true">
+      <TemplateValue Name="Card" Type="Cardinality">1</TemplateValue>
+    </Part>
+    <Part Name="Not" UId="33" />
+    <Part Name="Move" UId="34" DisabledENO="true">
+      <TemplateValue Name="Card" Type="Cardinality">1</TemplateValue>
+    </Part>
+    <Part Name="Move" UId="35" DisabledENO="true">
+      <TemplateValue Name="Card" Type="Cardinality">1</TemplateValue>
+    </Part>
+  </Parts>
+  <Wires>
+    <Wire UId="36">
+      <Powerrail />
+      <NameCon UId="30" Name="in" />
+    </Wire>
+    <Wire UId="37">
+      <IdentCon UId="21" />
+      <NameCon UId="30" Name="operand" />
+    </Wire>
+    <Wire UId="38">
+      <NameCon UId="30" Name="out" />
+      <NameCon UId="31" Name="en" />
+      <NameCon UId="32" Name="en" />
+      <NameCon UId="33" Name="in" />
+    </Wire>
+    <Wire UId="39">
+      <IdentCon UId="22" />
+      <NameCon UId="31" Name="in" />
+    </Wire>
+    <Wire UId="40">
+      <NameCon UId="31" Name="out1" />
+      <IdentCon UId="23" />
+    </Wire>
+    <Wire UId="41">
+      <IdentCon UId="24" />
+      <NameCon UId="32" Name="in" />
+    </Wire>
+    <Wire UId="42">
+      <NameCon UId="32" Name="out1" />
+      <IdentCon UId="25" />
+    </Wire>
+    <Wire UId="43">
+      <NameCon UId="33" Name="out" />
+      <NameCon UId="34" Name="en" />
+      <NameCon UId="35" Name="en" />
+    </Wire>
+    <Wire UId="44">
+      <IdentCon UId="26" />
+      <NameCon UId="34" Name="in" />
+    </Wire>
+    <Wire UId="45">
+      <NameCon UId="34" Name="out1" />
+      <IdentCon UId="27" />
+    </Wire>
+    <Wire UId="46">
+      <IdentCon UId="28" />
+      <NameCon UId="35" Name="in" />
+    </Wire>
+    <Wire UId="47">
+      <NameCon UId="35" Name="out1" />
+      <IdentCon UId="29" />
+    </Wire>
+  </Wires>
+</FlgNet></NetworkSource>
+          <ProgrammingLanguage>LAD</ProgrammingLanguage>
+        </AttributeList>
+        <ObjectList>
+          <MultilingualText ID="7" CompositionName="Comment">
+            <ObjectList>
+              <MultilingualTextItem ID="8" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="9" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="A" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="B" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+          <MultilingualText ID="C" CompositionName="Title">
+            <ObjectList>
+              <MultilingualTextItem ID="D" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="E" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="F" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="10" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+        </ObjectList>
+      </SW.Blocks.CompileUnit>
+      <SW.Blocks.CompileUnit ID="11" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource><StructuredText xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/StructuredText/v4">
+  <NewLine UId="21" />
+  <Token Text="IF" UId="22" />
+  <Blank UId="23" />
+  <Access Scope="LocalVariable" UId="24">
+    <Symbol UId="25">
+      <Component Name="torqueSwitch" UId="26" />
+    </Symbol>
+  </Access>
+  <Blank UId="27" />
+  <Token Text="THEN" UId="28" />
+  <NewLine UId="29" />
+  <Blank Num="4" UId="30" />
+  <Access Scope="LocalVariable" UId="31">
+    <Symbol UId="32">
+      <Component Name="axisCommandConfiguration" UId="33" />
+      <Token Text="." UId="34" />
+      <Component Name="torqueLimit" UId="35" />
+      <Token Text="." UId="36" />
+      <Component Name="limit" UId="37" />
+    </Symbol>
+  </Access>
+  <Blank UId="38" />
+  <Token Text=":=" UId="39" />
+  <Blank UId="40" />
+  <Access Scope="LocalVariable" UId="41">
+    <Symbol UId="42">
+      <Component Name="velList" UId="43">
+        <Token Text="[" UId="44" />
+        <Access Scope="LiteralConstant" UId="45">
+          <Constant UId="46">
+            <ConstantValue UId="48">1</ConstantValue>
+          </Constant>
+        </Access>
+        <Token Text="]" UId="49" />
+      </Component>
+      <Token Text="." UId="50" />
+      <Component Name="torqueLimit" UId="51" />
+    </Symbol>
+  </Access>
+  <Token Text=";" UId="52" />
+  <NewLine UId="53" />
+  <Token Text="ELSE" UId="54" />
+  <NewLine UId="55" />
+  <Blank Num="4" UId="56" />
+  <Access Scope="LocalVariable" UId="57">
+    <Symbol UId="58">
+      <Component Name="axisCommandConfiguration" UId="59" />
+      <Token Text="." UId="60" />
+      <Component Name="torqueLimit" UId="61" />
+      <Token Text="." UId="62" />
+      <Component Name="limit" UId="63" />
+    </Symbol>
+  </Access>
+  <Blank UId="64" />
+  <Token Text=":=" UId="65" />
+  <Blank UId="66" />
+  <Access Scope="LocalVariable" UId="67">
+    <Symbol UId="68">
+      <Component Name="velList" UId="69">
+        <Token Text="[" UId="70" />
+        <Access Scope="LiteralConstant" UId="71">
+          <Constant UId="72">
+            <ConstantValue UId="74">0</ConstantValue>
+          </Constant>
+        </Access>
+        <Token Text="]" UId="75" />
+      </Component>
+      <Token Text="." UId="76" />
+      <Component Name="torqueLimit" UId="77" />
+    </Symbol>
+  </Access>
+  <Token Text=";" UId="78" />
+  <NewLine UId="79" />
+  <Token Text="END_IF" UId="80" />
+  <Token Text=";" UId="81" />
+  <NewLine UId="82" />
+  <Token Text="IF" UId="83" />
+  <Blank UId="84" />
+  <Token Text="NOT" UId="85" />
+  <Blank UId="86" />
+  <Access Scope="LocalVariable" UId="87">
+    <Symbol UId="88">
+      <Component Name="speedSwitch" UId="89" />
+    </Symbol>
+  </Access>
+  <Blank UId="90" />
+  <Token Text="THEN" UId="91" />
+  <NewLine UId="92" />
+  <Blank Num="4" UId="93" />
+  <Access Scope="LocalVariable" UId="94">
+    <Symbol UId="95">
+      <Component Name="axisCommandConfiguration" UId="96" />
+      <Token Text="." UId="97" />
+      <Component Name="jog" UId="98" />
+      <Token Text="." UId="99" />
+      <Component Name="velocity" UId="100" />
+    </Symbol>
+  </Access>
+  <Blank UId="101" />
+  <Token Text=":=" UId="102" />
+  <Blank UId="103" />
+  <Access Scope="LocalVariable" UId="104">
+    <Symbol UId="105">
+      <Component Name="velList" UId="106">
+        <Token Text="[" UId="107" />
+        <Access Scope="LiteralConstant" UId="108">
+          <Constant UId="109">
+            <ConstantValue UId="111">0</ConstantValue>
+          </Constant>
+        </Access>
+        <Token Text="]" UId="112" />
+      </Component>
+      <Token Text="." UId="113" />
+      <Component Name="velocity" UId="114" />
+    </Symbol>
+  </Access>
+  <Token Text=";" UId="115" />
+  <NewLine UId="116" />
+  <Blank Num="4" UId="117" />
+  <Access Scope="LocalVariable" UId="118">
+    <Symbol UId="119">
+      <Component Name="axisCommandConfiguration" UId="120" />
+      <Token Text="." UId="121" />
+      <Component Name="jog" UId="122" />
+      <Token Text="." UId="123" />
+      <Component Name="acceleration" UId="124" />
+    </Symbol>
+  </Access>
+  <Blank UId="125" />
+  <Token Text=":=" UId="126" />
+  <Blank UId="127" />
+  <Access Scope="LocalVariable" UId="128">
+    <Symbol UId="129">
+      <Component Name="velList" UId="130">
+        <Token Text="[" UId="131" />
+        <Access Scope="LiteralConstant" UId="132">
+          <Constant UId="133">
+            <ConstantValue UId="135">0</ConstantValue>
+          </Constant>
+        </Access>
+        <Token Text="]" UId="136" />
+      </Component>
+      <Token Text="." UId="137" />
+      <Component Name="acceleration" UId="138" />
+    </Symbol>
+  </Access>
+  <Token Text=";" UId="139" />
+  <NewLine UId="140" />
+  <Blank Num="4" UId="141" />
+  <Access Scope="LocalVariable" UId="142">
+    <Symbol UId="143">
+      <Component Name="axisCommandConfiguration" UId="144" />
+      <Token Text="." UId="145" />
+      <Component Name="jog" UId="146" />
+      <Token Text="." UId="147" />
+      <Component Name="deceleration" UId="148" />
+    </Symbol>
+  </Access>
+  <Blank UId="149" />
+  <Token Text=":=" UId="150" />
+  <Blank UId="151" />
+  <Access Scope="LocalVariable" UId="152">
+    <Symbol UId="153">
+      <Component Name="velList" UId="154">
+        <Token Text="[" UId="155" />
+        <Access Scope="LiteralConstant" UId="156">
+          <Constant UId="157">
+            <ConstantValue UId="159">0</ConstantValue>
+          </Constant>
+        </Access>
+        <Token Text="]" UId="160" />
+      </Component>
+      <Token Text="." UId="161" />
+      <Component Name="deceleration" UId="162" />
+    </Symbol>
+  </Access>
+  <Token Text=";" UId="163" />
+  <NewLine UId="164" />
+  <Token Text="ELSE" UId="165" />
+  <NewLine UId="166" />
+  <Blank Num="4" UId="167" />
+  <Access Scope="LocalVariable" UId="168">
+    <Symbol UId="169">
+      <Component Name="axisCommandConfiguration" UId="170" />
+      <Token Text="." UId="171" />
+      <Component Name="jog" UId="172" />
+      <Token Text="." UId="173" />
+      <Component Name="velocity" UId="174" />
+    </Symbol>
+  </Access>
+  <Blank UId="175" />
+  <Token Text=":=" UId="176" />
+  <Blank UId="177" />
+  <Access Scope="LocalVariable" UId="178">
+    <Symbol UId="179">
+      <Component Name="velList" UId="180">
+        <Token Text="[" UId="181" />
+        <Access Scope="LiteralConstant" UId="182">
+          <Constant UId="183">
+            <ConstantValue UId="185">1</ConstantValue>
+          </Constant>
+        </Access>
+        <Token Text="]" UId="186" />
+      </Component>
+      <Token Text="." UId="187" />
+      <Component Name="velocity" UId="188" />
+    </Symbol>
+  </Access>
+  <Token Text=";" UId="189" />
+  <NewLine UId="190" />
+  <Blank Num="4" UId="191" />
+  <Access Scope="LocalVariable" UId="192">
+    <Symbol UId="193">
+      <Component Name="axisCommandConfiguration" UId="194" />
+      <Token Text="." UId="195" />
+      <Component Name="jog" UId="196" />
+      <Token Text="." UId="197" />
+      <Component Name="acceleration" UId="198" />
+    </Symbol>
+  </Access>
+  <Blank UId="199" />
+  <Token Text=":=" UId="200" />
+  <Blank UId="201" />
+  <Access Scope="LocalVariable" UId="202">
+    <Symbol UId="203">
+      <Component Name="velList" UId="204">
+        <Token Text="[" UId="205" />
+        <Access Scope="LiteralConstant" UId="206">
+          <Constant UId="207">
+            <ConstantValue UId="209">1</ConstantValue>
+          </Constant>
+        </Access>
+        <Token Text="]" UId="210" />
+      </Component>
+      <Token Text="." UId="211" />
+      <Component Name="acceleration" UId="212" />
+    </Symbol>
+  </Access>
+  <Token Text=";" UId="213" />
+  <NewLine UId="214" />
+  <Blank Num="4" UId="215" />
+  <Access Scope="LocalVariable" UId="216">
+    <Symbol UId="217">
+      <Component Name="axisCommandConfiguration" UId="218" />
+      <Token Text="." UId="219" />
+      <Component Name="jog" UId="220" />
+      <Token Text="." UId="221" />
+      <Component Name="deceleration" UId="222" />
+    </Symbol>
+  </Access>
+  <Blank UId="223" />
+  <Token Text=":=" UId="224" />
+  <Blank UId="225" />
+  <Access Scope="LocalVariable" UId="226">
+    <Symbol UId="227">
+      <Component Name="velList" UId="228">
+        <Token Text="[" UId="229" />
+        <Access Scope="LiteralConstant" UId="230">
+          <Constant UId="231">
+            <ConstantValue UId="233">1</ConstantValue>
+          </Constant>
+        </Access>
+        <Token Text="]" UId="234" />
+      </Component>
+      <Token Text="." UId="235" />
+      <Component Name="deceleration" UId="236" />
+    </Symbol>
+  </Access>
+  <Token Text=";" UId="237" />
+  <NewLine Num="2" UId="238" />
+  <Token Text="END_IF" UId="239" />
+  <Token Text=";" UId="240" />
+  <NewLine Num="2" UId="241" />
+</StructuredText></NetworkSource>
+          <ProgrammingLanguage>SCL</ProgrammingLanguage>
+        </AttributeList>
+        <ObjectList>
+          <MultilingualText ID="12" CompositionName="Comment">
+            <ObjectList>
+              <MultilingualTextItem ID="13" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="14" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="15" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="16" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+          <MultilingualText ID="17" CompositionName="Title">
+            <ObjectList>
+              <MultilingualTextItem ID="18" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="19" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="1A" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="1B" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+        </ObjectList>
+      </SW.Blocks.CompileUnit>
+      <MultilingualText ID="1C" CompositionName="Title">
+        <ObjectList>
+          <MultilingualTextItem ID="1D" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="1E" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="1F" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="20" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+    </ObjectList>
+  </SW.Blocks.FC>
+</Document>

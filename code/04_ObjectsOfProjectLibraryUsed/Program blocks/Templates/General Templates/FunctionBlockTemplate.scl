@@ -1,0 +1,80 @@
+﻿FUNCTION_BLOCK "FunctionBlockTemplate"
+TITLE = Function Block
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+AUTHOR : '(department/personInCharge/contact)'
+FAMILY : '(family)'
+//Simple Function Block template to write your own
+   VAR_INPUT 
+      myInputVariable : Int;   // add a constant to the given actual value
+   END_VAR
+
+   VAR_OUTPUT 
+      myOutputVariable { ExternalWritable := 'False'} : Int;   // input value + constant
+   END_VAR
+
+   VAR 
+      statVariable { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // static Tag to store values between cyclic call's
+      instWatchdog {InstructionName := 'IEC_TIMER'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : IEC_TIMER;   // multi instance tag e.g.  watchdog timer
+      instWatchDogs {InstructionName := 'IEC_TIMER'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : Array[0..#NO_OF_WATCHDOG] of IEC_TIMER;   // multi instance array is plural  e.g.  watchdog timer's
+   END_VAR
+
+   VAR_TEMP 
+      tempVariable : Int;   // temp value for anything
+   END_VAR
+
+   VAR CONSTANT 
+      NO_OF_WATCHDOG : DInt := 10;
+      TEMPORARY_INIT_VALUE : Int := 10;   // value for the initialization of the temporary tag
+   END_VAR
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // (company) / (c)Copyright (year)
+	  //-------------------------------------------------------------------------------
+	  // Title:            (Title of this Block)
+	  // Comment/Function: (that is implemented in the block)
+	  // Library/Family:   (that the source is dedicated to)
+	  // Author:           (department / person in charge / contact)
+	  // Tested with:      (test system with FW version)
+	  // Engineering:      TIA Portal (SW version)
+	  // Restrictions:     (OB types, etc.)
+	  // Requirements:     (hardware, technological package, memory needed, etc.)
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  // Version  | Date       | Expert in charge       | Changes applied
+	  //----------|------------|------------------------|------------------------------
+	  // 01.00.00 | yyyy-mm-dd | (name of expert)       | First released version
+	  //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(/*
+	
+	*/)
+	END_REGION DESCRIPTION
+	
+	REGION INITIALISATION  
+	  // TODO: Initialize functionality: reset of variables, diagnostics, etc.
+	  // 
+	  
+	END_REGION INITIALISATION  
+	
+	REGION PROGRAM LOGIC
+	  // TODO: Use this region for application specific code
+	  // 
+	  
+	  // just an example code fragment
+	 
+	END_REGION PROGRAM LOGIC
+	
+	REGION OUTPUTS
+	  // TODO: Write application specific temp values to outputs
+	  // 
+	  
+	  // if ENO mechanism is used for error handling, set to false in case of error
+	  ENO := TRUE;
+	END_REGION OUTPUTS
+	
+END_FUNCTION_BLOCK
+

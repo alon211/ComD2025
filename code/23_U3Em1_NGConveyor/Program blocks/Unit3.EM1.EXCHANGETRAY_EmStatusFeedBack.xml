@@ -1,0 +1,783 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Document>
+  <Engineering version="V19" />
+  <SW.Blocks.FB ID="0">
+    <AttributeList>
+      <Interface><Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v5">
+  <Section Name="Input" />
+  <Section Name="Output" />
+  <Section Name="InOut" />
+  <Section Name="Static" />
+  <Section Name="Temp" />
+  <Section Name="Constant" />
+</Sections></Interface>
+      <MemoryReserve>100</MemoryReserve>
+      <Name>EXCHANGETRAY_EmStatusFeedBack</Name>
+      <Namespace>Unit3.EM1</Namespace>
+      <Number>9</Number>
+      <ProgrammingLanguage>LAD</ProgrammingLanguage>
+      <SetENOAutomatically>false</SetENOAutomatically>
+    </AttributeList>
+    <ObjectList>
+      <MultilingualText ID="1" CompositionName="Comment">
+        <ObjectList>
+          <MultilingualTextItem ID="2" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="3" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="4" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="5" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+      <SW.Blocks.CompileUnit ID="6" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource />
+          <ProgrammingLanguage>LAD</ProgrammingLanguage>
+        </AttributeList>
+        <ObjectList>
+          <MultilingualText ID="7" CompositionName="Comment">
+            <ObjectList>
+              <MultilingualTextItem ID="8" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="9" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="A" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="B" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+          <MultilingualText ID="C" CompositionName="Title">
+            <ObjectList>
+              <MultilingualTextItem ID="D" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="E" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="F" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="10" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+        </ObjectList>
+      </SW.Blocks.CompileUnit>
+      <SW.Blocks.CompileUnit ID="11" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource><StructuredText xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/StructuredText/v4">
+  <NewLine UId="21" />
+  <Token Text="IF" UId="22" />
+  <Blank UId="23" />
+  <Token Text="(" UId="24" />
+  <Access Scope="GlobalVariable" UId="25">
+    <Symbol UId="26">
+      <Component Name="Unit3.EM1.ControlNodes" UId="27" />
+      <Token Text="." UId="28" />
+      <Component Name="sequence" UId="29" />
+      <Token Text="." UId="30" />
+      <Component Name="status" UId="31" />
+      <Token Text="." UId="32" />
+      <Component Name="currentStep" UId="33" />
+    </Symbol>
+  </Access>
+  <Token Text="&gt;=" UId="34" />
+  <Access Scope="LiteralConstant" UId="35">
+    <Constant UId="36">
+      <ConstantValue UId="38">100</ConstantValue>
+    </Constant>
+  </Access>
+  <NewLine UId="39" />
+  <Blank Num="4" UId="40" />
+  <Token Text="AND" UId="41" />
+  <NewLine UId="42" />
+  <Blank Num="4" UId="43" />
+  <Access Scope="GlobalVariable" UId="44">
+    <Symbol UId="45">
+      <Component Name="Unit3.EM1.ControlNodes" UId="46" />
+      <Token Text="." UId="47" />
+      <Component Name="sequence" UId="48" />
+      <Token Text="." UId="49" />
+      <Component Name="status" UId="50" />
+      <Token Text="." UId="51" />
+      <Component Name="currentStep" UId="52" />
+    </Symbol>
+  </Access>
+  <Token Text="&lt;=" UId="53" />
+  <Access Scope="LiteralConstant" UId="54">
+    <Constant UId="55">
+      <ConstantValue UId="57">199</ConstantValue>
+    </Constant>
+  </Access>
+  <Token Text=")" UId="58" />
+  <NewLine UId="59" />
+  <Blank Num="4" UId="60" />
+  <Token Text="OR" UId="61" />
+  <NewLine UId="62" />
+  <Blank Num="4" UId="63" />
+  <Token Text="(" UId="64" />
+  <Access Scope="GlobalVariable" UId="65">
+    <Symbol UId="66">
+      <Component Name="Unit3.EM1.ControlNodes" UId="67" />
+      <Token Text="." UId="68" />
+      <Component Name="sequence" UId="69" />
+      <Token Text="." UId="70" />
+      <Component Name="status" UId="71" />
+      <Token Text="." UId="72" />
+      <Component Name="currentStep" UId="73" />
+    </Symbol>
+  </Access>
+  <Token Text="&gt;=" UId="74" />
+  <Access Scope="LiteralConstant" UId="75">
+    <Constant UId="76">
+      <ConstantValue UId="78">300</ConstantValue>
+    </Constant>
+  </Access>
+  <NewLine UId="79" />
+  <Blank Num="4" UId="80" />
+  <Token Text="AND" UId="81" />
+  <NewLine UId="82" />
+  <Blank Num="4" UId="83" />
+  <Access Scope="GlobalVariable" UId="84">
+    <Symbol UId="85">
+      <Component Name="Unit3.EM1.ControlNodes" UId="86" />
+      <Token Text="." UId="87" />
+      <Component Name="sequence" UId="88" />
+      <Token Text="." UId="89" />
+      <Component Name="status" UId="90" />
+      <Token Text="." UId="91" />
+      <Component Name="currentStep" UId="92" />
+    </Symbol>
+  </Access>
+  <Token Text="&lt;=" UId="93" />
+  <Access Scope="LiteralConstant" UId="94">
+    <Constant UId="95">
+      <ConstantValue UId="97">499</ConstantValue>
+    </Constant>
+  </Access>
+  <Token Text=")" UId="98" />
+  <NewLine UId="99" />
+  <Blank Num="4" UId="100" />
+  <Token Text="OR" UId="101" />
+  <NewLine UId="102" />
+  <Blank Num="4" UId="103" />
+  <Token Text="(" UId="104" />
+  <Access Scope="GlobalVariable" UId="105">
+    <Symbol UId="106">
+      <Component Name="Unit3.EM1.ControlNodes" UId="107" />
+      <Token Text="." UId="108" />
+      <Component Name="sequence" UId="109" />
+      <Token Text="." UId="110" />
+      <Component Name="status" UId="111" />
+      <Token Text="." UId="112" />
+      <Component Name="currentStep" UId="113" />
+    </Symbol>
+  </Access>
+  <Token Text="&gt;=" UId="114" />
+  <Access Scope="LiteralConstant" UId="115">
+    <Constant UId="116">
+      <ConstantValue UId="118">600</ConstantValue>
+    </Constant>
+  </Access>
+  <NewLine UId="119" />
+  <Blank Num="4" UId="120" />
+  <Token Text="AND" UId="121" />
+  <NewLine UId="122" />
+  <Blank Num="4" UId="123" />
+  <Access Scope="GlobalVariable" UId="124">
+    <Symbol UId="125">
+      <Component Name="Unit3.EM1.ControlNodes" UId="126" />
+      <Token Text="." UId="127" />
+      <Component Name="sequence" UId="128" />
+      <Token Text="." UId="129" />
+      <Component Name="status" UId="130" />
+      <Token Text="." UId="131" />
+      <Component Name="currentStep" UId="132" />
+    </Symbol>
+  </Access>
+  <Token Text="&lt;=" UId="133" />
+  <Access Scope="LiteralConstant" UId="134">
+    <Constant UId="135">
+      <ConstantValue UId="137">799</ConstantValue>
+    </Constant>
+  </Access>
+  <Token Text=")" UId="138" />
+  <NewLine UId="139" />
+  <Token Text="THEN" UId="140" />
+  <NewLine UId="141" />
+  <Blank Num="4" UId="142" />
+  <Access Scope="GlobalVariable" UId="143">
+    <Symbol UId="144">
+      <Component Name="Unit3.EmNodes" UId="145" />
+      <Token Text="." UId="146" />
+      <Component Name="emStatus" UId="147">
+        <Token Text="[" UId="148" />
+        <Access Scope="GlobalConstant" UId="149">
+          <Constant UId="150">
+            <ConstantValue UId="152">Unit3_EM1</ConstantValue>
+          </Constant>
+        </Access>
+        <Token Text="]" UId="153" />
+      </Component>
+      <Token Text="." UId="154" />
+      <Component Name="current" UId="155" />
+    </Symbol>
+  </Access>
+  <Token Text=":=" UId="156" />
+  <Blank UId="157" />
+  <Access Scope="LiteralConstant" UId="158">
+    <Constant UId="159">
+      <ConstantValue UId="161">2</ConstantValue>
+    </Constant>
+  </Access>
+  <Token Text=";" UId="162" />
+  <NewLine UId="163" />
+  <Token Text="END_IF" UId="164" />
+  <Token Text=";" UId="165" />
+  <NewLine UId="166" />
+</StructuredText></NetworkSource>
+          <ProgrammingLanguage>SCL</ProgrammingLanguage>
+        </AttributeList>
+        <ObjectList>
+          <MultilingualText ID="12" CompositionName="Comment">
+            <ObjectList>
+              <MultilingualTextItem ID="13" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="14" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="15" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="16" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+          <MultilingualText ID="17" CompositionName="Title">
+            <ObjectList>
+              <MultilingualTextItem ID="18" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text>stop：2</Text>
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="19" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="1A" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="1B" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+        </ObjectList>
+      </SW.Blocks.CompileUnit>
+      <SW.Blocks.CompileUnit ID="1C" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource><StructuredText xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/StructuredText/v4">
+  <Token Text="IF" UId="21" />
+  <NewLine UId="22" />
+  <Blank Num="4" UId="23" />
+  <Token Text="(" UId="24" />
+  <Access Scope="GlobalVariable" UId="25">
+    <Symbol UId="26">
+      <Component Name="Unit3.EM1.ControlNodes" UId="27" />
+      <Token Text="." UId="28" />
+      <Component Name="sequence" UId="29" />
+      <Token Text="." UId="30" />
+      <Component Name="status" UId="31" />
+      <Token Text="." UId="32" />
+      <Component Name="currentStep" UId="33" />
+    </Symbol>
+  </Access>
+  <Token Text="&gt;=" UId="34" />
+  <Access Scope="LiteralConstant" UId="35">
+    <Constant UId="36">
+      <ConstantValue UId="38">203</ConstantValue>
+    </Constant>
+  </Access>
+  <NewLine UId="39" />
+  <Blank Num="4" UId="40" />
+  <Token Text="AND" UId="41" />
+  <NewLine UId="42" />
+  <Blank Num="4" UId="43" />
+  <Access Scope="GlobalVariable" UId="44">
+    <Symbol UId="45">
+      <Component Name="Unit3.EM1.ControlNodes" UId="46" />
+      <Token Text="." UId="47" />
+      <Component Name="sequence" UId="48" />
+      <Token Text="." UId="49" />
+      <Component Name="status" UId="50" />
+      <Token Text="." UId="51" />
+      <Component Name="currentStep" UId="52" />
+    </Symbol>
+  </Access>
+  <Token Text="&lt;=" UId="53" />
+  <Access Scope="LiteralConstant" UId="54">
+    <Constant UId="55">
+      <ConstantValue UId="57">299</ConstantValue>
+    </Constant>
+  </Access>
+  <Token Text=")" UId="58" />
+  <NewLine UId="59" />
+  <Blank Num="4" UId="60" />
+  <NewLine UId="61" />
+  <Blank Num="4" UId="62" />
+  <NewLine UId="63" />
+  <Blank Num="4" UId="64" />
+  <NewLine UId="65" />
+  <Blank Num="4" UId="66" />
+  <NewLine UId="67" />
+  <Blank Num="4" UId="68" />
+  <NewLine UId="69" />
+  <Token Text="THEN" UId="70" />
+  <NewLine UId="71" />
+  <Blank Num="4" UId="72" />
+  <Access Scope="GlobalVariable" UId="73">
+    <Symbol UId="74">
+      <Component Name="Unit3.EmNodes" UId="75" />
+      <Token Text="." UId="76" />
+      <Component Name="emStatus" UId="77">
+        <Token Text="[" UId="78" />
+        <Access Scope="GlobalConstant" UId="79">
+          <Constant UId="80">
+            <ConstantValue UId="82">Unit3_EM1</ConstantValue>
+          </Constant>
+        </Access>
+        <Token Text="]" UId="83" />
+      </Component>
+      <Token Text="." UId="84" />
+      <Component Name="current" UId="85" />
+    </Symbol>
+  </Access>
+  <Blank UId="86" />
+  <Token Text=":=" UId="87" />
+  <Blank UId="88" />
+  <Access Scope="LiteralConstant" UId="89">
+    <Constant UId="90">
+      <ConstantValue UId="92">1</ConstantValue>
+    </Constant>
+  </Access>
+  <Token Text=";" UId="93" />
+  <NewLine UId="94" />
+  <Token Text="END_IF" UId="95" />
+  <Token Text=";" UId="96" />
+</StructuredText></NetworkSource>
+          <ProgrammingLanguage>SCL</ProgrammingLanguage>
+        </AttributeList>
+        <ObjectList>
+          <MultilingualText ID="1D" CompositionName="Comment">
+            <ObjectList>
+              <MultilingualTextItem ID="1E" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="1F" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="20" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="21" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+          <MultilingualText ID="22" CompositionName="Title">
+            <ObjectList>
+              <MultilingualTextItem ID="23" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text>execute：1</Text>
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="24" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="25" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="26" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+        </ObjectList>
+      </SW.Blocks.CompileUnit>
+      <SW.Blocks.CompileUnit ID="27" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource><StructuredText xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/StructuredText/v4">
+  <Token Text="IF" UId="21" />
+  <Blank UId="22" />
+  <NewLine UId="23" />
+  <Blank Num="4" UId="24" />
+  <Access Scope="GlobalVariable" UId="25">
+    <Symbol UId="26">
+      <Component Name="Unit3.EM1.ControlNodes" UId="27" />
+      <Token Text="." UId="28" />
+      <Component Name="sequence" UId="29" />
+      <Token Text="." UId="30" />
+      <Component Name="status" UId="31" />
+      <Token Text="." UId="32" />
+      <Component Name="currentStep" UId="33" />
+    </Symbol>
+  </Access>
+  <Token Text="=" UId="34" />
+  <Access Scope="LiteralConstant" UId="35">
+    <Constant UId="36">
+      <ConstantValue UId="38">201</ConstantValue>
+    </Constant>
+  </Access>
+  <NewLine UId="39" />
+  <Blank Num="4" UId="40" />
+  <Token Text="OR" UId="41" />
+  <NewLine UId="42" />
+  <Blank Num="4" UId="43" />
+  <Access Scope="GlobalVariable" UId="44">
+    <Symbol UId="45">
+      <Component Name="Unit3.EM1.ControlNodes" UId="46" />
+      <Token Text="." UId="47" />
+      <Component Name="sequence" UId="48" />
+      <Token Text="." UId="49" />
+      <Component Name="status" UId="50" />
+      <Token Text="." UId="51" />
+      <Component Name="currentStep" UId="52" />
+    </Symbol>
+  </Access>
+  <Token Text="=" UId="53" />
+  <Access Scope="LiteralConstant" UId="54">
+    <Constant UId="55">
+      <ConstantValue UId="57">202</ConstantValue>
+    </Constant>
+  </Access>
+  <NewLine UId="58" />
+  <Token Text="THEN" UId="59" />
+  <NewLine UId="60" />
+  <Blank Num="4" UId="61" />
+  <Access Scope="GlobalVariable" UId="62">
+    <Symbol UId="63">
+      <Component Name="Unit3.EmNodes" UId="64" />
+      <Token Text="." UId="65" />
+      <Component Name="emStatus" UId="66">
+        <Token Text="[" UId="67" />
+        <Access Scope="GlobalConstant" UId="68">
+          <Constant UId="69">
+            <ConstantValue UId="71">Unit3_EM1</ConstantValue>
+          </Constant>
+        </Access>
+        <Token Text="]" UId="72" />
+      </Component>
+      <Token Text="." UId="73" />
+      <Component Name="current" UId="74" />
+    </Symbol>
+  </Access>
+  <Blank UId="75" />
+  <Token Text=":=" UId="76" />
+  <Blank UId="77" />
+  <Access Scope="LiteralConstant" UId="78">
+    <Constant UId="79">
+      <ConstantValue UId="81">40</ConstantValue>
+    </Constant>
+  </Access>
+  <Token Text=";" UId="82" />
+  <NewLine UId="83" />
+  <Token Text="END_IF" UId="84" />
+  <Token Text=";" UId="85" />
+</StructuredText></NetworkSource>
+          <ProgrammingLanguage>SCL</ProgrammingLanguage>
+        </AttributeList>
+        <ObjectList>
+          <MultilingualText ID="28" CompositionName="Comment">
+            <ObjectList>
+              <MultilingualTextItem ID="29" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="2A" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="2B" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="2C" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+          <MultilingualText ID="2D" CompositionName="Title">
+            <ObjectList>
+              <MultilingualTextItem ID="2E" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text>暂停:40</Text>
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="2F" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="30" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="31" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+        </ObjectList>
+      </SW.Blocks.CompileUnit>
+      <SW.Blocks.CompileUnit ID="32" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource><StructuredText xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/StructuredText/v4">
+  <Token Text="IF" UId="21" />
+  <Blank UId="22" />
+  <Access Scope="GlobalVariable" UId="23">
+    <Symbol UId="24">
+      <Component Name="Unit3.EmNodes" UId="25" />
+      <Token Text="." UId="26" />
+      <Component Name="unitStatus" UId="27" />
+      <Token Text="." UId="28" />
+      <Component Name="state" UId="29" />
+      <Token Text="." UId="30" />
+      <Component Name="held" UId="31" />
+    </Symbol>
+  </Access>
+  <NewLine UId="32" />
+  <Blank Num="4" UId="33" />
+  <NewLine UId="34" />
+  <Token Text="THEN" UId="35" />
+  <NewLine UId="36" />
+  <Blank Num="4" UId="37" />
+  <Access Scope="GlobalVariable" UId="38">
+    <Symbol UId="39">
+      <Component Name="Unit3.EmNodes" UId="40" />
+      <Token Text="." UId="41" />
+      <Component Name="emStatus" UId="42">
+        <Token Text="[" UId="43" />
+        <Access Scope="GlobalConstant" UId="44">
+          <Constant UId="45">
+            <ConstantValue UId="47">Unit3_EM1</ConstantValue>
+          </Constant>
+        </Access>
+        <Token Text="]" UId="48" />
+      </Component>
+      <Token Text="." UId="49" />
+      <Component Name="current" UId="50" />
+    </Symbol>
+  </Access>
+  <Blank UId="51" />
+  <Token Text=":=" UId="52" />
+  <Access Scope="LiteralConstant" UId="53">
+    <Constant UId="54">
+      <ConstantValue UId="56">20</ConstantValue>
+    </Constant>
+  </Access>
+  <Token Text=";" UId="57" />
+  <NewLine UId="58" />
+  <Token Text="END_IF" UId="59" />
+  <Token Text=";" UId="60" />
+</StructuredText></NetworkSource>
+          <ProgrammingLanguage>SCL</ProgrammingLanguage>
+        </AttributeList>
+        <ObjectList>
+          <MultilingualText ID="33" CompositionName="Comment">
+            <ObjectList>
+              <MultilingualTextItem ID="34" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="35" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="36" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="37" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+          <MultilingualText ID="38" CompositionName="Title">
+            <ObjectList>
+              <MultilingualTextItem ID="39" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text>hold:20</Text>
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="3A" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="3B" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="3C" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+        </ObjectList>
+      </SW.Blocks.CompileUnit>
+      <MultilingualText ID="3D" CompositionName="Title">
+        <ObjectList>
+          <MultilingualTextItem ID="3E" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="3F" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="40" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="41" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+    </ObjectList>
+  </SW.Blocks.FB>
+</Document>

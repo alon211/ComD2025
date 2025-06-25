@@ -1,0 +1,600 @@
+﻿NAMESPACE Unit2.EM2
+FUNCTION_BLOCK Sequence
+TITLE = EquipmentC_StateActions
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+VERSION : 0.1
+//State model of equipment module following the OMAC standard.
+   VAR 
+      statSelectedJobNumber { ExternalWritable := 'False'} : DInt;   // Evaluated Job Number
+      instSequenceSCLControl { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LAF_ControlSclSequence;
+      instSequenceSCLStatus { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LAF_StatusSclSequence;
+      statVfdSportsInc { ExternalWritable := 'False'; S7_SetPoint := 'True'} : Int;
+      statVfdSportsIncEnable { ExternalWritable := 'False'} : Bool;
+      statLstlogisticsoutFeeding { ExternalWritable := 'False'} : Bool;
+      statOnHome { ExternalWritable := 'False'; S7_SetPoint := 'True'} : Bool;
+      statCycleMovexPos { ExternalWritable := 'False'} : Bool;   // 循环拿取电池
+      statTimeDelayTrigger {InstructionName := 'TON_TIME'; LibVersion := '1.0'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : Array[0..1] of TON_TIME;
+      statAxisPosHomeDone { ExternalWritable := 'False'; S7_SetPoint := 'True'} : Bool;
+      statCylinderHomeDone { ExternalWritable := 'False'} : Bool;
+      statCm5bit06_Done { ExternalWritable := 'False'} : Bool;
+      statXyzTransferEnable { ExternalWritable := 'False'} : Bool;
+      statStepFirstCall { ExternalWritable := 'False'} : Bool;
+      statCurrentStepPrevious { ExternalWritable := 'False'} : DInt;
+   END_VAR
+
+   VAR_TEMP 
+      tempCellSize : Int;
+      tempCurrentPosIndex : Int;   // 当前POS平移索引号
+      tempNextPosIndex : Int;
+   END_VAR
+
+   VAR CONSTANT 
+      STEP_IDLE : DInt := 1;   // Idle Step
+      STEP_101 : DInt := 101;   // Template Step
+      STEP_102 : DInt := 102;   // Template Step
+      STEP_103 : DInt := 103;
+      STEP_104 : DInt := 104;
+      STEP_105 : DInt := 105;
+      STEP_106 : DInt := 106;
+      STEP_107 : DInt := 107;
+      STEP_108 : DInt := 108;
+      STEP_109 : DInt := 109;
+      STEP_110 : DInt := 110;
+      STEP_111 : DInt := 111;
+      STEP_112 : DInt := 112;
+      STEP_113 : DInt := 113;
+      STEP_114 : DInt := 114;
+      STEP_125 : DInt := 115;
+      STEP_120 : DInt := 120;
+      STEP_121 : DInt := 121;
+      STEP_122 : DInt := 122;
+      STEP_123 : DInt := 123;
+      STEP_124 : DInt := 124;
+      STEP_130 : DInt := 130;
+      STEP_131 : DInt := 131;
+      STEP_132 : DInt := 132;
+      STEP_201 : DInt := 201;
+      STEP_301 : DInt := 301;
+      STEP_401 : DInt := 401;
+      STEP_501 : DInt := 501;
+      STEP_601 : DInt := 601;
+      STEP_IMMEDIATE_STOP : DInt := 901;   // Step executed when an immediate stop command is triggered for the sequence (i.e. when unit is in state aborting)
+      TO_DO_INSERT_CONDITION_FOR_TRANSITION_HERE : Bool := TRUE;   // Template : Add conditions
+      VFD_CW : DInt := 1;
+      VFD_CCW : DInt := -1;
+      TRAYPOSTION_LOGISTIC : Word := 16#0001;
+      TRAYPOSTION_EM1 : Word := 16#0002;
+      TRAYPOSTION_EM2 : Word := 16#0004;
+      TRAYPOSTION_EM5 : Word := 16#0008;
+      TRAYPOSTION_EM6 : Word := 16#0010;
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // (company)/ (c)Copyright (year)
+	    //-------------------------------------------------------------------------------
+	    // Title:            (Title of this block)
+	    // Comment/Function: (that is implemented in the block)
+	    // Library/Family:   (that the source is dedicated to)
+	    // Author:           (department / person in charge / contact)
+	    // Tested with:      (test system with FW version)
+	    // Engineering:      TIA Portal (SW version)
+	    // Restrictions:     (OB types, etc.)
+	    // Requirements:     (hardware, technological package, etc.)
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | dd.mm.yyyy | (name of expert)        | First released version
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	    (/*
+	            This is a template block provided by the Automation Framework. It can be used to create an own project.
+	            The Block Info Header is prepared to put in your own data.
+	            Description of the block could be added here and the docu created by Code2Docu.
+	            */)
+	END_REGION DESCRIPTION
+	REGION intput
+	    #tempCellSize := _.Global.Data.material.Unit2.contraint.monitor.cellsInfo.cellSize;
+	    
+	END_REGION
+	IF HmiInterface.sequence.commands.setSingleStepMode THEN
+	    IF NOT HmiInterface.sequence.commands.nextStep THEN
+	        ControlNodes.sequence.status.nextStep := ControlNodes.sequence.status.currentStep;
+	        ;
+	    END_IF;
+	END_IF;
+	REGION Sequence control
+	    // General control of the sequence
+	    #instSequenceSCLControl(idleStep := #STEP_IDLE,
+	                            stoppedStep := #STEP_IMMEDIATE_STOP,
+	                            resetJobs => ControlNodes.jobs.commands.reset,
+	                            hmiInterface := HmiInterface.sequence,
+	                            sequence := ControlNodes.sequence);
+	END_REGION Sequence control
+	IF #statCurrentStepPrevious <> ControlNodes.sequence.status.currentStep THEN
+	    #statStepFirstCall := FALSE;
+	END_IF;
+	#statCurrentStepPrevious := ControlNodes.sequence.status.currentStep;
+	REGION Steps
+	    // Only execute sequence if active
+	    IF ControlNodes.sequence.status.seqActive THEN
+	        
+	        // Determine the current step
+	        CASE ControlNodes.sequence.status.currentStep OF
+	                
+	            #STEP_IDLE:
+	                // If a new job is activated, move to the first step of that job                   
+	                IF ControlNodes.sequence.status.executionEnabled THEN
+	                    CASE ControlNodes.jobs.commands.setJobNumber OF
+	                        _.U2EM2_JOB_EXECUTE:
+	                            ControlNodes.sequence.status.nextStep := #STEP_101;
+	                        _.U2EM2_JOB_STOPPING:
+	                            ControlNodes.sequence.status.nextStep := #STEP_201;
+	                        _.U2EM2_JOB_HOLODING:
+	                            ControlNodes.sequence.status.nextStep := #STEP_301;
+	                        _.U2EM2_JOB_UNHOLODING:
+	                            ControlNodes.sequence.status.nextStep := #STEP_401;
+	                        _.U2EM2_JOB_RESTING:
+	                            ControlNodes.sequence.status.nextStep := #STEP_501;
+	                        _.U2EM2_JOB_STARTING:
+	                            ControlNodes.sequence.status.nextStep := #STEP_601;
+	                            
+	                    END_CASE;
+	                    
+	                END_IF;
+	                
+	                REGION ########JOB_STARTING_Step600
+	                    
+	                    
+	                END_REGION
+	            #STEP_601:
+	                REGION STARTING_Step601
+	                    
+	                    
+	                    
+	                    
+	                    
+	                    EXCHANGETRAY_ConstraintRollerCmParameterUpdate();
+	                    ControlNodes.cm6SignalTM.reset := true;
+	                    
+	                    
+	                    ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                    
+	                END_REGION ;
+	                REGION ########JOB_RESTING_Step500
+	                    
+	                    
+	                END_REGION
+	            #STEP_501:
+	                REGION RESTING_Step501
+	                    
+	                    ControlNodes.cm6SignalTM.reset := true;
+	                    ControlNodes.cm1Vfd206.commands.sinaCommands.reset :=
+	                    ControlNodes.cm1Vfd206.commands.vfdSportsIncReset := TRUE;
+	                    
+	                    ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                    
+	                END_REGION ;
+	                REGION ########JOB_UNHOLODING_Step400
+	                    
+	                    
+	                END_REGION
+	            #STEP_401:
+	                REGION UNHOLODING_Step401
+	                    
+	                    
+	                    ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                END_REGION ;
+	                REGION ########JOB_HOLODING_Step300
+	                    
+	                    
+	                END_REGION
+	            #STEP_301:
+	                REGION HOLODING_Step301
+	                    
+	                    
+	                    
+	                    ;
+	                END_REGION ;
+	                REGION ########JOB_STOPPING_Step200
+	                    
+	                    
+	                END_REGION
+	            #STEP_201:
+	                REGION STEP_201 Stopping
+	                    ControlNodes.cm5AxisControl.commands.stop := TRUE;
+	                    ControlNodes.cm1Vfd206.commands.sinaCommands.stop := TRUE;
+	                    #statStepFirstCall := FALSE;
+	                    IF ControlNodes.cm1Vfd206.monitoring.vfdStopped
+	                        AND
+	                        ControlNodes.cm5AxisControl.monitoring.statusWord.bit06_Done
+	                    THEN
+	                        ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                        ;
+	                    END_IF;
+	                    
+	                    
+	                    
+	                    
+	                    ;
+	                END_REGION ;
+	                REGION ########JOB_EXECUTE_STEP_100
+	                    
+	                END_REGION
+	                
+	            #STEP_101:
+	                REGION STEP_101 Initpara step
+	                    
+	                    EXCHANGETRAY_ConstraintRollerCmParameterUpdate();
+	                    
+	                    
+	                    EXCHANGETRAY_Em2CylindersGoHome(goHome := NOT #statOnHome,
+	                                                    homeDone => #statOnHome);
+	                    
+	                    IF ControlNodes.cm5AxisControl.monitoring.position <> 0 THEN
+	                        ControlNodes.cm5AxisControl.commands.home := TRUE;
+	                    END_IF;
+	                    
+	                    
+	                END_REGION ;
+	                IF #statOnHome AND ControlNodes.cm5AxisControl.monitoring.position = 0 THEN
+	                    ControlNodes.sequence.status.nextStep := #STEP_102;
+	                END_IF;
+	                
+	                
+	            #STEP_102:
+	                REGION STEP_102 Waiting em1 feeding
+	                    // 等待EM1进料 - Waiting for EM1 feeding
+	                    IF NOT ControlNodes.cm1Vfd206.monitoring.vfdStopped THEN
+	                        ControlNodes.sequence.status.nextStep := #STEP_103;
+	                    END_IF;
+	                    
+	                    IF _.Unit2.EmNodes.emRelations.EM2.recieve.roller.req.outFeedReq
+	                        AND
+	                        NOT ControlNodes.cm6SignalTM.monitoring.trayEntryDetection
+	                        AND
+	                        NOT ControlNodes.cm6SignalTM.monitoring.trayInPlaceDetection
+	                        AND
+	                        NOT ControlNodes.cm6SignalTM.monitoring.detectionBeforePalletPositioning
+	                    THEN
+	                        _.Unit2.EmNodes.emRelations.EM2.deliver.roller.feedback.inFeedEnabled := TRUE;
+	                    END_IF;
+	                    
+	                    ControlNodes.cm1Vfd206.commandConfiguration.direction := #VFD_CW;
+	                    EXCHANGETRAY_VfdExecuteControl(start := _.Unit2.EmNodes.emRelations.EM2.deliver.roller.feedback.inFeedEnabled);
+	                END_REGION
+	                
+	                ;
+	                
+	                
+	            #STEP_103:
+	                ;
+	                
+	                REGION STEP_103 Logistics feeding
+	                    // 物流进料中 - Logistics feeding in progress
+	                    IF ControlNodes.cm1Vfd206.monitoring.vfdStopped AND ControlNodes.cm6SignalTM.monitoring.trayInPlaceDetection THEN
+	                        _.Unit2.EmNodes.emRelations.EM2.deliver.roller.feedback.inFeedEnabled := FALSE;
+	                        ControlNodes.sequence.status.nextStep := #STEP_104;
+	                    END_IF;
+	                    
+	                    IF ControlNodes.cm6SignalTM.monitoring.trayInPlaceDetection THEN
+	                        EXCHANGETRAY_VfdExecuteControl(FALSE);
+	                        _.Global.Data.material.Unit2.contraint.monitor.postion.position := #TRAYPOSTION_EM2;
+	                    END_IF;
+	                END_REGION
+	                ;
+	                
+	            #STEP_104:
+	                REGION STEP_104 Tray lifting em1
+	                    // 托盘顶升EM1 - Tray lifting at EM1
+	                    _.Unit2.EM2.ControlNodes.cm2TrayLiftingCylinder.commands.commandWorkPos :=
+	                    ControlNodes.cm6SignalTM.monitoring.trayInPlaceDetection AND _.Global.Data.material.Unit2.contraint.monitor.postion.EM2
+	                    AND NOT ControlNodes.cm2TrayLiftingCylinder.monitoring.inWorkPos;
+	                    IF ControlNodes.cm2TrayLiftingCylinder.monitoring.inWorkPos THEN
+	                        ControlNodes.sequence.status.nextStep := #STEP_105;
+	                    END_IF;
+	                    
+	                END_REGION
+	            #STEP_105:
+	                REGION STEP_105 Scan tray info
+	                    // 扫码得到托盘信息 - Scan to get tray information
+	                    ControlNodes.cm8Scanner.commands.start := TRUE;
+	                    IF ControlNodes.cm8Scanner.monitoring.complete THEN
+	                        _.Global.Data.material.Unit2.contraint.monitor.trayCode := STRING_TO_WSTRING(ControlNodes.cm8Scanner.monitoring.code);
+	                        ControlNodes.sequence.status.nextStep := #STEP_106;
+	                    END_IF;
+	                END_REGION
+	                
+	            #STEP_106:
+	                
+	                ;
+	                
+	                REGION STEP_106 Pc get battery em2
+	                    // PC获取电池EM2 - PC gets battery at EM2
+	                    //1. 获取电池条码  2. 读取托盘大小 3. 获取电池OK NG
+	                    // 1. Get battery barcode  2. Read tray size  3. Get battery OK/NG status
+	                    
+	                    #tempCellSize := _.Global.Data.parameter.material.Unit2.contraint.parameters.specification
+	                    [_.Global.Data.parameter.material.Unit2.contraint.parameters.selectSpecification].traySize;
+	                    
+	                    ControlNodes.cm7Pc.cmd.execute := TRUE; //仿真，实际的没有 - Simulation, not actual
+	                    IF ControlNodes.cm7Pc.monitor.status.Done AND NOT ControlNodes.cm7Pc.monitor.status.error THEN
+	                        _.Global.Data.material.Unit2.contraint.monitor.cellsInfo.cellsCode := ControlNodes.cm7Pc.monitor.cellsInfo.cellsCode;
+	                        _.Global.Data.material.Unit2.contraint.monitor.cellsInfo.cellsResult := ControlNodes.cm7Pc.monitor.cellsInfo.cellsResult;
+	                        IF #tempCellSize <> ControlNodes.cm7Pc.monitor.cellsInfo.cellSize THEN
+	                            ControlNodes.cm7Pc.cmd.raiseError := true;
+	                        ELSE
+	                            _.Global.Data.material.Unit2.contraint.monitor.cellsInfo.cellSize := ControlNodes.cm7Pc.monitor.cellsInfo.cellSize;
+	                        END_IF;
+	                        
+	                        ControlNodes.sequence.status.nextStep := #STEP_107;
+	                    END_IF;
+	                END_REGION
+	                REGION ###### unconstraint
+	                    
+	                    
+	                END_REGION
+	                
+	            #STEP_107:
+	                REGION STEP_107 Request unconstraint
+	                    // 请求解拘束 - Request unconstraint
+	                    
+	                    //托盘机构顶升，托盘状态在拘束中 - Tray mechanism lifting, tray status in constraint
+	                    
+	                    IF ControlNodes.cm2TrayLiftingCylinder.monitoring.inWorkPos
+	                        AND
+	                        ControlNodes.cm6SignalTM.monitoring.detectionBeforePalletPositioning
+	                        AND
+	                        ControlNodes.cm6SignalTM.monitoring.detectionAfterTrayPositioning
+	                        AND
+	                        _.Global.Data.material.Unit2.contraint.monitor.status.contraintStatus = 0
+	                    THEN
+	                        // Statement section IF
+	                        _.Unit2.EmNodes.emRelations.EM2.deliver.constraintWorkstation.req.unConstraint :=
+	                        _.Unit2.EmNodes.emRelations.EM2.deliver.constraintWorkstation.req.transferEnable := true;
+	                    END_IF;
+	                    
+	                    //等待解拘束完成 - Wait for unconstraint completion
+	                    IF _.Unit2.EmNodes.emRelations.EM2.recieve.constraintWorkstation.req.transferEnable
+	                        AND
+	                        _.Global.Data.material.Unit2.contraint.monitor.status.contraintStatus = 2
+	                    THEN
+	                        ControlNodes.sequence.status.nextStep := #STEP_108;
+	                    END_IF;
+	                    
+	                END_REGION
+	            #STEP_108:
+	                REGION STEP_108 Precise positioning lifting
+	                    // 精定位顶升 - Precise positioning lifting
+	                    ControlNodes.cm4PositioningPinCylinder.commands.commandWorkPos := TRUE;
+	                    
+	                    //顶升到位后 - After lifting in position
+	                    IF ControlNodes.cm4PositioningPinCylinder.monitoring.inWorkPos THEN
+	                        ControlNodes.sequence.status.nextStep := #STEP_110;
+	                    END_IF;
+	                    
+	                END_REGION
+	            REGION ####### XYZ grab
+	                
+	                
+	            END_REGION
+	            
+	            #STEP_110:
+	                REGION STEP_110 Battery lifting cylinder
+	                    // 24尺寸平移电池顶升气缸 - Battery lifting cylinder for 24-size translation
+	                    
+	                    //移动轴 - Move axis
+	                    //没有目标值和实际值不一致时执行移动 - Execute movement when target and actual values are inconsistent
+	                    //一次顶4个2排一起顶，一排12个，需要走4次位置 - Lift 4 batteries in 2 rows at once, 12 per row, need to move 4 positions
+	                    IF #tempCellSize = 24 THEN
+	                        #tempCurrentPosIndex := 20 + _.Global.Data.material.Unit2.contraint.monitor.cellsInfo.nextScratchCellIndex / 8;
+	                    END_IF;
+	                    IF #tempCellSize = 36 THEN
+	                        #tempCurrentPosIndex := 30 + _.Global.Data.material.Unit2.contraint.monitor.cellsInfo.nextScratchCellIndex / 8;
+	                    END_IF;
+	                    
+	                    ControlNodes.cm5AxisControl.commandConfiguration.posAbsolute.position := Config.em2Parameters.cm5Axis107.production.distanceList[#tempCurrentPosIndex].position;
+	                    
+	                    IF ControlNodes.cm5AxisControl.monitoring.statusWord.bit06_Done
+	                        AND
+	                        (ControlNodes.cm5AxisControl.monitoring.position <>
+	                        ControlNodes.cm5AxisControl.commandConfiguration.posAbsolute.position)
+	                    THEN
+	                        ControlNodes.cm5AxisControl.commands.posAbsolute := TRUE;
+	                    END_IF;
+	                    
+	                    IF _.LGF_CompareLReal(valueA := ControlNodes.cm5AxisControl.monitoring.position, valueB := ControlNodes.cm5AxisControl.commandConfiguration.posAbsolute.position)
+	                        AND
+	                        ControlNodes.cm5AxisControl.monitoring.statusWord.bit06_Done
+	                    THEN
+	                        ControlNodes.sequence.status.nextStep := #STEP_111;
+	                    END_IF;
+	                END_REGION
+	                ;
+	            #STEP_111:
+	                REGION STEP_111 Battery lifting
+	                    // 电池顶升 - Battery lifting
+	                    ControlNodes.cm3CellLiftingCylinder.commands.commandWorkPos := true;
+	                    IF ControlNodes.cm3CellLiftingCylinder.monitoring.inWorkPos
+	                        AND
+	                        ControlNodes.cm6SignalTM.monitoring.detectionBeforePalletPositioning
+	                        AND
+	                        ControlNodes.cm6SignalTM.monitoring.detectionAfterTrayPositioning
+	                    THEN
+	                        _.Unit2.EmNodes.emRelations.EM2.deliver.handlingXyz.req.transferEnable := true;
+	                        ControlNodes.sequence.status.nextStep := #STEP_130;
+	                    END_IF;
+	                END_REGION
+	                
+	                
+	                
+	            #STEP_130:
+	                REGION STEP_130 Check battery complete
+	                    // 电池是否取完 - Check if battery picking is complete
+	                    IF _.Unit2.EmNodes.emRelations.EM2.recieve.handlingXyz.req.transferEnable THEN
+	                        
+	                        IF NOT #statStepFirstCall THEN
+	                            #tempNextPosIndex := _.Global.Data.material.Unit2.contraint.monitor.cellsInfo.nextScratchCellIndex / 4;
+	                            #tempNextPosIndex := #tempNextPosIndex + 1;
+	                            #statStepFirstCall := TRUE;
+	                        END_IF;
+	                        
+	                        IF _.Global.Data.material.Unit2.contraint.monitor.cellsInfo.nextScratchCellIndex MOD 8 = 0 THEN
+	                            //循环抓取下一个 - Cycle to pick next one
+	                            //电芯顶升回原点 - Battery cell lifting returns to home position
+	                            ControlNodes.cm3CellLiftingCylinder.commands.commandHomePos := NOT ControlNodes.cm3CellLiftingCylinder.monitoring.inHomePos;
+	                            IF ControlNodes.cm3CellLiftingCylinder.monitoring.inHomePos THEN
+	                                ControlNodes.sequence.status.nextStep := #STEP_110;
+	                                _.Unit2.EmNodes.emRelations.EM2.deliver.handlingXyz.req.transferEnable :=
+	                                "_".Unit2.EmNodes.emRelations.EM4.deliver.constraintRoller.req.transferEnable := FALSE;
+	                            END_IF;
+	                        END_IF;
+	                        //抓取完毕 - Picking complete
+	                        IF #tempCellSize <= _.Global.Data.material.Unit2.contraint.monitor.cellsInfo.nextScratchCellIndex THEN
+	                            ControlNodes.sequence.status.nextStep := #STEP_120;
+	                            _.Unit2.EmNodes.emRelations.EM2.deliver.handlingXyz.req.transferEnable :=
+	                            "_".Unit2.EmNodes.emRelations.EM4.deliver.constraintRoller.req.transferEnable := FALSE;
+	                        END_IF;
+	                        
+	                    END_IF;
+	                END_REGION
+	                REGION ###### constraint
+	                    // Statement section REGION
+	                    
+	                END_REGION
+	                
+	            #STEP_120:
+	                REGION STEP_120 Positioning cylinder return
+	                    // 定位和电池气缸回原，通知EM3加拘束 - Return positioning and battery cylinders to home, notify EM3 for constraint
+	                    ControlNodes.cm3CellLiftingCylinder.commands.commandHomePos := NOT ControlNodes.cm3CellLiftingCylinder.monitoring.inHomePos;
+	                    ControlNodes.cm4PositioningPinCylinder.commands.commandHomePos := NOT ControlNodes.cm4PositioningPinCylinder.monitoring.inHomePos;
+	                    
+	                    IF ControlNodes.cm3CellLiftingCylinder.monitoring.inHomePos
+	                        AND
+	                        ControlNodes.cm4PositioningPinCylinder.monitoring.inHomePos
+	                    THEN
+	                        _.Unit2.EmNodes.emRelations.EM2.deliver.constraintWorkstation.req.Constraint :=
+	                        _.Unit2.EmNodes.emRelations.EM2.deliver.constraintWorkstation.req.transferEnable := TRUE;
+	                    END_IF;
+	                    
+	                    //等待加拘束完成 - Wait for constraint completion
+	                    IF _.Unit2.EmNodes.emRelations.EM2.recieve.constraintWorkstation.req.transferEnable
+	                        AND
+	                        _.Global.Data.material.Unit2.contraint.monitor.status.contraintStatus = 0
+	                    THEN
+	                        ControlNodes.sequence.status.nextStep := #STEP_121;
+	                    END_IF;
+	                END_REGION
+	                
+	                
+	                
+	                ;
+	            #STEP_121:
+	                REGION STEP_121 Tray cylinder return
+	                    // 托盘气缸回原,通知EM1换盘 - Return tray cylinder to home, notify EM1 for tray change
+	                    ControlNodes.cm2TrayLiftingCylinder.commands.commandHomePos := TRUE;
+	                    
+	                    IF ControlNodes.cm2TrayLiftingCylinder.monitoring.inHomePos THEN
+	                        ControlNodes.sequence.status.nextStep := #STEP_122;
+	                    END_IF;
+	                END_REGION
+	                
+	                
+	                
+	                ;
+	            #STEP_122:
+	                REGION STEP_122 Notify pc release
+	                    // 通知PC放行 - Notify PC for release
+	                    IF _.Global.Data.general.activateSimulation THEN
+	                        ControlNodes.sequence.status.nextStep := #STEP_123;
+	                    END_IF;
+	                END_REGION
+	            #STEP_123:
+	                REGION STEP_123 Pc data read complete
+	                    // 上位机读取数据完成 申请出盘 - PC data read complete, request tray output
+	                    _.Unit2.EmNodes.emRelations.EM2.deliver.roller.req.outFeedReq := TRUE;
+	                    
+	                    IF _.Unit2.EmNodes.emRelations.EM2.recieve.roller.feedback.inFeedEnabled THEN
+	                        ControlNodes.sequence.status.nextStep := #STEP_124;
+	                    END_IF;
+	                END_REGION
+	            #STEP_124:
+	                REGION STEP_124 Tray output
+	                    // 出托盘 - Tray output
+	                    ControlNodes.cm1Vfd206.commandConfiguration.direction := #VFD_CCW;
+	                    EXCHANGETRAY_VfdExecuteControl(TRUE);
+	                    
+	                    IF NOT ControlNodes.cm6SignalTM.monitoring.trayEntryDetection
+	                        AND
+	                        NOT ControlNodes.cm6SignalTM.monitoring.trayEntryDetection
+	                        AND
+	                        _.Global.Data.material.Unit2.contraint.monitor.postion.EM1
+	                    THEN
+	                        EXCHANGETRAY_VfdExecuteControl(FALSE);
+	                        ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                    END_IF;
+	                END_REGION
+	                
+	                ;
+	            #STEP_IMMEDIATE_STOP:
+	                REGION STEP_901 Immediate stop
+	                    ControlNodes.cm5AxisControl.commands.stop := TRUE;
+	                    ControlNodes.cm1Vfd206.commands.sinaCommands.fastStop := TRUE;
+	                    #statStepFirstCall := FALSE;
+	                    IF ControlNodes.cm1Vfd206.monitoring.vfdStopped
+	                        AND
+	                        ControlNodes.cm5AxisControl.monitoring.statusWord.bit06_Done
+	                    THEN
+	                        ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                        ;
+	                    END_IF;
+	                    
+	                END_REGION
+	                ;
+	                ;
+	        END_CASE;
+	    END_IF;
+	END_REGION Steps
+	
+	REGION Status updates      
+	    REGION Sequence Status
+	        // Update the status
+	        #instSequenceSCLStatus(parentReferenceDesignator := Config.em.referenceDesignator.combined,
+	                               idleStep := #STEP_IDLE,
+	                               stoppedStep := #STEP_IMMEDIATE_STOP,
+	                               setJobNumber := ControlNodes.jobs.commands.setJobNumber,
+	                               activeJobNumber => ControlNodes.jobs.status.activeJobNumber,
+	                               previousCycleJobNumber => ControlNodes.jobs.status.previousCycleJobNumber,
+	                               hmiInterface := HmiInterface.sequence,
+	                               sequence := ControlNodes.sequence);
+	    END_REGION Sequence Status
+	    
+	    
+	    REGION Update Job History
+	        // Update the History of jobs if a new job was started
+	        IF (ControlNodes.jobs.status.activeJobNumber <> ControlNodes.jobs.status.previousCycleJobNumber) THEN
+	            _.LAF_UpdateJobHistory(jobs := ControlNodes.jobs);
+	        END_IF;
+	    END_REGION
+	    
+	    REGION Output steps as String
+	        // Write outputs as strings 
+	        ControlNodes.sequence.status.currentStepSTRING := StepToString(ControlNodes.sequence.status.currentStep);
+	        ControlNodes.sequence.status.previousStepSTRING := StepToString(ControlNodes.sequence.status.previousStep);
+	        ControlNodes.sequence.status.nextStepSTRING := StepToString(ControlNodes.sequence.status.nextStep);
+	    END_REGION Output steps as String   
+	    
+	    #statLstlogisticsoutFeeding := _.Unit2.EmNodes.emRelations.EM1.recieve.logistics.feedback.outFeeding;
+	    (* #timeDelayTrigger[0](IN:=ControlNodes.sequence.status.currentStep=#STEP_105 AND ControlNodes.cm8Scanner.cmd.cmdStep=1,
+	                         PT:=T#200MS); *)
+	    #statCm5bit06_Done := ControlNodes.cm5AxisControl.monitoring.statusWord.bit06_Done;
+	    #statXyzTransferEnable := _.Unit2.EmNodes.emRelations.EM2.recieve.handlingXyz.req.transferEnable AND NOT #statXyzTransferEnable;
+	END_REGION Status updates
+END_FUNCTION_BLOCK
+END_NAMESPACE
+

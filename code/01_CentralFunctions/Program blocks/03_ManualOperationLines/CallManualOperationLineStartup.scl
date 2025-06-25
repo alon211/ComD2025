@@ -1,0 +1,36 @@
+﻿FUNCTION "CallManualOperationLineStartup" : Void
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+VERSION : 0.1
+
+BEGIN
+	REGION Description
+	(*
+	    Startup call to set the configuration of the Manual Operation Line for the Equipment modules
+	*)   
+	END_REGION
+	
+	REGION Unit 3 Equipment Module 2 configuration
+	    "ManualOperationControl_U3Em2".manualOperationEm.equipmentModuleNum := 3020;
+	    "ManualOperationControl_U3Em2".manualOperationEmArea[1].displayedLines := '1-6;';
+	    "ManualOperationControl_U3Em2".manualOperationEmArea[2].displayedLines := '6,5,4,3,2,1,1-3;';
+	    "ManualOperationControl_U3Em2".manualOperationEmArea[3].displayedLines := '1;';
+	    "ManualOperationControl_U3Em2".manualOperationEmArea[4].displayedLines := '1;';
+	    "ManualOperationControl_U3Em2".manualOperationEmArea[5].displayedLines := '1;';
+	    "ManualOperationControl_U3Em2".manualOperationEmArea[6].displayedLines := '1;';
+	    "ManualOperationControl_U3Em2".manualOperationEmArea[7].displayedLines := '1;';
+	END_REGION
+	
+	REGION Unit 3 Equipment Module 1 configuration
+	    // Statement section REGION
+	    "ManualOperationControl_U3Em1".manualOperationEm.equipmentModuleNum := 3010;
+	    "ManualOperationControl_U3Em1".manualOperationEmArea[1].displayedLines := '1;';
+	END_REGION
+	
+	REGION Unit 3 Equipment Module 3 configuration
+	    // Statement section REGION
+	    "ManualOperationControl_U3Em3".manualOperationEm.equipmentModuleNum := 3030;
+	    "ManualOperationControl_U3Em3".manualOperationEmArea[1].displayedLines := '1;';
+	END_REGION
+	
+END_FUNCTION
+

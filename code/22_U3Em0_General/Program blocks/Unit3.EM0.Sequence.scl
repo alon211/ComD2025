@@ -1,0 +1,154 @@
+﻿NAMESPACE Unit3.EM0
+FUNCTION_BLOCK Sequence
+TITLE = EquipmentC_StateActions
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+VERSION : 0.1
+//State model of equipment module following the OMAC standard.
+   VAR 
+      statSelectedJobNumber { ExternalWritable := 'False'} : DInt;   // Evaluated Job Number
+      instSequenceSCLControl { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LAF_ControlSclSequence;
+      instSequenceSCLStatus { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LAF_StatusSclSequence;
+   END_VAR
+
+   VAR_TEMP 
+      tempCustomerAction : Bool;   // Placeholder for possible actions
+   END_VAR
+
+   VAR CONSTANT 
+      STEP_IDLE : DInt := 1;   // Idle Step
+      JOB_1_STEP_1 : DInt := 101;   // Template Step
+      JOB_1_STEP_2 : DInt := 102;   // Template Step
+      STEP_IMMEDIATE_STOP : DInt := 901;   // Step executed when an immediate stop command is triggered for the sequence (i.e. when unit is in state aborting)
+      TO_DO_INSERT_CONDITION_FOR_TRANSITION_HERE : Bool := TRUE;   // Template : Add conditions
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // (company)/ (c)Copyright (year)
+	    //-------------------------------------------------------------------------------
+	    // Title:            (Title of this block)
+	    // Comment/Function: (that is implemented in the block)
+	    // Library/Family:   (that the source is dedicated to)
+	    // Author:           (department / person in charge / contact)
+	    // Tested with:      (test system with FW version)
+	    // Engineering:      TIA Portal (SW version)
+	    // Restrictions:     (OB types, etc.)
+	    // Requirements:     (hardware, technological package, etc.)
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | dd.mm.yyyy | (name of expert)        | First released version
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(/*
+	This is a template block provided by the Automation Framework. It can be used to create an own project.
+	The Block Info Header is prepared to put in your own data.
+	Description of the block could be added here and the docu created by Code2Docu.
+	*/)
+	END_REGION DESCRIPTION
+	
+	REGION Sequence control
+	    // General control of the sequence
+	    #instSequenceSCLControl(idleStep := #STEP_IDLE,
+	                            stoppedStep := #STEP_IMMEDIATE_STOP,
+	                            resetJobs => ControlNodes.jobs.commands.reset,
+	                            hmiInterface := HmiInterface.sequence,
+	                            sequence := ControlNodes.sequence);
+	END_REGION Sequence control
+	
+	REGION Steps
+	    // Only execute sequence if active
+	    IF ControlNodes.sequence.status.seqActive THEN
+	        
+	        // Determine the current step
+	        CASE ControlNodes.sequence.status.currentStep OF
+	                
+	            #STEP_IDLE:
+	                // If a new job is activated, move to the first step of that job                   
+	                IF ControlNodes.sequence.status.executionEnabled THEN
+	                    CASE ControlNodes.jobs.commands.setJobNumber OF
+	                        _.U3EM0_JOB1:
+	                            ControlNodes.sequence.status.nextStep := #JOB_1_STEP_1;
+	                            
+	                   
+	                    END_CASE;
+	                    
+	                END_IF;
+	                //-------------------------------------------
+	                // Job 1              
+	                //-------------------------------------------                
+	            #JOB_1_STEP_1:
+	                // Actions
+	                #tempCustomerAction := TRUE;
+	                
+	                // Transitions
+	                IF (#"TO_DO_INSERT_CONDITION_FOR_TRANSITION_HERE") THEN
+	                    #tempCustomerAction := FALSE;
+	                    ControlNodes.sequence.status.nextStep := #JOB_1_STEP_2;
+	                END_IF;
+	                
+	            #JOB_1_STEP_2:
+	                // Actions
+	                #tempCustomerAction := TRUE;
+	                
+	                // Transitions
+	                IF (#"TO_DO_INSERT_CONDITION_FOR_TRANSITION_HERE") THEN
+	                    #tempCustomerAction := FALSE;
+	                    ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                END_IF;
+	                
+	                //-------------------------------------------
+	                // Job 2              
+	                //-------------------------------------------                     
+	           
+	                //-------------------------------------------
+	                // Immediate Stop              
+	                //-------------------------------------------                      
+	            #STEP_IMMEDIATE_STOP:
+	                // Actions
+	                #tempCustomerAction := TRUE;
+	                
+	                // Transitions
+	                IF (#"TO_DO_INSERT_CONDITION_FOR_TRANSITION_HERE") THEN
+	                    #tempCustomerAction := FALSE;
+	                END_IF;
+	        END_CASE;
+	    END_IF;
+	END_REGION Steps
+	
+	REGION Status updates      
+	    REGION Sequence Status
+	        // Update the status
+	        #instSequenceSCLStatus(parentReferenceDesignator:=Config.em.referenceDesignator.combined,
+	                               idleStep := #STEP_IDLE,
+	                               stoppedStep := #STEP_IMMEDIATE_STOP,
+	                               setJobNumber := ControlNodes.jobs.commands.setJobNumber,
+	                               activeJobNumber => ControlNodes.jobs.status.activeJobNumber,
+	                               previousCycleJobNumber=>ControlNodes.jobs.status.previousCycleJobNumber,
+	                               hmiInterface := HmiInterface.sequence,
+	                               sequence := ControlNodes.sequence);
+	    END_REGION Sequence Status
+	    
+	    REGION Update Job History
+	        // Update the History of jobs if a new job was started
+	        IF (ControlNodes.jobs.status.activeJobNumber <> ControlNodes.jobs.status.previousCycleJobNumber) THEN
+	            _.LAF_UpdateJobHistory(jobs := ControlNodes.jobs);
+	        END_IF;
+	    END_REGION
+	    
+	    REGION Output steps as String
+	        // Write outputs as strings 
+	        ControlNodes.sequence.status.currentStepSTRING := StepToString(ControlNodes.sequence.status.currentStep);
+	        ControlNodes.sequence.status.previousStepSTRING := StepToString(ControlNodes.sequence.status.previousStep);
+	        ControlNodes.sequence.status.nextStepSTRING := StepToString(ControlNodes.sequence.status.nextStep);
+	    END_REGION Output steps as String   
+	END_REGION Status updates
+	
+END_FUNCTION_BLOCK
+END_NAMESPACE
+

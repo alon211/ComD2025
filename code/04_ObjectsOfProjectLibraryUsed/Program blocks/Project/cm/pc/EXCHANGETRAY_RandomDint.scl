@@ -1,0 +1,132 @@
+﻿FUNCTION_BLOCK "LEXCHANGETRAY_RandomDint"
+TITLE = EXCHANGETRAY_RandomDint
+{ S7_Optimized_Access := 'TRUE' ; Published := 'TRUE' }
+AUTHOR : 'SUP/Zhang Shi Long'
+FAMILY : SUP
+VERSION : 0.1
+//Exchange Tray function
+   VAR_INPUT 
+      lowerLimit { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;   // Lower limit for random integer range
+      upperLimit { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;   // Upper limit for random integer range
+   END_VAR
+
+   VAR_OUTPUT 
+      randomNumber { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;   // Internal random integer storage
+      error { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Internal error flag
+      errorID { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;   // Internal error ID
+   END_VAR
+
+   VAR 
+      seed { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DWord;   // Random number generator seed
+      statRandom { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DWord;   // Random number generation status
+      statCycleCounter { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DWord;   // Cycle counter status
+      statRange { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;   // Range validation status
+      statSysTime {InstructionName := 'DTL'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DTL;   // System time status
+      statReturn { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // Return value status
+      statExecutePrev { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Previous execution state
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // Siemens / (c)Copyright 2020-2024
+	    //-------------------------------------------------------------------------------
+	    // Title:            Random Number Generator Module
+	    // 标题:             随机数生成模块
+	    // Comment/Function: This module generates a random number within a specified range 
+	    //                    using a linear congruential generator algorithm.
+	    // 注释/功能:        此模块使用线性同余法生成指定范围内的随机数。
+	    // Library/Family:   EXCHANGETRAY - Library of Basic
+	    // 库/家族:         换盘机 - 基本控制模块库
+	    // Author:           Siemens Digital Industries
+	    // 作者:            西门子数字工业
+	    // Tested with:      S7-PLCSIM Advanced 6.0
+	    // 测试环境:        S7-PLCSIM Advanced 6.0
+	    // Engineering:      TIA Portal V19
+	    // 工程环境:        TIA Portal V19
+	    // Restrictions:     ENO mechanism is not used - forced to TRUE.
+	    // 限制条件:        不使用 ENO 机制 - 强制设置为 TRUE。
+	    // Requirements:     PLC (S7-1200 / S7-1500)
+	    // 要求:            PLC (S7-1200 / S7-1500)
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 17.04.2025 | SIMATIC Systems Support | Updated block info and comments following AIupdate.scl style.
+	    // 版本     | 日期       | 负责人                  | 更改内容
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 2025年4月17日 | SIMATIC系统支持        | 参照 LBC 风格更新块信息和注释。
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	    (/*
+	    This module generates a random number within a specified range (#LowerLimit to #UpperLimit) 
+	    using a linear congruential generator (LCG) algorithm. It handles:
+	    - Input parameter validation (e.g., valid range, seed initialization)
+	    - Random number generation with system time-based seeding
+	    - Mapping the random number to the target range
+	    
+	    此模块使用线性同余法 (LCG) 在指定范围（#LowerLimit 到 #UpperLimit）内生成随机数。
+	    实现以下功能：
+	    - 输入参数校验（如范围有效性、种子初始化）
+	    - 基于系统时间的随机数生成
+	    - 将随机数映射到目标范围
+	    */)
+	END_REGION DESCRIPTION
+	
+	REGION INITIALISATION  
+	    // Reset error flags
+	    // 重置错误标志
+	    #error := FALSE;
+	    #errorID := 0;
+	    
+	    // Initialize seed if not provided
+	    // 如果未提供种子则初始化
+	    IF #seed = 0 THEN
+	        // Use system time for seed generation
+	        // 使用系统时间生成种子
+	        #statReturn := RD_SYS_T(#statSysTime);
+	        #seed := DWORD_TO_DINT(#statSysTime.NANOSECOND) + DWORD_TO_DINT(#statSysTime.SECOND) * 1000;
+	    END_IF;
+	END_REGION INITIALISATION  
+	
+	REGION PROGRAM LOGIC
+	    REGION PARAMETER VALIDATION
+	        // Validate input parameters
+	        // 输入参数校验
+	        IF #lowerLimit > #upperLimit THEN
+	            #error := TRUE;
+	            #errorID := 1;
+	            RETURN;
+	        END_IF;
+	    END_REGION PARAMETER VALIDATION
+	    
+	    REGION RANDOM NUMBER GENERATION
+	        // Calculate range
+	        // 计算范围
+	        #statRange := #upperLimit - #lowerLimit + 1;
+	        
+	        // Update seed using LCG algorithm
+	        // 使用线性同余法更新种子
+	        #statCycleCounter := #statCycleCounter + 1;
+	        #seed := #seed * 1103515245 + 12345 + #statCycleCounter;
+	        
+	        // Generate raw random number
+	        // 生成原始随机数
+	        #statRandom := #seed;
+	        
+	        // Map random number to target range
+	        // 将随机数映射到目标范围
+	        #randomNumber := #lowerLimit + (DWORD_TO_DINT(#statRandom) MOD #statRange);
+	    END_REGION RANDOM NUMBER GENERATION
+	END_REGION PROGRAM LOGIC
+	
+	REGION OUTPUTS
+	    // ENO mechanism disabled, ENO - forced to TRUE
+	    // ENO 机制禁用，强制设置为 TRUE
+	    ENO := TRUE;
+	END_REGION OUTPUTS
+END_FUNCTION_BLOCK
+

@@ -1,0 +1,299 @@
+﻿FUNCTION_BLOCK "LEXCHANGETRAY_RollerVfd"
+TITLE = EXCHANGETRAY_RollerVfd
+{ S7_Optimized_Access := 'TRUE' ; Published := 'TRUE' }
+AUTHOR : 'SUP/Zhang Shi Long'
+FAMILY : SUP
+VERSION : 0.1
+//Exchange Tray function
+   VAR_IN_OUT 
+      configuration : "LAF_typeVfdParameters";   // VFD configuration parameters
+      moduleInterface : "LEXCHANGETRAY_typeRollerVfdInterface";   // VFD module interface
+      controlNode : "LEXCHANGETRAY_typeRollerVfdContronNode";   // VFD control node
+   END_VAR
+
+   VAR 
+      instFrequency : "LGF_Frequency";   // Frequency generator instance
+      instVfd { S7_SetPoint := 'False'} : "LEXCHANGETRAY_Vfd";   // VFD controller instance
+      statVfdModuleInterface { S7_SetPoint := 'False'} : "LEXCHANGETRAY_typeVfdInterface";   // VFD module interface status
+      statVfdControlNode { S7_SetPoint := 'False'} : "LEXCHANGETRAY_typeVfdContronNode";   // VFD control node status
+      statDiagnostics : "LBC_typeDiagnostics";   // Diagnostics status
+      statSpeedSetPoint : Real;   // Speed setpoint status
+      statFbState : Word;   // Function block current state
+      statFbStatePrevious : Word;   // Function block previous state
+      statResetError : Bool;   // Error reset status
+      statClockPulses : Bool;   // Clock pulses status
+      statVfdSportsIncEnable : Bool;   // VFD motion increment enable status
+      statDirection : Real;   // Rotation direction status
+      statVfdSportsIncReset : Bool;   // VFD motion increment reset status
+      statVfdSportsInc : Int;   // VFD motion increment status
+      statHighVel : Real;   // High velocity status
+      statLowVel : Real;   // Low velocity status
+      statLowVelocity : Bool;   // Low speed status
+   END_VAR
+
+   VAR_TEMP 
+      tempSimActiveEdge : Bool;
+   END_VAR
+
+   VAR CONSTANT 
+      FB_STATE_NO_PROCESSING : Word := 16#0000;   // Function block state: No processing
+      FB_STATE_ERROR_HANDLER : Word := 16#0010;   // Function block state: Error handler仿真控制
+      FB_STATE_INIT_SIMULATING : Word := 16#0020;   // Function block state: Initializing simulation
+      FB_STATE_EXECUTE_SIMULATING : Word := 16#0021;   // Function block state: Executing simulation实际自动控制
+      FB_CALL_FB : Word := 16#0030;   // Function block call referenceFB状态
+      SUB_STATUS_NO_ERROR : Word := 16#0000;   // Sub status: No error
+      ERR_INCORRECT_REFSPEED : Word := 16#8201;   // Error: Incorrect reference speed
+      ERR_INCORRECT_HIGHVEL : Word := 16#8202;   // Error: Incorrect high velocity
+      "0.5HZ" : Real := 0.5;
+      VFD_CW : DInt := 1;   // VFD direction: Clockwise
+      VFD_CCW : DInt := -1;   // VFD direction: Counter-clockwise
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER  
+	    //===============================================================================  
+	    // Siemens / (c)Copyright 2020-2024  
+	    //-----------------------------------------------------------------------------  
+	    // Title:            VFD Control Logic (变频器控制逻辑)  
+	    // Comment/Function:  
+	    //                   - Process input signals from module interface or control node  
+	    //                   - Handle speed setpoint, direction, and incremental control  
+	    //                   - Parameter validation and error handling  
+	    //                   - State machine-driven execution  
+	    //                   - Output signal mapping to module interface/control node  
+	    // Library/Family:   EXCHANGETRAY - Library of Basic Functions  
+	    // Author:           Siemens Digital Industries  
+	    // Tested with:      S7-PLCSIM Advanced 6.0  
+	    // Engineering:      TIA Portal V19  
+	    // Restrictions:     ENO mechanism is not used - forced to TRUE (不使用ENO机制，强制置位为TRUE)  
+	    // Requirements:     PLC (S7-1200 / S7-1500)  
+	    //-----------------------------------------------------------------------------  
+	    // Change log table:  
+	    // Version  | Date       | Expert in charge        | Changes applied  
+	    //----------|------------|-------------------------|-----------------------------  
+	    // XX.00.00 | XX.XX.XXXX | SIMATIC Systems Support | Initial version  
+	    //===============================================================================  
+	END_REGION BLOCK INFO HEADER 
+	REGION DESCRIPTION  
+	    (/*  
+	中文描述：  
+	本代码块实现了一个变频器（VFD）的控制逻辑，主要功能包括：  
+	1. 处理来自模块接口（ModuleInterface）或控制节点（ControlNode）的输入信号；  
+	2. 管理速度设定值（Speed Setpoint）、方向（CW/CCW）及增量控制（SportsInc）；  
+	3. 参数校验（如参考速度、高低速限制）及错误处理（ERR_INCORRECT_REFSPEED 等）；  
+	4. 基于状态机（State Machine）的流程控制（调用底层函数块 `#instVfd`）；  
+	5. 输出信号映射至模块接口和控制节点，同步监控状态（如错误标志、使能状态）。  
+	应用场景：工业自动化中电机驱动控制，支持方向切换、速度斜坡控制及故障复位功能。  
+	
+	English Description:  
+	This code block implements a Variable Frequency Drive (VFD) control logic, including:  
+	1. Processing input signals from ModuleInterface or ControlNode;  
+	2. Managing speed setpoint, direction (CW/CCW), and incremental control (SportsInc);  
+	3. Parameter validation (reference speed, high/low velocity limits) and error handling (ERR_INCORRECT_REFSPEED, etc.);  
+	4. State machine-driven execution (invoking the underlying function block `#instVfd`);  
+	5. Mapping output signals to ModuleInterface/ControlNode and synchronizing monitoring data (error flags, enable status).  
+	Application: Motor drive control in industrial automation, supporting direction switching, speed ramp control, and fault reset.  
+	*/)
+	END_REGION DESCRIPTION  
+	REGION PROCESS INPUT SIGNALS
+	    REGION Input configuration parameter
+	        
+	        #instFrequency(frequency := #"0.5HZ",
+	                       clock => #statClockPulses);
+	    END_REGION
+	    REGION Intput moduleInterface commands
+	        
+	    END_REGION
+	    REGION Intput controlnode commands
+	        
+	    END_REGION
+	    
+	    //mapping input and sim input or contorlnodes commands and moduleinterface commands
+	    #statVfdModuleInterface.configuration := #moduleInterface.configuration;
+	    #statVfdModuleInterface.commands := #moduleInterface.commands.sinaCommands;
+	    #statVfdModuleInterface.commandConfiguration := #moduleInterface.commandConfiguration.sinaCommandConfiguration;
+	    #statVfdControlNode.commands := #controlNode.commands.sinaCommands;
+	    #statVfdModuleInterface.commandConfiguration := #moduleInterface.commandConfiguration.sinaCommandConfiguration;
+	    
+	    #statResetError := #controlNode.commands.sinaCommands.resetAxis OR #controlNode.commands.sinaCommands.reset OR (#moduleInterface.commands.sinaCommands.reset OR #moduleInterface.commands.sinaCommands.resetAxis) AND #moduleInterface.commands.sinaCommands.enableControl;
+	    IF #moduleInterface.commands.sinaCommands.enableControl THEN
+	        
+	        IF #moduleInterface.commandConfiguration.direction = #VFD_CW THEN
+	            #statDirection := DINT_TO_REAL(#VFD_CW);
+	        END_IF;
+	        IF #moduleInterface.commandConfiguration.direction = #VFD_CCW THEN
+	            #statDirection := DINT_TO_REAL(#VFD_CCW);
+	        END_IF;
+	        #statVfdSportsIncEnable := #moduleInterface.commands.vfdSportsIncEnable;
+	        #statVfdSportsIncReset := #moduleInterface.commands.vfdSportsIncReset;
+	        #statHighVel := #moduleInterface.commandConfiguration.highVel;
+	        #statLowVel := #moduleInterface.commandConfiguration.lowVel;
+	        
+	    ELSE
+	        
+	        ;
+	        #statVfdSportsIncEnable := #controlNode.commands.vfdSportsIncEnable;
+	        #statVfdSportsIncReset := #controlNode.commands.vfdSportsIncReset;
+	        #statHighVel := #controlNode.commandConfiguration.highVel;
+	        #statLowVel := #controlNode.commandConfiguration.lowVel;
+	        
+	        IF #controlNode.commandConfiguration.direction = #VFD_CW THEN
+	            #statDirection := DINT_TO_REAL(#VFD_CW);
+	        END_IF;
+	        IF #controlNode.commandConfiguration.direction = #VFD_CCW THEN
+	            #statDirection := DINT_TO_REAL(#VFD_CCW);
+	        END_IF;
+	    END_IF;
+	    IF NOT #statVfdSportsIncEnable THEN
+	        IF #moduleInterface.commands.sinaCommands.enableControl THEN
+	            #statSpeedSetPoint := #moduleInterface.commandConfiguration.sinaCommandConfiguration.speedSetpoint;
+	        ELSE
+	            #statSpeedSetPoint := #controlNode.commandConfiguration.sinaCommandConfiguration.speedSetpoint;
+	        END_IF;
+	    END_IF;
+	    
+	    REGION SIMULATE MODE
+	        
+	    END_REGION SIMULATE MODE
+	    REGION Interlock dependent edge commands
+	        
+	    END_REGION Interlock dependent edge commands
+	    
+	END_REGION PROCESS INPUT SIGNALS
+	REGION RESET
+	    
+	    IF #statVfdSportsIncReset THEN
+	        #statVfdSportsInc := 0;
+	        #statVfdSportsIncEnable :=
+	        #statLowVelocity :=
+	        #statVfdSportsIncReset := FALSE;
+	    END_IF;
+	    
+	END_REGION RESET
+	REGION PARAMETER CHECK
+	    //commands handle in here
+	    #statFbState := #FB_CALL_FB;
+	    IF #controlNode.monitoring.monitoring.axisEnabled THEN
+	        IF "LGF_CompareLReal"(valueA := #configuration.general.refSpeed, valueB := 0.0) THEN
+	            #statDiagnostics.status := #ERR_INCORRECT_REFSPEED;
+	        END_IF;
+	        IF #statHighVel < #statLowVel THEN
+	            #statDiagnostics.status := #ERR_INCORRECT_HIGHVEL;
+	            ;
+	        END_IF;
+	        
+	        ;
+	    END_IF;
+	    
+	    IF #statDiagnostics.status.%X15 THEN
+	        
+	        #statFbState := #FB_STATE_ERROR_HANDLER;
+	    END_IF;
+	    IF #statResetError THEN
+	        #statDiagnostics.status := #SUB_STATUS_NO_ERROR;
+	    END_IF;
+	    REGION Input configuration parameter
+	        #statVfdControlNode.commandConfiguration.referenceSpeed := #configuration.general.refSpeed;
+	        
+	        #statVfdControlNode.commands.enableAxis := #controlNode.commands.sinaCommands.enableAxis;
+	        #statVfdControlNode.commandConfiguration := #controlNode.commandConfiguration.sinaCommandConfiguration;
+	        
+	    END_REGION
+	    
+	END_REGION PARAMETER CHECK
+	REGION ENABLING/DISABLING
+	    
+	END_REGION ENABLING/DISABLING
+	REGION STATE MACHINE
+	    REPEAT
+	        #statFbStatePrevious := #statFbState;
+	        CASE #statFbState OF
+	            #FB_STATE_NO_PROCESSING:
+	                ;
+	                
+	            #FB_CALL_FB:
+	                REGION CALL_FB
+	                    
+	                    #instVfd(configuration := #configuration,
+	                             moduleInterface := #statVfdModuleInterface,
+	                             controlNode := #statVfdControlNode
+	                    );
+	                    
+	                END_REGION
+	                
+	            #FB_STATE_ERROR_HANDLER:
+	                REGION Error handling
+	                    IF #statResetError THEN
+	                        #statDiagnostics.status := #FB_STATE_NO_PROCESSING;
+	                    END_IF;
+	                    
+	                END_REGION
+	                
+	                ;
+	        END_CASE;
+	    UNTIL (#statFbStatePrevious = #statFbState OR #statDiagnostics.status.%X15)
+	    END_REPEAT;
+	END_REGION CONFIGURATION HANDLING
+	REGION Velocity Handling
+	    
+	    IF #statVfdSportsIncEnable AND #statClockPulses THEN
+	        IF #statVfdSportsInc < 5 THEN
+	            #statSpeedSetPoint := #statHighVel;
+	            #statVfdSportsInc := #statVfdSportsInc + 1;
+	        ELSE
+	            #statSpeedSetPoint := #statLowVel;
+	            IF NOT #statLowVelocity THEN
+	                #statLowVelocity :=
+	                #statVfdControlNode.commands.moveVelocity := TRUE;
+	            END_IF;
+	            
+	        END_IF;
+	        
+	    END_IF;
+	    #statVfdControlNode.commandConfiguration.speedSetpoint := #statDirection * #statSpeedSetPoint;
+	    #statVfdModuleInterface.commandConfiguration.speedSetpoint := #statDirection * #statSpeedSetPoint;
+	END_REGION Velocity Handling
+	REGION Setting previous values for edge detection
+	    
+	END_REGION Setting previous values for edge detection
+	REGION PROCESS OUTPUT SIGNALS
+	    REGION Disabling
+	        
+	    END_REGION Disabling
+	    REGION Error user cleared
+	        
+	    END_REGION Error user cleared
+	    REGION Error auto cleared
+	        
+	    END_REGION Error auto cleared
+	    REGION Write monitoring structure
+	        IF #statVfdModuleInterface.monitoring.vfdStopped THEN
+	            #statLowVelocity := FALSE;
+	        END_IF;
+	        
+	    END_REGION Write monitoring structure
+	    REGION Write Process data to module interface
+	        #moduleInterface.commands.vfdSportsIncEnable := #statVfdSportsIncEnable;
+	        #moduleInterface.commands.vfdSportsIncReset := #statVfdSportsIncReset;
+	        #moduleInterface.commands.sinaCommands := #statVfdModuleInterface.commands;
+	        #moduleInterface.monitoring := #statVfdModuleInterface.monitoring;
+	        #moduleInterface.monitoring.monitoring.error := #statDiagnostics.status.%X15 OR #statVfdModuleInterface.monitoring.monitoring.error;
+	        #moduleInterface.monitoring.monitoring.status := #statDiagnostics.status OR #statVfdModuleInterface.monitoring.monitoring.status;
+	    END_REGION Write Process data to module interface
+	    REGION Write work data to interface and outputs
+	        #controlNode.commands.sinaCommands := #statVfdControlNode.commands;
+	        #controlNode.commandConfiguration.sinaCommandConfiguration := #statVfdControlNode.commandConfiguration;
+	        #controlNode.commands.vfdSportsIncEnable := #statVfdSportsIncEnable;
+	        #controlNode.commands.vfdSportsIncReset := #statVfdSportsIncReset;
+	        #controlNode.monitoring := #statVfdControlNode.monitoring;
+	        
+	        #controlNode.monitoring.monitoring.error := #statDiagnostics.status.%X15 OR #statVfdControlNode.monitoring.monitoring.error;
+	        #controlNode.monitoring.monitoring.status := #statDiagnostics.status OR #statVfdControlNode.monitoring.monitoring.status;
+	        // ENO mechanism disabled, ENO - forced to TRUE
+	        ENO := TRUE;
+	    END_REGION Write static values to outputs    
+	END_REGION PROCESS OUTPUT SIGNALS
+	
+END_FUNCTION_BLOCK
+

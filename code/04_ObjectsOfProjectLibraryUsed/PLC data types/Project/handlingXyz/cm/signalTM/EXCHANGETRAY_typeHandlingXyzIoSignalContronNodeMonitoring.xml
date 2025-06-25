@@ -1,0 +1,140 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Document xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v5">
+  <Engineering version="V19" />
+  <SW.Types.PlcStruct ID="0">
+    <AttributeList>
+      <Access>Published</Access>
+      <Interface><Sections>
+  <Section Name="None">
+    <Member Name="simulated" Datatype="Bool" />
+    <Member Name="GripperCylinderHomePositionDetectionU2EM4_1" Datatype="Bool" />
+    <Member Name="gripperCylinderWorkPositionDetectionOfSmallCellU2EM4_2" Datatype="Bool" />
+    <Member Name="withOrWithoutCellDetectionU2EM4_2" Datatype="Bool" />
+    <Member Name="GripperCylinderHomePositionDetectionU2EM4_3" Datatype="Bool" />
+    <Member Name="yaxlEmotorOrgU2EM4" Datatype="Bool" />
+    <Member Name="yaxlEmotorPotU2EM4" Datatype="Bool" />
+    <Member Name="gripperCylinderWorkPositionDetectionOfSmallCellU2EM4_4" Datatype="Bool" />
+    <Member Name="handlingCollisionAvoidance2U2EM4" Datatype="Bool" />
+    <Member Name="gripperCylinderWorkPositionDetectionOfSmallCellU2EM4_3" Datatype="Bool" />
+    <Member Name="gripperCylinderWorkPositionDetectionOfBigCellU2EM4_3" Datatype="Bool" />
+    <Member Name="gripperCylinderWorkPositionDetectionOfBigCellU2EM4_2" Datatype="Bool" />
+    <Member Name="gripperCylinderWorkPositionDetectionOfBigCellU2EM4_1" Datatype="Bool" />
+    <Member Name="xaxlEmotorPotU2EM4" Datatype="Bool" />
+    <Member Name="zaxlEmotorNotU2EM4" Datatype="Bool" />
+    <Member Name="cellFoolproof4U2EM4" Datatype="Bool" />
+    <Member Name="withOrWithoutCellDetectionU2EM4_3" Datatype="Bool" />
+    <Member Name="cellFoolproof1U2EM4" Datatype="Bool" />
+    <Member Name="xaxlEmotorOrgU2EM4" Datatype="Bool" />
+    <Member Name="GripperCylinderHomePositionDetectionU2EM4_2" Datatype="Bool" />
+    <Member Name="xaxlEmotorNotU2EM4" Datatype="Bool" />
+    <Member Name="handlingCollisionAvoidance4U2EM4" Datatype="Bool" />
+    <Member Name="handlingCollisionAvoidance3U2EM4" Datatype="Bool" />
+    <Member Name="zaxlEmotorPotU2EM4" Datatype="Bool" />
+    <Member Name="cellFoolproof3U2EM4" Datatype="Bool" />
+    <Member Name="zaxlEmotorOrgU2EM4" Datatype="Bool" />
+    <Member Name="yaxlEmotorNotU2EM4" Datatype="Bool" />
+    <Member Name="handlingCollisionAvoidance1U2EM4" Datatype="Bool" />
+    <Member Name="cellFoolproof2U2EM4" Datatype="Bool" />
+    <Member Name="gripperCylinderWorkPositionDetectionOfSmallCellU2EM4_1" Datatype="Bool" />
+    <Member Name="withOrWithoutCellDetectionU2EM4_4" Datatype="Bool" />
+    <Member Name="gripperCylinderWorkPositionDetectionOfBigCellU2EM4_4" Datatype="Bool" />
+    <Member Name="GripperCylinderHomePositionDetectionU2EM4_4" Datatype="Bool" />
+    <Member Name="withOrWithoutCellDetectionU2EM4_1" Datatype="Bool" />
+  </Section>
+</Sections></Interface>
+      <Name>LEXCHANGETRAY_typeHandlingXyzIoSignalContronNodeMonitoring</Name>
+      <Namespace />
+    </AttributeList>
+    <ObjectList>
+      <MultilingualText ID="1" CompositionName="Comment">
+        <ObjectList>
+          <MultilingualTextItem ID="2" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text>simulated: Bool
+GripperCylinderHomePositionDetectionU2EM4_1: Bool
+gripperCylinderWorkPositionDetectionOfSmallCellU2EM4_2: Bool
+withOrWithoutCellDetectionU2EM4_2: Bool
+GripperCylinderHomePositionDetectionU2EM4_3: Bool
+yaxlEmotorOrgU2EM4: Bool
+yaxlEmotorPotU2EM4: Bool
+gripperCylinderWorkPositionDetectionOfSmallCellU2EM4_4: Bool
+handlingCollisionAvoidance2U2EM4: Bool
+gripperCylinderWorkPositionDetectionOfSmallCellU2EM4_3: Bool
+gripperCylinderWorkPositionDetectionOfBigCellU2EM4_3: Bool
+gripperCylinderWorkPositionDetectionOfBigCellU2EM4_2: Bool
+gripperCylinderWorkPositionDetectionOfBigCellU2EM4_1: Bool
+xaxlEmotorPotU2EM4: Bool
+zaxlEmotorNotU2EM4: Bool
+cellFoolproof4U2EM4: Bool
+withOrWithoutCellDetectionU2EM4_3: Bool
+cellFoolproof1U2EM4: Bool
+xaxlEmotorOrgU2EM4: Bool
+GripperCylinderHomePositionDetectionU2EM4_2: Bool
+xaxlEmotorNotU2EM4: Bool
+handlingCollisionAvoidance4U2EM4: Bool
+handlingCollisionAvoidance3U2EM4: Bool
+zaxlEmotorPotU2EM4: Bool
+cellFoolproof3U2EM4: Bool
+zaxlEmotorOrgU2EM4: Bool
+yaxlEmotorNotU2EM4: Bool
+handlingCollisionAvoidance1U2EM4: Bool
+cellFoolproof2U2EM4: Bool
+gripperCylinderWorkPositionDetectionOfSmallCellU2EM4_1: Bool
+withOrWithoutCellDetectionU2EM4_4: Bool
+gripperCylinderWorkPositionDetectionOfBigCellU2EM4_4: Bool
+GripperCylinderHomePositionDetectionU2EM4_4: Bool
+withOrWithoutCellDetectionU2EM4_1: Bool</Text>
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="3" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="4" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="5" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+      <MultilingualText ID="6" CompositionName="Title">
+        <ObjectList>
+          <MultilingualTextItem ID="7" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="8" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="9" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="A" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+    </ObjectList>
+  </SW.Types.PlcStruct>
+</Document>

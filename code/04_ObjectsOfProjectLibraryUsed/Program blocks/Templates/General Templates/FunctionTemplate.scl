@@ -1,0 +1,73 @@
+﻿FUNCTION "FunctionTemplate" : Void
+TITLE = Function
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+AUTHOR : '(department/personInCharge/contact)'
+FAMILY : '(family)'
+//Function template to write your own
+   VAR_INPUT 
+      myInputVariable : Int;   // add a constant to the given actual value
+   END_VAR
+
+   VAR_OUTPUT 
+      myOutputVariable : Int;   // input value + constant
+   END_VAR
+
+   VAR_TEMP 
+      tempVariable : Int;   // temp value for anything
+   END_VAR
+
+   VAR CONSTANT 
+      TEMPORARY_INIT_VALUE : Int := 10;   // value for the initialization of the temporary tag
+   END_VAR
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // (company) / (c)Copyright (year)
+	  //-------------------------------------------------------------------------------
+	  // Title:            (Title of this Block)
+	  // Comment/Function: (that is implemented in the block)
+	  // Library/Family:   (that the source is dedicated to)
+	  // Author:           (department / person in charge / contact)
+	  // Tested with:      (test system with FW version)
+	  // Engineering:      TIA Portal (SW version)
+	  // Restrictions:     (OB types, etc.)
+	  // Requirements:     (hardware, technological package, memory needed, etc.)
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  // Version  | Date       | Expert in charge       | Changes applied
+	  //----------|------------|------------------------|------------------------------
+	  // 01.00.00 | yyyy-mm-dd | (name of expert)       | First released version
+	  //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(/*
+	
+	*/)
+	END_REGION DESCRIPTION
+	
+	REGION INITIALISATION  
+	  // TODO: Initialize functionality: reset of variables, diagnostics, etc.
+	  // 
+	  #tempVariable := #TEMPORARY_INIT_VALUE;
+	END_REGION INITIALISATION  
+	
+	REGION PROGRAM LOGIC
+	  // TODO: Use this region for application specific code
+	  // 
+	  
+	  // just an example code fragment
+	  #tempVariable += #myInputVariable;
+	END_REGION PROGRAM LOGIC
+	
+	REGION OUTPUTS
+	  // TODO: Write application specific temp values to outputs
+	  // 
+	  #myOutputVariable := #tempVariable;
+	  // if ENO mechanism is used for error handling, set to false in case of error
+	  ENO := TRUE;
+	END_REGION OUTPUTS
+	
+END_FUNCTION
+

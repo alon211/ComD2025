@@ -1,0 +1,163 @@
+﻿FUNCTION_BLOCK "LEXCHANGETRAY_PcResetMerge"
+TITLE = EXCHANGETRAY_PcResetMerge
+{ S7_Optimized_Access := 'TRUE' ; Published := 'TRUE' }
+AUTHOR : 'SUP/Zhang Shi Long'
+FAMILY : SUP
+VERSION : 0.1
+//Exchange Tray function
+   VAR_INPUT 
+      ack { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 0
+      ack_1 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 1
+      ack_2 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 2
+      ack_3 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 3
+      ack_4 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 4
+      ack_5 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 5
+      ack_6 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 6
+      ack_7 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 7
+      ack_8 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 8
+      ack_9 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 9
+      ack_10 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 10
+      ack_11 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 11
+      ack_12 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 12
+      ack_13 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 13
+      ack_14 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 14
+      ack_15 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 15
+      ack_16 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 16
+      ack_17 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 17
+      ack_18 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 18
+      ack_19 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 19
+      ack_20 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 20
+      ack_21 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 21
+      ack_22 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 22
+      ack_23 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 23
+      ack_24 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 24
+      ack_25 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 25
+      ack_26 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 26
+      ack_27 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 27
+      ack_28 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 28
+      ack_29 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 29
+      ack_30 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 30
+      ack_31 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 31
+      ack_32 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 32
+      ack_33 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 33
+      ack_34 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 34
+      ack_35 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 35
+      ack_36 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 36
+      ack_37 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 37
+      ack_38 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 38
+      ack_39 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 39
+      ack_40 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 40
+      ack_41 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 41
+      ack_42 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 42
+      ack_43 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 43
+      ack_44 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal 44
+      reset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Reset signal for PC
+   END_VAR
+
+   VAR_IN_OUT 
+      pc : "LEXCHANGETRAY_typePc_controlNode";   // Internal PC control variable
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // Siemens / (c)Copyright 2020-2024
+	    //-------------------------------------------------------------------------------
+	    // Title:            pc Control Reset Logic Module
+	    // 标题:             pc控制复位逻辑模块
+	    // Comment/Function: This module manages pc control reset logic, including:
+	    //                    - Automatic command reset on completion/error
+	    //                    - External trigger handling for acknowledgment/reset
+	    // 注释/功能:        此模块管理pc控制复位逻辑，包括：
+	    //                    - 在完成/错误时自动复位命令
+	    //                    - 外部触发（确认/复位）的处理
+	    // Library/Family:   EXCHANGETRAY - Library of Basic
+	    // 库/家族:         换盘机 - 基本控制模块库
+	    // Author:           Siemens Digital Industries
+	    // 作者:            西门子数字工业
+	    // Tested with:      S7-PLCSIM Advanced 6.0
+	    // 测试环境:        S7-PLCSIM Advanced 6.0
+	    // Engineering:      TIA Portal V19
+	    // 工程环境:        TIA Portal V19
+	    // Restrictions:     ENO mechanism is not used - forced to TRUE.
+	    // 限制条件:        不使用 ENO 机制 - 强制设置为 TRUE。
+	    // Requirements:     PLC (S7-1200 / S7-1500)
+	    // 要求:            PLC (S7-1200 / S7-1500)
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 17.04.2025 | SIMATIC Systems Support | Updated block info and comments following AIupdate.scl style.
+	    // 版本     | 日期       | 负责人                  | 更改内容
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 2025年4月17日 | SIMATIC系统支持        | 参照 LBC 风格更新块信息和注释。
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	    (/*
+	    This module manages pc control reset logic based on feedback signals and external triggers. 
+	    It resets active commands when:
+	    - Completion or error status is detected
+	    - Acknowledgment (`#ack`) or system reset (`#reset`) is received
+	    
+	    此模块根据反馈信号和外部触发管理pc控制复位逻辑。当以下情况发生时重置激活命令：
+	    - 检测到完成状态或错误状态
+	    - 收到确认信号 (`#ack`) 或系统复位 (`#reset`)
+	    */)
+	END_REGION DESCRIPTION
+	
+	REGION INITIALISATION  
+	    // Reset error flags on initialization
+	    // 初始化时重置错误标志
+	    IF #pc.cmd.raiseError THEN
+	        #pc.cmd.raiseError := FALSE;
+	    END_IF;
+	    
+	    // Force resetError to active state during initialization
+	    // 初始化期间强制设置resetError为激活状态
+	    #pc.cmd.resetError := TRUE;
+	END_REGION INITIALISATION  
+	
+	REGION PROGRAM LOGIC
+	    REGION PC CONTROL RESET LOGIC
+	        REGION Command Auto Reset
+	            // Reset execute command when completion or error status is detected
+	            // 在检测到完成或错误状态时自动复位执行命令
+	            IF (#pc.monitor.status.Done OR #pc.monitor.status.error) AND #pc.cmd.execute THEN
+	                #pc.cmd.execute := FALSE;
+	            END_IF;
+	        END_REGION Command Auto Reset
+	        
+	        REGION External Trigger Handling
+	            // Handle external reset triggers from acknowledgment or system reset
+	            // 处理来自确认信号或系统复位的外部复位触发
+	            IF #ack OR #reset THEN
+	                // Clear execute command if active
+	                // 如果执行命令激活则清除
+	                IF #pc.cmd.execute THEN
+	                    #pc.cmd.execute := FALSE;
+	                END_IF;
+	                
+	                // Clear error raise flag
+	                // 清除错误触发标志
+	                IF #pc.cmd.raiseError THEN
+	                    #pc.cmd.raiseError := FALSE;
+	                END_IF;
+	            END_IF;
+	        END_REGION External Trigger Handling
+	    END_REGION PC CONTROL RESET LOGIC
+	END_REGION PROGRAM LOGIC
+	
+	REGION OUTPUTS
+	    // Force resetError signal active during reset state
+	    // 在复位状态下强制resetError信号激活
+	    #pc.cmd.resetError := #ack OR #reset;
+	    
+	    // ENO mechanism disabled, ENO - forced to TRUE
+	    // ENO 机制禁用，强制设置为 TRUE
+	    ENO := TRUE;
+	END_REGION OUTPUTS
+END_FUNCTION_BLOCK
+

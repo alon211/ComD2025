@@ -1,0 +1,105 @@
+﻿FUNCTION_BLOCK "rollerSignalTM_1"
+{ S7_Optimized_Access := 'TRUE' ; Published := 'TRUE' }
+AUTHOR : 'SUP/Zhang Shi Long'
+FAMILY : 'SUP'
+//Exchange Tray function
+VERSION : 0.1
+   VAR_INPUT 
+      trayAutomaticDischargeDetectionEm1 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      trayAutomaticFeedingDetectionEm1 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      restraintTrayAntiReverseDetection2Em1 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      restraintTrayAntiReverseDetection1Em1 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+   END_VAR
+
+   VAR_IN_OUT 
+      signalTMInterface : "lexchangetray_typeroller_signalTM_Interface";
+      signalTMControlNode : "lexchangetray_typeroller_signalTM_ControlNode";
+   END_VAR
+
+   VAR 
+      lstSimActive { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+   END_VAR
+
+   VAR_TEMP 
+      tempMonitor : "lexchangetray_typeroller_signalTM_Monitor";
+   END_VAR
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // (company)/ (c)Copyright (year)
+	    //-------------------------------------------------------------------------------
+	    // Title:            滚动信号检测
+	    // Comment/Function: mapping 仿真信号和实际信号，激活仿真
+	    // Library/Family:   (that the source is dedicated to)
+	    // Author:           (sup / zhang shilong / contact)
+	    // Tested with:      (test system with FW version)
+	    // Engineering:      --
+	    // Restrictions:     --
+	    // Requirements:     --
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | dd.mm.yyyy | (name of expert)        | First released version
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	REGION simReset
+	    // Statement section REGION
+	    IF #signalTMControlNode.cmd.simActive AND NOT #lstSimActive THEN
+	        
+	        #signalTMInterface.sim.restraintTrayAntiReverseDetection1Em1 := FALSE;
+	        #signalTMInterface.sim.restraintTrayAntiReverseDetection2Em1 := FALSE;
+	        #signalTMInterface.sim.trayAutomaticFeedingDetectionEm1 := FALSE;
+	        #signalTMInterface.sim.trayAutomaticDischargeDetectionEm1 := FALSE;
+	        
+	    END_IF;
+	    
+	END_REGION
+	#signalTMControlNode.cmd.simActive := #signalTMInterface.cmd.simActive;
+	IF #signalTMControlNode.cmd.simActive THEN
+	    #signalTMControlNode.sim := #signalTMInterface.sim;
+	    ;
+	END_IF;
+	
+	REGION input
+	    IF #signalTMInterface.monitor.simulationed THEN
+	        #signalTMControlNode.sim := #signalTMInterface.sim;
+	        ;
+	    END_IF;
+	    
+	    IF #signalTMControlNode.cmd.simActive THEN
+	        #tempMonitor.trayAutomaticDischargeDetectionEm1 := #signalTMControlNode.sim.#trayAutomaticDischargeDetectionEm1;
+	        #tempMonitor.trayAutomaticFeedingDetectionEm1 := #signalTMControlNode.sim.#trayAutomaticFeedingDetectionEm1;
+	        #tempMonitor.restraintTrayAntiReverseDetection2Em1 := #signalTMControlNode.sim.#restraintTrayAntiReverseDetection2Em1;
+	        #tempMonitor.restraintTrayAntiReverseDetection1Em1 := #signalTMControlNode.sim.#restraintTrayAntiReverseDetection1Em1;
+	    ELSE
+	     
+	        #tempMonitor.trayAutomaticDischargeDetectionEm1 := #trayAutomaticDischargeDetectionEm1;
+	 
+	        #tempMonitor.trayAutomaticFeedingDetectionEm1 := #trayAutomaticFeedingDetectionEm1;
+	  
+	        #tempMonitor.restraintTrayAntiReverseDetection2Em1 := #restraintTrayAntiReverseDetection2Em1;
+	
+	        #tempMonitor.restraintTrayAntiReverseDetection1Em1 := #restraintTrayAntiReverseDetection1Em1;
+	    END_IF;
+	END_REGION
+	
+	REGION process
+	    // Statement section REGION
+	    
+	END_REGION
+	
+	REGION output
+	    // Statement section REGION
+	    
+	    #signalTMControlNode.monitor:= #tempMonitor;
+	
+	    #signalTMControlNode.monitor.simulationed := #signalTMControlNode.cmd.simActive;
+	    #signalTMInterface.monitor := #signalTMControlNode.monitor;
+	 
+	END_REGION
+	#lstSimActive := #signalTMControlNode.cmd.simActive;
+	
+END_FUNCTION_BLOCK
+

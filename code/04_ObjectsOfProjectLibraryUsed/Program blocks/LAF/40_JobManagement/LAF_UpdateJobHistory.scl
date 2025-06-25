@@ -1,0 +1,56 @@
+﻿FUNCTION "LAF_UpdateJobHistory" : Void
+TITLE = LAF_UpdateJobHistory
+{ S7_Optimized_Access := 'TRUE' ; Published := 'TRUE' }
+AUTHOR : 'Siemens Digital Industries'
+FAMILY : LAF
+VERSION : 1.2
+//Updates the job history
+   VAR_IN_OUT 
+      jobs : "LAF_typeJobs";
+   END_VAR
+
+   VAR_TEMP 
+      tempIndex : DInt;
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // Siemens AG / (c)Copyright 2024
+	    //-------------------------------------------------------------------------------
+	    // Title:            LAF_UpdateJobHistory 
+	    // Comment/Function: Updates the job history
+	    // Library/Family:   LAF - Library of Automation Framework
+	    // Author:           Siemens Digital Industries
+	    // Tested with:      S7-PLCSIM Advanced 6.0
+	    // Engineering:      TIA Portal V19
+	    // Restrictions:     -
+	    // Requirements:     -
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.01.00 | 21.06.2024 | SIMATIC Systems Support | First released version
+	    // 01.02.00 | 30.09.2024 | SIMATIC Systems Support | Updated block information properties
+	    //                                                   Optimized code
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(/* 
+	This this block inserts the executed jobs into a history.
+	*/)  
+	END_REGION
+	
+	// Shift history data forward by index one
+	FOR #tempIndex := 63 TO 1 BY -1 DO
+	    #jobs.previousJobs[#tempIndex] := #jobs.previousJobs[#tempIndex - 1];
+	END_FOR;
+	
+	// Update history for previous job
+	#jobs.previousJobs[0].job := #jobs.status.previousCycleJobNumber;
+	#jobs.previousJobs[0].duration := RUNTIME(#jobs.status.memoryJobTime);
+	
+END_FUNCTION
+

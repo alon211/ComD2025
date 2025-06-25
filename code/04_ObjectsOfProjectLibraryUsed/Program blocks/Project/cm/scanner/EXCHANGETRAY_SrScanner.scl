@@ -1,0 +1,387 @@
+﻿FUNCTION_BLOCK "LEXCHANGETRAY_SrScanner"
+TITLE = EXCHANGETRAY_SrScanner
+{ S7_Optimized_Access := 'TRUE' ; Published := 'TRUE' }
+AUTHOR : 'SUP/Zhang Shi Long'
+FAMILY : SUP
+VERSION : 0.1
+//Exchange Tray function
+   VAR_INPUT 
+      laddr { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : HW_ANY;   // Local address for scanner communication
+      dataLength { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : UInt;   // Length of data to be scanned
+      startBit { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;   // Starting bit position for scanning
+      disable { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Disable scanner flag
+      busyStatusBits_1 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Busy status bits from scanner
+      completionStatusBits_1 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Completion status bits from scanner
+      errorStatusBits_1 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Error status bits from scanner
+      reset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Reset signal for scanner
+   END_VAR
+
+   VAR_OUTPUT 
+      ngCount { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // Internal NG count storage
+      error { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // Internal error flag
+      completionClearControlBits_1 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Internal completion clear control bits
+      operationInstructionControlBits_1 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Internal operation instruction control bits
+      startTimeOutAlarm { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Internal timeout alarm flag
+   END_VAR
+
+   VAR_IN_OUT 
+      controlInterface : "LEXCHANGETRAY_typeScanner_controlInterface";   // Scanner control interface
+      hmiInterface : "LEXCHANGETRAY_typeScanner_hmiInterface";   // HMI interface for scanner
+   END_VAR
+
+   VAR 
+      statResult { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Array[0..135] of Char;   // Scanning result status
+      statString { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : String;   // Scanned string status
+      statP_trig { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'True'} : Array[0..15] of Bool;   // Positive edge trigger status
+      statTimeOut { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Timeout status
+      statTime {InstructionName := 'TON_TIME'; LibVersion := '1.0'; ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Array[0..5] of TON_TIME;   // Current time status
+      statRealScannerActive { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'True'} : Bool;   // Real scanner active status
+      statTrayCodeMax { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'True'} : DInt := 10000;   // 托盘条码号最大值
+      statCurrentCode { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;   // Current scanned code status
+      statIndex { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;   // Current index status
+      statResultStr { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : String;   // Result string status
+   END_VAR
+
+   VAR_TEMP 
+      tempStr : String;
+      tempLength : DInt;
+      temperoToAdd : DInt;
+      tempSimNgMapping : Bool;
+   END_VAR
+
+   VAR CONSTANT 
+      DUMMY : Int := 0;   // Dummy constant value
+      INIT : Int := 1;   // Initialization constant
+      ZERO : Int := 0;   // Zero constant value
+      STARTSC : Int := 2;   // Start scanning operation state
+      READ_RESULT : Int := 3;   // Read result operation state
+      CONCAT_STRING : Int := 4;   // String concatenation operation state
+      STRIM_LEN : Int := 5;   // String trim length operation state
+      SCAN_SC : Int := 6;   // Scanning sequence control state
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // HYNN AG / (c)Copyright 2023-2025
+	    //-------------------------------------------------------------------------------
+	    // Title:            SR_Scanner - Scanner SR1000 Control Module
+	    // 标题:             SR_Scanner - SR1000扫码枪控制模块
+	    // Comment/Function: This module controls the SR1000 scanner, including:
+	    //                    - Real scanner logic with time-based steps
+	    //                    - Simulation mode with dummy code generation
+	    //                    - Error handling and timeout management
+	    // 注释/功能:        此模块控制SR1000扫码枪，包括：
+	    //                    - 真实扫码枪的时序控制逻辑
+	    //                    - 模拟模式下的虚拟码生成
+	    //                    - 错误处理和超时管理
+	    // Library/Family:   EXCHANGETRAY - Library of Basic
+	    // 库/家族:         换盘机 - 基本控制模块库
+	    // Author:           HYNN AG
+	    // 作者:            HYNN AG
+	    // Tested with:      S7-PLCSIM Advanced 6.0
+	    // 测试环境:        S7-PLCSIM Advanced 6.0
+	    // Engineering:      TIA Portal V19
+	    // 工程环境:        TIA Portal V19
+	    // Restrictions:     ENO mechanism is not used - forced to TRUE.
+	    // 限制条件:        不使用 ENO 机制 - 强制设置为 TRUE。
+	    // Requirements:     PLC (S7-1500)
+	    // 要求:            PLC (S7-1500)
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 05.00    | 19.06.2024 | HYNN AG                | First released version
+	    // 版本     | 日期       | 负责人                  | 更改内容
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 17.04.2025 | SIMATIC Systems Support | Updated block info and comments following AIupdate.scl style.
+	    // 版本     | 日期       | 负责人                  | 参照 LBC 风格更新块信息和注释。
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	    (/*
+	    This module manages SR1000 scanner operations in both real and simulation modes. 
+	    It handles:
+	    - Real scanner execution steps (INIT → STARTSC → READ_RESULT → ...)
+	    - Simulation mode with dummy code generation and error mapping
+	    - Timeout detection and error recovery
+	    - Result string formatting and output synchronization
+	    
+	    此模块管理SR1000扫码枪在真实和模拟模式下的操作，包括：
+	    - 真实扫码枪的执行步骤（初始化→启动→读取结果→...）
+	    - 模拟模式下的虚拟码生成和错误映射
+	    - 超时检测与错误恢复
+	    - 结果字符串格式化及输出同步
+	    */)
+	END_REGION DESCRIPTION
+	
+	REGION INITIALISATION  
+	    // Reset scanner status flags and counters
+	    // 重置扫码枪状态标志和计数器
+	    #tempSimNgMapping := #controlInterface.sim.simNG OR #hmiInterface.sim.simNG;
+	    
+	    // Initialize time and trigger flags
+	    // 初始化定时器和触发标志
+	    #statTimeOut := FALSE;
+	END_REGION INITIALISATION  
+	
+	REGION PROGRAM LOGIC
+	    REGION SCANNER MODE SELECTION
+	        // Switch between real scanner and simulation mode
+	        // 根据模拟激活状态切换真实扫码枪或模拟模式
+	        IF NOT #controlInterface.monitor.simulated THEN
+	            #statRealScannerActive := TRUE;
+	        ELSE
+	            #statRealScannerActive := FALSE;
+	        END_IF;
+	    END_REGION SCANNER MODE SELECTION
+	    
+	    REGION REAL SCANNER LOGIC
+	        // Real scanner control logic with step-based execution
+	        // 真实扫码枪的时序控制逻辑
+	        IF #statRealScannerActive THEN
+	            REGION INIT STEP
+	                // Step 1: Initialization
+	                // 步骤1: 初始化
+	                #completionClearControlBits_1 :=
+	                #controlInterface.cmd.cmdStep = #INIT
+	                AND NOT #disable
+	                AND NOT #busyStatusBits_1;
+	                
+	                IF #completionClearControlBits_1 THEN
+	                    #controlInterface.monitor.result.srCode := LEFT_STRING(IN := '', L := #INIT);
+	                    #controlInterface.monitor.result.ngOK := 0;
+	                END_IF;
+	                
+	                IF #controlInterface.cmd.cmdStep = #INIT
+	                    AND NOT #disable
+	                    AND NOT #completionStatusBits_1
+	                    AND NOT #errorStatusBits_1
+	                    AND NOT #statP_trig[0] THEN
+	                    #controlInterface.cmd.cmdStep := #STARTSC;
+	                END_IF;
+	            END_REGION INIT STEP
+	            
+	            REGION START SCAN
+	                // Step 2: Start scanning with timers
+	                // 步骤2: 启动扫描并启用定时器
+	                #operationInstructionControlBits_1 :=
+	                #controlInterface.cmd.cmdStep = #STARTSC
+	                AND NOT #disable
+	                AND NOT #completionStatusBits_1;
+	                
+	                #statTime[0](
+	                             IN := #controlInterface.cmd.cmdStep = #STARTSC
+	                             AND NOT #disable
+	                             AND #completionClearControlBits_1,
+	                             PT := T#0.2S
+	                );
+	                
+	                #statTime[1](
+	                             IN := #controlInterface.cmd.cmdStep = #STARTSC
+	                             AND NOT #disable,
+	                             PT := T#3S
+	                );
+	                
+	                IF #statTime[0].Q AND NOT #statP_trig[1] THEN
+	                    #ngCount := #DUMMY;
+	                    #controlInterface.cmd.cmdStep := #READ_RESULT;
+	                END_IF;
+	                
+	                IF #statTime[1].Q THEN
+	                    #statTimeOut := TRUE;
+	                END_IF;
+	                
+	                IF #statTime[1].Q AND NOT #statP_trig[2] THEN
+	                    #ngCount := #ngCount + 1;
+	                    #controlInterface.cmd.cmdStep := #ZERO;
+	                END_IF;
+	            END_REGION START SCAN
+	            
+	            REGION READ RESULT
+	                // Step 3: Read result from DPRD_DAT
+	                // 步骤3: 从 DPRD_DAT 读取结果
+	                IF #controlInterface.cmd.cmdStep = #READ_RESULT
+	                    AND NOT #disable
+	                    AND NOT #statP_trig[3] THEN
+	                    #controlInterface.cmd.cmdStep := #CONCAT_STRING;
+	                    #error := DPRD_DAT(LADDR := #laddr, RECORD => #statResult);
+	                END_IF;
+	            END_REGION READ RESULT
+	            
+	            REGION CONCAT STRING
+	                // Step 4: Convert result to string
+	                // 步骤4: 将结果转换为字符串
+	                IF #controlInterface.cmd.cmdStep = #CONCAT_STRING
+	                    AND NOT #disable
+	                    AND NOT #statP_trig[4] THEN
+	                    Chars_TO_Strg(
+	                                  Chars := #statResult,
+	                                  pChars := #startBit,
+	                                  Cnt := #dataLength,
+	                                  Strg => #statString
+	                    );
+	                END_IF;
+	            END_REGION CONCAT STRING
+	            
+	            REGION TRIM LENGTH
+	                // Step 5: Trim string to fixed length
+	                // 步骤5: 截取固定长度字符串
+	                IF #controlInterface.cmd.cmdStep = #STRIM_LEN
+	                    AND NOT #disable THEN
+	                    #controlInterface.monitor.result.srCode := LEFT_STRING(IN := #statString, L := 67);
+	                    
+	                    IF NOT #statP_trig[5] THEN
+	                        #controlInterface.cmd.cmdStep := #SCAN_SC;
+	                    END_IF;
+	                END_IF;
+	            END_REGION TRIM LENGTH
+	            
+	            REGION SCAN COMPLETE
+	                // Step 6: Finalize scan result
+	                // 步骤6: 完成扫描结果
+	                IF #controlInterface.cmd.cmdStep = #SCAN_SC
+	                    AND NOT #disable
+	                    AND #errorStatusBits_1
+	                    AND NOT #statP_trig[6] THEN
+	                    #controlInterface.monitor.result.ngSum := #controlInterface.monitor.result.ngSum + 1;
+	                    #controlInterface.cmd.cmdStep := #ZERO;
+	                END_IF;
+	                
+	                IF #controlInterface.cmd.cmdStep = #SCAN_SC
+	                    AND NOT #disable
+	                    AND NOT #statP_trig[7] THEN
+	                    #controlInterface.monitor.result.ngSum := 0;
+	                    #controlInterface.cmd.cmdStep := #INIT;
+	                END_IF;
+	            END_REGION SCAN COMPLETE
+	        END_IF;
+	    END_REGION REAL SCANNER LOGIC
+	    
+	    REGION SIMULATION LOGIC
+	        // Simulation mode logic with dummy code generation
+	        // 模拟模式下的虚拟码生成逻辑
+	        IF NOT #statRealScannerActive THEN
+	            CASE #controlInterface.cmd.cmdStep OF
+	                #INIT:
+	                    // Initialize status flags
+	                    // 初始化状态标志
+	                    #controlInterface.monitor.status.error := FALSE;
+	                    #controlInterface.monitor.status.ok := FALSE;
+	                    #controlInterface.monitor.status.execute := FALSE;
+	                    #controlInterface.monitor.status.done := FALSE;
+	                    #controlInterface.cmd.cmdStep := #STARTSC;
+	                    
+	                    IF #statCurrentCode >= #statTrayCodeMax THEN
+	                        #statCurrentCode := 0;
+	                    END_IF;
+	                    
+	                #STARTSC:
+	                    // Generate dummy code with leading zeros
+	                    // 生成带前导零的虚拟码
+	                    #controlInterface.monitor.status.execute := TRUE;
+	                    #statCurrentCode := ABS_DINT(IN := #statCurrentCode) + 1;
+	                    #tempStr := DINT_TO_STRING(IN := #statCurrentCode);
+	                    #tempLength := LEN(IN := #tempStr);
+	                    #temperoToAdd := 5 - #tempLength;
+	                    #statIndex := 0;
+	                    
+	                    #statResultStr := '';
+	                    WHILE #statIndex < #temperoToAdd DO
+	                        #statResultStr := CONCAT_STRING(IN1 := #statResultStr, IN2 := '0');
+	                        #statIndex := #statIndex + 1;
+	                    END_WHILE;
+	                    
+	                    #statResultStr := CONCAT_STRING(IN1 := #statResultStr, IN2 := #tempStr);
+	                    #controlInterface.monitor.result.srCode := CONCAT_STRING(IN1 := 'SR', IN2 := #statResultStr);
+	                    #controlInterface.monitor.result.traySize := 24;
+	                    
+	                    IF #statTime[2].Q THEN
+	                        #controlInterface.cmd.cmdStep := #SCAN_SC;
+	                    END_IF;
+	                    
+	                #SCAN_SC:
+	                    // Simulation result mapping
+	                    // 模拟结果映射
+	                    #controlInterface.monitor.status.execute := FALSE;
+	                    #controlInterface.monitor.status.ok := NOT #tempSimNgMapping;
+	                    #controlInterface.monitor.status.error := #tempSimNgMapping;
+	                    #controlInterface.monitor.status.done := TRUE;
+	                    
+	                ELSE
+	                    ;
+	            END_CASE;
+	        END_IF;
+	    END_REGION SIMULATION LOGIC
+	END_REGION PROGRAM LOGIC
+	
+	REGION ERROR HANDLING
+	    REGION TIMEOUT DETECTION
+	        // Update timeout alarm status
+	        // 更新超时报警状态
+	        #startTimeOutAlarm := #statTimeOut;
+	        
+	        IF #reset AND #statTimeOut THEN
+	            #statTimeOut := FALSE;
+	        END_IF;
+	    END_REGION TIMEOUT DETECTION
+	    
+	    REGION ERROR RECOVERY
+	        // Reset error flags on reset command
+	        // 在复位命令下清除错误标志
+	        IF #reset THEN
+	            #controlInterface.monitor.result.ngSum := 0;
+	        END_IF;
+	    END_REGION ERROR RECOVERY
+	    
+	    REGION DISABLE HANDLING
+	        // Force scanner to dummy state when disabled
+	        // 禁用时强制扫码枪进入虚拟状态
+	        IF #disable THEN
+	            #controlInterface.cmd.cmdStep := #DUMMY;
+	            #controlInterface.monitor.result.ngOK := 1;
+	        END_IF;
+	    END_REGION DISABLE HANDLING
+	END_REGION ERROR HANDLING
+	
+	REGION OUTPUTS
+	    REGION STATUS UPDATE
+	        // Update trigger flags for edge detection
+	        // 更新触发标志用于边沿检测
+	        #statP_trig[0] := #controlInterface.cmd.cmdStep = #INIT
+	        AND NOT #disable
+	        AND NOT #completionStatusBits_1
+	        AND NOT #errorStatusBits_1;
+	        #statP_trig[1] := #statTime[0].Q;
+	        #statP_trig[2] := #statTime[1].Q;
+	        #statP_trig[3] := #controlInterface.cmd.cmdStep = #READ_RESULT
+	        AND NOT #disable;
+	        #statP_trig[4] := #controlInterface.cmd.cmdStep = #CONCAT_STRING
+	        AND NOT #disable;
+	        #statP_trig[5] := #controlInterface.cmd.cmdStep = #STRIM_LEN
+	        AND NOT #disable;
+	        #statP_trig[6] := #controlInterface.cmd.cmdStep = #SCAN_SC
+	        AND NOT #disable
+	        AND #errorStatusBits_1;
+	        #statP_trig[7] := #controlInterface.cmd.cmdStep = #SCAN_SC
+	        AND NOT #disable;
+	    END_REGION STATUS UPDATE
+	    
+	    REGION INTERFACE MAPPING
+	        // Update simulation status and interface mapping
+	        // 更新模拟状态和接口映射
+	        #statTime[2](IN := #controlInterface.cmd.cmdStep = #SCAN_SC,
+	                     PT := T#3S);
+	        #controlInterface.monitor.simulated := #controlInterface.cmd.simActive;
+	        #controlInterface.monitor.status.cmdStep := #controlInterface.cmd.cmdStep;
+	        #hmiInterface.monitor := #controlInterface.monitor;
+	        
+	        // ENO mechanism disabled, ENO - forced to TRUE
+	        // ENO 机制禁用，强制设置为 TRUE
+	        ENO := TRUE;
+	    END_REGION INTERFACE MAPPING
+	END_REGION OUTPUTS
+END_FUNCTION_BLOCK
+

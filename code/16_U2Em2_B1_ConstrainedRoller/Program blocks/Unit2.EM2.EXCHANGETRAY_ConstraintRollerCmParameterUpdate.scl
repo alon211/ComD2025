@@ -1,0 +1,124 @@
+﻿NAMESPACE Unit2.EM2
+FUNCTION "EXCHANGETRAY_ConstraintRollerCmParameterUpdate" : Void
+
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+VERSION : 0.1
+VAR_INPUT
+
+END_VAR
+
+VAR_OUTPUT
+
+END_VAR
+
+VAR_IN_OUT
+
+END_VAR
+
+VAR_TEMP
+  index:Int;
+  rows : Int;
+END_VAR
+
+VAR CONSTANT
+
+END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // LGF / (c)Copyright 2024
+	    //-------------------------------------------------------------------------------
+	    // Title:            Unit2 Material Constraint Control
+	    // Comment/Function: Material constraint monitoring and VFD control
+	    // Library/Family:   Unit2 Material Handling
+	    // Author:           Material Handling Department
+	    // Tested with:      SIMATIC S7-1500 FW V2.9
+	    // Engineering:      TIA Portal V17
+	    // Restrictions:     Must be called in OB35
+	    // Requirements:     VFD206 drive configured
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge     | Changes applied
+	    //----------|------------|---------------------|------------------------------
+	    // 01.00.00 | 2024-01-17 | Material Team       | First released version
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(*
+	This block implements material constraint monitoring and VFD206 control logic.
+	- Production mode: Initializes EM action manager and sets production parameters
+	- Manual mode: Sets manual operation parameters
+	- Maintenance mode: Sets maintenance parameters
+	
+	功能说明：
+	本块实现物料约束监控和VFD206控制逻辑
+	- 生产模式：初始化EM动作管理器并设置生产参数
+	- 手动模式：设置手动操作参数
+	- 维护模式：设置维护参数
+	*)
+	END_REGION DESCRIPTION
+	
+	REGION INITIALISATION  
+	    // Initialize functionality if needed
+	    // 初始化功能（如需要）
+	END_REGION INITIALISATION  
+	
+	REGION PROGRAM LOGIC
+	    // Material constraint monitoring
+	    // 物料约束监控
+	
+	    #rows := _.Global.Data.parameter.material.Unit2.contraint.parameters.specification
+	    [_.Global.Data.parameter.material.Unit2.contraint.parameters.selectSpecification].rows;
+	    
+	    // Production mode control logic
+	    // 生产模式控制逻辑
+	    IF _.Unit2.EmNodes.unitStatus.mode.production THEN
+	        _.Unit2.EmNodes.actionEmManager.init := TRUE;
+	        
+	        // VFD206 production parameters
+	        // VFD206生产参数
+	        ControlNodes.cm1Vfd206.commandConfiguration.sinaCommandConfiguration.speedSetpoint :=
+	        ControlNodes.cm1Vfd206.commandConfiguration.highVel := Config.em2Parameters.cm1Vfd206.production.highVel;
+	        ControlNodes.cm1Vfd206.commandConfiguration.lowVel := Config.em2Parameters.cm1Vfd206.production.lowVel;
+	        
+	        // PC initialization
+	        // PC初始化
+	        ControlNodes.cm7Pc.par.cellSize := 0;
+	        
+	        // Tray status update
+	        // 托盘状态更新
+	        _.Global.Data.material.Unit2.contraint.monitor.status.cellsStatus := 1;
+	        _.Global.Data.material.Unit2.contraint.monitor.status.contraintStatus := 0;
+	        
+	        // Communication initialization
+	        // 通信初始化
+	        _.Unit2.EmNodes.emRelations.EM2.deliver.init := true;
+	        _.Unit2.EmNodes.actionEmManager.actionEMConstraint.em2 := true;
+	    END_IF;
+	    
+	    // Manual mode control logic
+	    // 手动模式控制逻辑
+	    IF _.Unit2.EmNodes.unitStatus.mode.manual THEN
+	        HmiInterface.cm1Vfd206.commandConfiguration.highVel := Config.em2Parameters.cm1Vfd206.manual.highVel;
+	        HmiInterface.cm1Vfd206.commandConfiguration.lowVel := Config.em2Parameters.cm1Vfd206.manual.lowVel;
+	    END_IF;
+	    
+	    // Maintenance mode control logic
+	    // 维护模式控制逻辑
+	    IF _.Unit2.EmNodes.unitStatus.mode.maintenance THEN
+	        HmiInterface.cm1Vfd206.commandConfiguration.highVel := Config.em2Parameters.cm1Vfd206.maintenance.highVel;
+	        HmiInterface.cm1Vfd206.commandConfiguration.lowVel := Config.em2Parameters.cm1Vfd206.maintenance.lowVel;
+	    END_IF;
+	END_REGION PROGRAM LOGIC
+	
+	REGION OUTPUTS
+	    // Set ENO to indicate successful execution
+	    // 设置ENO表示成功执行
+	    ENO := TRUE;
+	END_REGION OUTPUTS
+END_FUNCTION
+END_NAMESPACE
+

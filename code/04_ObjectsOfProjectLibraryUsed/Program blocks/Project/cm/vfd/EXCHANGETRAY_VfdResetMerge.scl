@@ -1,0 +1,136 @@
+﻿FUNCTION_BLOCK "LEXCHANGETRAY_VfdResetMerge"
+TITLE = EXCHANGETRAY_VfdResetMerge
+{ S7_Optimized_Access := 'TRUE' ; Published := 'TRUE' }
+AUTHOR : 'SUP/Zhang Shi Long'
+FAMILY : SUP
+VERSION : 0.1
+//Exchange Tray function
+   VAR_INPUT 
+      ack { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal for VFD reset
+      reset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Reset signal for VFD
+   END_VAR
+
+   VAR_IN_OUT 
+      controlnodeCommands : "LBC_typeSinaSpeedControlNodeCommands";   // Internal control node commands
+      controlnodeMonitoring : "LEXCHANGETRAY_typeVfdContronNodeMonitoring";   // Internal control node monitoring
+   END_VAR
+
+
+BEGIN
+	
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // Siemens / (c)Copyright 2020-2024
+	    //-------------------------------------------------------------------------------
+	    // Title:            VFD Reset Logic Module
+	    // 标题:             变频器复位逻辑模块
+	    // Comment/Function: Manages VFD command reset logic based on operational feedback and system triggers
+	    //                   - Resets active motion commands upon completion/acknowledgment
+	    //                   - Handles emergency stop sequences and fast stop procedures
+	    // 注释/功能:        管理基于操作反馈和系统触发的变频器命令复位逻辑
+	    //                   - 在命令完成/确认后重置激活的运动命令
+	    //                   - 处理急停序列和快速停止程序
+	    // Library/Family:   EXCHANGETRAY - Drive Control Library
+	    // 库/家族:         换盘机 - 驱动控制库
+	    // Author:           SIMATIC Systems Support
+	    // 作者:            SIMATIC系统支持团队
+	    // Tested with:      S7-PLCSIM Advanced 6.0 / SINAMICS V2.1
+	    // 测试环境:        S7-PLCSIM Advanced 6.0 / SINAMICS V2.1
+	    // Engineering:      TIA Portal V19
+	    // 工程环境:        TIA Portal V19
+	    // Restrictions:     
+	    // 限制条件:        
+	    // Requirements:     PLC (S7-1200 / S7-1500) with PROFINET IRT communication
+	    // 要求:            配备PROFINET IRT通信的S7-1200/S7-1500 PLC
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 2025-04-18 | SIMATIC Systems Support | Initial implementation based on LBC style guide
+	    // 版本     | 日期       | 负责人                  | 更改内容
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 2025-04-18 | SIMATIC系统支持        | 根据LBC风格指南进行初始实现
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	    (/*
+	    This module implements standardized reset logic for VFD command management according to LBC (Library of Basic Controls) guidelines.
+	    It ensures safe termination of motion commands through:
+	    - Acknowledgment-based command reset (`#ack`)
+	    - Emergency stop handling (both soft/hard stop paths)
+	    - System-wide reset coordination (`#reset`)
+	    - VFD status feedback monitoring
+	
+	    此模块根据LBC(基本控制库)标准实现变频器命令管理的复位逻辑，通过以下方式确保运动命令安全终止：
+	    - 基于确认的命令复位(`#ack`)
+	    - 急停处理(软/硬停止路径)
+	    - 系统级复位协调(`#reset`)
+	    - 变频器状态反馈监控
+	    */)
+	END_REGION DESCRIPTION
+	
+	REGION INITIALISATION  
+	    // TODO: Initialize functionality: reset of variables, diagnostics, etc.
+	    // 
+	    
+	END_REGION INITIALISATION  
+	
+	REGION PROGRAM LOGIC
+	    REGION ack trigger reset
+	        #controlnodeCommands.resetAxis := #ack OR #reset;
+	        
+	    END_REGION
+	    REGION moveVelocity cmd reset
+	        IF
+	            #controlnodeCommands.stop
+	            OR
+	            #ack
+	            OR
+	            #reset
+	        THEN
+	            #controlnodeCommands.moveVelocity := FALSE;
+	        END_IF;
+	        
+	    END_REGION
+	    REGION stop cmd reset
+	        IF
+	            (#controlnodeMonitoring.vfdStopped
+	            OR
+	            #ack
+	            OR
+	            #reset)
+	            AND
+	            #controlnodeCommands.stop
+	        THEN
+	            #controlnodeCommands.stop := FALSE;
+	        END_IF;
+	        
+	    END_REGION
+	    REGION faststop cmd reset
+	        IF
+	            (#controlnodeMonitoring.vfdStopped
+	            OR
+	            #ack
+	            OR
+	            #reset)
+	            AND
+	            #controlnodeCommands.fastStop
+	        THEN
+	            #controlnodeCommands.fastStop := FALSE;
+	        END_IF;
+	        
+	    END_REGION
+	    
+	END_REGION PROGRAM LOGIC
+	
+	REGION OUTPUTS
+	    // TODO: Write application specific temp values to outputs
+	    // 
+	    
+	    // if ENO mechanism is used for error handling, set to false in case of error
+	    ENO := TRUE;
+	END_REGION OUTPUTS
+	
+END_FUNCTION_BLOCK
+

@@ -1,0 +1,524 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Document>
+  <Engineering version="V19" />
+  <SW.Blocks.FC ID="0">
+    <AttributeList>
+      <Interface><Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v5">
+  <Section Name="Input">
+    <Member Name="index" Datatype="Int" />
+  </Section>
+  <Section Name="Output" />
+  <Section Name="InOut">
+    <Member Name="axisCommandConfiguration" Datatype="&quot;LBC_typeAxisSimpleControlCommandConfiguration_1&quot;" />
+    <Member Name="distantceList" Datatype="Array[*] of &quot;LAF_typeAxisMotionParameters&quot;" />
+  </Section>
+  <Section Name="Temp" />
+  <Section Name="Constant" />
+  <Section Name="Return">
+    <Member Name="Ret_Val" Datatype="Void" />
+  </Section>
+</Sections></Interface>
+      <Name>EXCHANGETRAY_AxisPosUpdate</Name>
+      <Namespace>Unit2.EM3</Namespace>
+      <Number>85</Number>
+      <ProgrammingLanguage>LAD</ProgrammingLanguage>
+      <SetENOAutomatically>false</SetENOAutomatically>
+    </AttributeList>
+    <ObjectList>
+      <MultilingualText ID="1" CompositionName="Comment">
+        <ObjectList>
+          <MultilingualTextItem ID="2" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="3" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="4" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="5" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+      <SW.Blocks.CompileUnit ID="6" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource />
+          <ProgrammingLanguage>LAD</ProgrammingLanguage>
+        </AttributeList>
+        <ObjectList>
+          <MultilingualText ID="7" CompositionName="Comment">
+            <ObjectList>
+              <MultilingualTextItem ID="8" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="9" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="A" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="B" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+          <MultilingualText ID="C" CompositionName="Title">
+            <ObjectList>
+              <MultilingualTextItem ID="D" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="E" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="F" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="10" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+        </ObjectList>
+      </SW.Blocks.CompileUnit>
+      <SW.Blocks.CompileUnit ID="11" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource><StructuredText xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/StructuredText/v4">
+  <Token Text="REGION" UId="21" />
+  <Blank UId="22" />
+  <Text UId="23">BLOCK INFO HEADER</Text>
+  <NewLine UId="24" />
+  <Blank Num="4" UId="25" />
+  <LineComment UId="26">
+    <Text UId="27">===============================================================================</Text>
+  </LineComment>
+  <NewLine UId="28" />
+  <Blank Num="4" UId="29" />
+  <LineComment UId="30">
+    <Text UId="31"> LGF / (c)Copyright 2024</Text>
+  </LineComment>
+  <NewLine UId="32" />
+  <Blank Num="4" UId="33" />
+  <LineComment UId="34">
+    <Text UId="35">-------------------------------------------------------------------------------</Text>
+  </LineComment>
+  <NewLine UId="36" />
+  <Blank Num="4" UId="37" />
+  <LineComment UId="38">
+    <Text UId="39"> Title:            Servo Axis Position Control Configuration</Text>
+  </LineComment>
+  <NewLine UId="40" />
+  <Blank Num="4" UId="41" />
+  <LineComment UId="42">
+    <Text UId="43"> Comment/Function: Configure absolute position movement parameters for servo axis</Text>
+  </LineComment>
+  <NewLine UId="44" />
+  <Blank Num="4" UId="45" />
+  <LineComment UId="46">
+    <Text UId="47"> Library/Family:   Unit2 Servo Control</Text>
+  </LineComment>
+  <NewLine UId="48" />
+  <Blank Num="4" UId="49" />
+  <LineComment UId="50">
+    <Text UId="51"> Author:           Automation Department / Servo Control Team</Text>
+  </LineComment>
+  <NewLine UId="52" />
+  <Blank Num="4" UId="53" />
+  <LineComment UId="54">
+    <Text UId="55"> Tested with:      SIMATIC S7-1500 FW V2.9</Text>
+  </LineComment>
+  <NewLine UId="56" />
+  <Blank Num="4" UId="57" />
+  <LineComment UId="58">
+    <Text UId="59"> Engineering:      TIA Portal V17</Text>
+  </LineComment>
+  <NewLine UId="60" />
+  <Blank Num="4" UId="61" />
+  <LineComment UId="62">
+    <Text UId="63"> Restrictions:     Must be called in OB1</Text>
+  </LineComment>
+  <NewLine UId="64" />
+  <Blank Num="4" UId="65" />
+  <LineComment UId="66">
+    <Text UId="67"> Requirements:     Servo drive configured with absolute positioning capability</Text>
+  </LineComment>
+  <NewLine UId="68" />
+  <Blank Num="4" UId="69" />
+  <LineComment UId="70">
+    <Text UId="71">-------------------------------------------------------------------------------</Text>
+  </LineComment>
+  <NewLine UId="72" />
+  <Blank Num="4" UId="73" />
+  <LineComment UId="74">
+    <Text UId="75"> Change log table:</Text>
+  </LineComment>
+  <NewLine UId="76" />
+  <Blank Num="4" UId="77" />
+  <LineComment UId="78">
+    <Text UId="79"> Version  | Date       | Expert in charge        | Changes applied</Text>
+  </LineComment>
+  <NewLine UId="80" />
+  <Blank Num="4" UId="81" />
+  <LineComment UId="82">
+    <Text UId="83">----------|------------|-------------------------|-----------------------------</Text>
+  </LineComment>
+  <NewLine UId="84" />
+  <Blank Num="4" UId="85" />
+  <LineComment UId="86">
+    <Text UId="87"> 01.00.00 | 2024-01-17 | Servo Control Team      | First released version</Text>
+  </LineComment>
+  <NewLine UId="88" />
+  <Blank Num="4" UId="89" />
+  <LineComment UId="90">
+    <Text UId="91">===============================================================================</Text>
+  </LineComment>
+  <NewLine UId="92" />
+  <Token Text="END_REGION" UId="93" />
+  <Blank UId="94" />
+  <Text UId="95">BLOCK INFO HEADER</Text>
+  <NewLine Num="2" UId="96" />
+  <Token Text="REGION" UId="97" />
+  <Blank UId="98" />
+  <Text UId="99">DESCRIPTION</Text>
+  <NewLine UId="100" />
+  <LineComment Inserted="true" UId="101">
+    <Text UId="102">
+This block configures absolute position movement parameters for servo axis:
+- Position: Target position for absolute movement
+- Acceleration: Acceleration value for movement
+- Deceleration: Deceleration value for movement
+- Velocity: Maximum velocity for movement
+
+Parameters are taken from distance list based on current index.
+
+功能说明：
+本块配置伺服轴绝对位置运动参数：
+- 位置：绝对运动目标位置
+- 加速度：运动加速度值
+- 减速度：运动减速度值
+- 速度：运动最大速度
+
+参数根据当前索引从距离列表中获取。
+</Text>
+  </LineComment>
+  <NewLine UId="103" />
+  <Token Text="END_REGION" UId="104" />
+  <Blank UId="105" />
+  <Text UId="106">DESCRIPTION</Text>
+  <NewLine Num="2" UId="107" />
+  <Token Text="REGION" UId="108" />
+  <Blank UId="109" />
+  <Text UId="110">INITIALISATION  </Text>
+  <NewLine UId="111" />
+  <Blank Num="4" UId="112" />
+  <LineComment UId="113">
+    <Text UId="114"> No initialization required for this block</Text>
+  </LineComment>
+  <NewLine UId="115" />
+  <Blank Num="4" UId="116" />
+  <LineComment UId="117">
+    <Text UId="118"> 本块不需要初始化</Text>
+  </LineComment>
+  <NewLine UId="119" />
+  <Token Text="END_REGION" UId="120" />
+  <Blank UId="121" />
+  <Text UId="122">INITIALISATION  </Text>
+  <NewLine Num="2" UId="123" />
+  <Token Text="REGION" UId="124" />
+  <Blank UId="125" />
+  <Text UId="126">PROGRAM LOGIC</Text>
+  <NewLine UId="127" />
+  <Blank Num="4" UId="128" />
+  <LineComment UId="129">
+    <Text UId="130"> Configure absolute position movement parameters from distance list</Text>
+  </LineComment>
+  <NewLine UId="131" />
+  <Blank Num="4" UId="132" />
+  <LineComment UId="133">
+    <Text UId="134"> 从距离列表配置绝对位置运动参数</Text>
+  </LineComment>
+  <NewLine UId="135" />
+  <Blank Num="4" UId="136" />
+  <Access Scope="LocalVariable" UId="137">
+    <Symbol UId="138">
+      <Component Name="axisCommandConfiguration" UId="139" />
+      <Token Text="." UId="140" />
+      <Component Name="posAbsolute" UId="141" />
+      <Token Text="." UId="142" />
+      <Component Name="position" UId="143" />
+    </Symbol>
+  </Access>
+  <Blank UId="144" />
+  <Token Text=":=" UId="145" />
+  <Blank UId="146" />
+  <Access Scope="LocalVariable" UId="147">
+    <Symbol UId="148">
+      <Component Name="distantceList" UId="149">
+        <Token Text="[" UId="150" />
+        <Access Scope="LocalVariable" UId="151">
+          <Symbol UId="152">
+            <Component Name="index" UId="153" />
+          </Symbol>
+        </Access>
+        <Token Text="]" UId="154" />
+      </Component>
+      <Token Text="." UId="155" />
+      <Component Name="position" UId="156" />
+    </Symbol>
+  </Access>
+  <Token Text=";" UId="157" />
+  <NewLine UId="158" />
+  <Blank Num="4" UId="159" />
+  <Access Scope="LocalVariable" UId="160">
+    <Symbol UId="161">
+      <Component Name="axisCommandConfiguration" UId="162" />
+      <Token Text="." UId="163" />
+      <Component Name="posAbsolute" UId="164" />
+      <Token Text="." UId="165" />
+      <Component Name="acceleration" UId="166" />
+    </Symbol>
+  </Access>
+  <Blank UId="167" />
+  <Token Text=":=" UId="168" />
+  <Blank UId="169" />
+  <Access Scope="LocalVariable" UId="170">
+    <Symbol UId="171">
+      <Component Name="distantceList" UId="172">
+        <Token Text="[" UId="173" />
+        <Access Scope="LocalVariable" UId="174">
+          <Symbol UId="175">
+            <Component Name="index" UId="176" />
+          </Symbol>
+        </Access>
+        <Token Text="]" UId="177" />
+      </Component>
+      <Token Text="." UId="178" />
+      <Component Name="acceleration" UId="179" />
+    </Symbol>
+  </Access>
+  <Token Text=";" UId="180" />
+  <NewLine UId="181" />
+  <Blank Num="4" UId="182" />
+  <Access Scope="LocalVariable" UId="183">
+    <Symbol UId="184">
+      <Component Name="axisCommandConfiguration" UId="185" />
+      <Token Text="." UId="186" />
+      <Component Name="posAbsolute" UId="187" />
+      <Token Text="." UId="188" />
+      <Component Name="deceleration" UId="189" />
+    </Symbol>
+  </Access>
+  <Blank UId="190" />
+  <Token Text=":=" UId="191" />
+  <Blank UId="192" />
+  <Access Scope="LocalVariable" UId="193">
+    <Symbol UId="194">
+      <Component Name="distantceList" UId="195">
+        <Token Text="[" UId="196" />
+        <Access Scope="LocalVariable" UId="197">
+          <Symbol UId="198">
+            <Component Name="index" UId="199" />
+          </Symbol>
+        </Access>
+        <Token Text="]" UId="200" />
+      </Component>
+      <Token Text="." UId="201" />
+      <Component Name="deceleration" UId="202" />
+    </Symbol>
+  </Access>
+  <Token Text=";" UId="203" />
+  <NewLine UId="204" />
+  <Blank Num="4" UId="205" />
+  <Access Scope="LocalVariable" UId="206">
+    <Symbol UId="207">
+      <Component Name="axisCommandConfiguration" UId="208" />
+      <Token Text="." UId="209" />
+      <Component Name="posAbsolute" UId="210" />
+      <Token Text="." UId="211" />
+      <Component Name="velocity" UId="212" />
+    </Symbol>
+  </Access>
+  <Blank UId="213" />
+  <Token Text=":=" UId="214" />
+  <Blank UId="215" />
+  <Access Scope="LocalVariable" UId="216">
+    <Symbol UId="217">
+      <Component Name="distantceList" UId="218">
+        <Token Text="[" UId="219" />
+        <Access Scope="LocalVariable" UId="220">
+          <Symbol UId="221">
+            <Component Name="index" UId="222" />
+          </Symbol>
+        </Access>
+        <Token Text="]" UId="223" />
+      </Component>
+      <Token Text="." UId="224" />
+      <Component Name="velocity" UId="225" />
+    </Symbol>
+  </Access>
+  <Token Text=";" UId="226" />
+  <NewLine UId="227" />
+  <Token Text="END_REGION" UId="228" />
+  <Blank UId="229" />
+  <Text UId="230">PROGRAM LOGIC</Text>
+  <NewLine Num="2" UId="231" />
+  <Token Text="REGION" UId="232" />
+  <Blank UId="233" />
+  <Text UId="234">OUTPUTS</Text>
+  <NewLine UId="235" />
+  <Blank Num="4" UId="236" />
+  <LineComment UId="237">
+    <Text UId="238"> ENO mechanism for error handling</Text>
+  </LineComment>
+  <NewLine UId="239" />
+  <Blank Num="4" UId="240" />
+  <LineComment UId="241">
+    <Text UId="242"> ENO机制用于错误处理</Text>
+  </LineComment>
+  <NewLine UId="243" />
+  <Blank Num="4" UId="244" />
+  <Access Scope="PredefinedVariable" UId="245">
+    <PredefinedVariable Name="ENO" UId="246" />
+  </Access>
+  <Blank UId="247" />
+  <Token Text=":=" UId="248" />
+  <Blank UId="249" />
+  <Access Scope="LiteralConstant" UId="250">
+    <Constant UId="251">
+      <ConstantValue UId="253">TRUE</ConstantValue>
+    </Constant>
+  </Access>
+  <Token Text=";" UId="254" />
+  <NewLine UId="255" />
+  <Token Text="END_REGION" UId="256" />
+  <Blank UId="257" />
+  <Text UId="258">OUTPUTS</Text>
+</StructuredText></NetworkSource>
+          <ProgrammingLanguage>SCL</ProgrammingLanguage>
+        </AttributeList>
+        <ObjectList>
+          <MultilingualText ID="12" CompositionName="Comment">
+            <ObjectList>
+              <MultilingualTextItem ID="13" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="14" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="15" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="16" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+          <MultilingualText ID="17" CompositionName="Title">
+            <ObjectList>
+              <MultilingualTextItem ID="18" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text>Module related command parameters configuration</Text>
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="19" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="1A" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="1B" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+        </ObjectList>
+      </SW.Blocks.CompileUnit>
+      <MultilingualText ID="1C" CompositionName="Title">
+        <ObjectList>
+          <MultilingualTextItem ID="1D" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="1E" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="1F" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="20" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+    </ObjectList>
+  </SW.Blocks.FC>
+</Document>

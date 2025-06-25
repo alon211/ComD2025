@@ -1,0 +1,252 @@
+﻿NAMESPACE Unit3
+FUNCTION_BLOCK CallUnit
+TITLE = CallUnit
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+VERSION : 0.1
+//Unit logic and state machine
+   VAR_INPUT 
+      safetyReleased { ExternalWritable := 'False'} : Bool;   // Status from safety program
+   END_VAR
+
+   VAR_OUTPUT 
+      acknowledgeSafety { ExternalWritable := 'False'} : Bool;   // Acknowledge command to the safety program
+   END_VAR
+
+   VAR_IN_OUT 
+      globalStatus : _.LAF_typeGeneralStatus;   // Global status
+      unitInterface : _.LAF_typeUnitInterface;   // Global unit interface
+   END_VAR
+
+   VAR 
+      statRemoteInterface { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LUC_typeCommands;
+      instManageBitAlarms { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LAF_ManageBitAlarms;
+      instStatusCollector { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LUC_StatusCollector;
+      instInterfaceManager { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LUC_InterfaceManager;
+      instUnitModeStateManager { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LPMLV2022_UnitModeStateManager;
+      instRemoteInterfaceOpcUa { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LUC_RemoteCtrl_OpcUa;
+      instSignalStack { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LUC_SignalStack;
+      instUnitModeStateTimes { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LPMLV2022_UnitModeStateTimes;
+      instLPMLV2022_UnitModeChangeAllowed { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LPMLV2022_UnitModeChangeAllowed;
+   END_VAR
+
+   VAR_TEMP 
+      tempUnitFeedback : _.LUC_typeStateCommands;   // Collected commands in the unit, e.g. direct command or commands derived from alarms
+      tempProcessCommands : _.LUC_typeStateCommands;   // Requested unit state changes by the process
+      tempUnitMode : DInt;   // Requested unit mode
+      tempUnitModeChangeRequest : Bool;   // Request unit mode
+      tempCntrlCmd : DInt;   // Request control command
+      tempCmdChangeRequest : Bool;   // Enable change into requested state
+      tempSc : Bool;   // State change from FALSE to TRUE (rising edge) triggers state complete signal
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // (company)/ (c)Copyright (year)
+	    //-------------------------------------------------------------------------------
+	    // Title:            (Title of this block)
+	    // Comment/Function: (that is implemented in the block)
+	    // Library/Family:   (that the source is dedicated to)
+	    // Author:           (department / person in charge / contact)
+	    // Tested with:      (test system with FW version)
+	    // Engineering:      TIA Portal (SW version)
+	    // Restrictions:     (OB types, etc.)
+	    // Requirements:     (hardware, technological package, etc.)
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | dd.mm.yyyy | (name of expert)        | First released version
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(/*
+	This is a template block provided by the Automation Framework. It can be used to create an own project.
+	The Block Info Header is prepared to put in your own data.
+	Description of the block could be added here and the docu created by Code2Docu.
+	*/)
+	END_REGION DESCRIPTION
+	
+	REGION Simulation   
+	    // If simulation is active on a global level, inherit this status and set simulation active in this unit also.
+	    // Information is written to DB ControlNodes, from where it is distributed to the equipmemt modules.
+	    EmNodes.unitStatus.simulationActive := #globalStatus.activateSimulation;
+	END_REGION
+	
+	REGION Acknowledge    
+	    // If acknowldge command on a global level is active, inherit this command and set acknowledge command in this unit also.
+	    // Information is written to DB ControlNodes, from where it is distributed to the equipmemt modules.
+	    EmNodes.unitStatus.acknowledgeActive := #globalStatus.acknowledge;
+	END_REGION
+	
+	REGION Disable Alarms
+	    // If alarms are disabled on a global level, inherit this status and disable alarms in this unit also.
+	    // Information is written to DB ControlNodes, from where it is distributed to the equipmemt modules.
+	    EmNodes.unitStatus.alarmsDisabled := #globalStatus.disableAlarms;
+	END_REGION
+	
+	REGION Acknowledge Safety
+	    // A hard-wired reset button could be assigned here. A reset command would be forwarded to the safety unit for safety acknowledgement. 
+	    //#acknowledgeSafety := _."Reset Button";
+	END_REGION
+	
+	REGION Safety Released
+	    // If related safety zone is release, write this information into the ControlNodes DB as information for other modules
+	   EmNodes.unitStatus.safetyReleased := #safetyReleased;
+	END_REGION
+	
+	REGION Special functions
+	    // Provide the selected special functions to the underlaying equipment modules
+	    EmNodes.unitStatus.specialFunctions := #unitInterface.specialFunctions;
+	END_REGION
+	
+	REGION Collect Alarms
+	    // Add events here that trigger alarms and lead to the respective commands to the unit. It is possible to trigger alarms,
+	    // set unit commands or do both for the specific event
+	    CollectAlarms(resetAlarms := EmNodes.unitStatus.acknowledgeActive,
+	                  disableAlarms := EmNodes.unitStatus.alarmsDisabled,
+	                  commandsToUnit=>#tempUnitFeedback);
+	END_REGION
+	
+	REGION Manage Alarms
+	    // Derive commands from the ProDiag supervision. The ProDiag supervisions contain categories which define the reaction of
+	    // these supervisions (e.g. abort, stop, hold). These are handed over as commands TO the unit level. Alternatively, if no
+	    // ProDiag should be used, you can use the LAF_ManageBitAlarms TO realize bit alarm handling. This block can be found in
+	    // LAF in folder 70_AlarmHandling.
+	
+	 #instManageBitAlarms(alarmDB=>_.Unit3.Alarms.unitAlarms,
+	                      hmiInterfaceDB=>#unitInterface.alarms,
+	                      commandsToUnit:=#tempUnitFeedback,
+	                      errorNoReaction:=_.Unit3.Alarms.errorNoReaction,
+	                      errorAbort:=_.Unit3.Alarms.errorAbort,
+	                      errorStop:=_.Unit3.Alarms.errorStop,
+	                      warningNoReaction:=_.Unit3.Alarms.warningNoReaction,
+	                      warningHold:=_.Unit3.Alarms.warningHold,
+	                      warningSuspend:=_.Unit3.Alarms.warningSuspend,
+	                      information:=_.Unit3.Alarms.information,
+	                      criteriaAnalysis:=_.Unit3.Alarms.criteriaAnalysis
+	 );
+	 
+	 
+	 
+	 
+	END_REGION
+	
+	REGION Status Collector
+	    // Collect the feedback from the unit level (commands) and all underlaying equipment modules (commands, stateComplete)
+	    // and merge them. Handover one summarized set of commands to the interface manager.
+	    #instStatusCollector(safetyOk := #safetyReleased,
+	                         unitFeedback := #tempUnitFeedback,
+	                         emFeedback := EmNodes.emFeedback,
+	                         currentState := EmNodes.unitStatus.state,
+	                         processCommands => #tempProcessCommands);
+	END_REGION
+	
+	REGION Interface Manager
+	    // Read the commands from all interfaces (process, local, hmi, remote) and merge them.
+	    // Handover one summarized set of commands to the mode state manager.
+	    #instInterfaceManager(processInterface := #tempProcessCommands,
+	                          enableLocalInterface := #unitInterface.enableControlInterfaces.local,
+	                          enableHmiInterface := #unitInterface.enableControlInterfaces.hmi,
+	                          hmiInterface := #unitInterface.controlModeStateManager.commands,
+	                          enableRemoteInterface := #unitInterface.enableControlInterfaces."remote",
+	                          unitMode => #tempUnitMode,
+	                          unitModeChangeRequest => #tempUnitModeChangeRequest,
+	                          cntrlCmd => #tempCntrlCmd,
+	                          cmdChangeRequest => #tempCmdChangeRequest,
+	                          SC => #tempSc,
+	                          localControlEnabled => #unitInterface.controlModeStateManager.monitoring.localControlEnabled,
+	                          hmiControlEnabled => #unitInterface.controlModeStateManager.monitoring.hmiControlEnabled,
+	                          remoteControlEnabled => #unitInterface.controlModeStateManager.monitoring.remoteControlEnabled,
+	                          status => #unitInterface.controlModeStateManager.diagnostics.interfaceManagerStatus);
+	END_REGION
+	
+	REGION Mode and State Manager
+	    // Determine unit mode and state based on the collected commands and status
+	    #instUnitModeStateManager(UnitMode := #tempUnitMode,
+	                              UnitModeChangeRequest := #tempUnitModeChangeRequest,
+	                              CntrlCmd := #tempCntrlCmd,
+	                              CmdChangeRequest := #tempCmdChangeRequest,
+	                              SC := #tempSc,
+	                              configuration := Config.stateModeManager,
+	                              UnitModeCurrent => #unitInterface.controlModeStateManager.monitoring.unitModeCurrent,
+	                              StateCurrent => #unitInterface.controlModeStateManager.monitoring.stateCurrent,
+	                              StateRequested => #unitInterface.controlModeStateManager.monitoring.stateRequested,
+	                              StateChangeInProcess => #unitInterface.controlModeStateManager.monitoring.stateChangeInProcess,
+	                              CurDisabledStates => #unitInterface.controlModeStateManager.monitoring.curDisabledStates,
+	                              curHoldCmdCfg => #unitInterface.controlModeStateManager.monitoring.curHoldCmdCfg,
+	                              curCompleteCmdCfg => #unitInterface.controlModeStateManager.monitoring.curCompleteCmdCfg,
+	                              cntrlCmdNotAllowed => #unitInterface.controlModeStateManager.monitoring.cntrlCmdNotAllowed,
+	                              diagnostics => #unitInterface.controlModeStateManager.diagnostics.modeStateManagerDiagnostics);
+	END_REGION
+	
+	REGION Helper Functions
+	    // Read mode and state from the mode state manager an write them to the DB ControlNode
+	    _.LUC_SetUnitStatus(mode := #instUnitModeStateManager.UnitModeCurrent,
+	                                state := #instUnitModeStateManager.StateCurrent,
+	                                unitMode:=EmNodes.unitStatus.mode,
+	                                unitState:=EmNodes.unitStatus.state);
+	    
+	    // Read mode and state from the mode state manager, translate them to a string and write them in unitInterface
+	    _.LUC_ModeStateToString(mode := #instUnitModeStateManager.UnitModeCurrent,
+	                                    state := #instUnitModeStateManager.StateCurrent,
+	                                    modeString => #unitInterface.currentMode,
+	                                    stateString => #unitInterface.currentState);
+	    
+	    // Determine if a mode change is allowed in the current state and write that information to the unitInterface
+	
+	                #instLPMLV2022_UnitModeChangeAllowed(UnitModeCurrent := #instUnitModeStateManager.UnitModeCurrent,
+	                                                     StateCurrent := #instUnitModeStateManager.StateCurrent,
+	                                                     allowedUnitModes => #unitInterface.controlModeStateManager.monitoring.allowedUnitModes,
+	                                                     configuration := Config.stateModeManager);
+	END_REGION
+	
+	REGION History
+	    // Update the mode and state history. When mode or state change occur, save current mode and state in history[0]
+	    // and the previous ones in ascending order.
+	    _.LUC_UpdateModeStateHistory(currentMode := #instUnitModeStateManager.UnitModeCurrent,
+	                                 currentState := #instUnitModeStateManager.StateCurrent,
+	                                 history := #unitInterface.history);
+	END_REGION
+	
+	REGION Time Statistics
+	    // Determine the time that has been spend in modes and states.
+	    #instUnitModeStateTimes(UnitModeCurrent := #instUnitModeStateManager.UnitModeCurrent,
+	                            StateCurrent := #instUnitModeStateManager.StateCurrent,
+	                            ModeTimeCurrent => #unitInterface.modeStateTimeStatistics.modeTimeCurrent,
+	                            StateTimeCurrent => #unitInterface.modeStateTimeStatistics.stateTimeCurrent,
+	                            AccTimeSinceReset => #unitInterface.modeStateTimeStatistics.accTimeSinceReset,
+	                            actualTimeAllModes => #unitInterface.modeStateTimeStatistics.actualTimeAllModes,
+	                            cumulativeTimeAllModes => #unitInterface.modeStateTimeStatistics.cumulativeTimeAllModes,
+	                            actualTimeAllStatesOfAllModes => #unitInterface.modeStateTimeStatistics.actualTimeAllStatesOfAllModes,
+	                            cumulativeTimeAllStatesOfAllModes => #unitInterface.modeStateTimeStatistics.cumulativeTimeAllStatesOfAllModes,
+	                            actualTimeAllStatesOfCurrentMode => #unitInterface.modeStateTimeStatistics.actualTimeAllStatesOfCurrentMode,
+	                            cumulativeTimeAllStatesOfCurrentMode => #unitInterface.modeStateTimeStatistics.cumulativeTimeAllStatesOfCurrentMode,
+	                            cumulativeTimeCurrentMode => #unitInterface.modeStateTimeStatistics.cumulativeTimeCurrentMode);
+	END_REGION
+	
+	REGION Stacklight
+	    // Determine light behaviour based on current mode and stacklight configuration
+	    #instSignalStack(currentState := #instUnitModeStateManager.StateCurrent,
+	                     freqClockBit:= #globalStatus.clock.cycle1000Msec,
+	                     configuration := Config.signalStack,
+	                     lightsByDWord => #unitInterface.signalStack,
+	                     lightsStatus => EmNodes.signalStack);
+	END_REGION
+	
+	REGION Remote Control via OPC UA
+	    // Control the mode state manager remotely via OPC UA
+	    #instRemoteInterfaceOpcUa(remoteControlEnabled := #unitInterface.enableControlInterfaces."remote",
+	                              currentState := #instUnitModeStateManager.StateCurrent,
+	                              currentMode := #instUnitModeStateManager.UnitModeCurrent,
+	                              cntrlCmdDenied := #unitInterface.controlModeStateManager.monitoring.cntrlCmdNotAllowed,
+	                              unitModeChangeNotAllowed := DWORD_TO_BOOL(#unitInterface.controlModeStateManager.monitoring.allowedUnitModes AND 0),
+	                              configuration := Config.remoteCtrlOpcUa,
+	                              remoteInterface := #statRemoteInterface);
+	END_REGION
+	
+END_FUNCTION_BLOCK
+END_NAMESPACE
+

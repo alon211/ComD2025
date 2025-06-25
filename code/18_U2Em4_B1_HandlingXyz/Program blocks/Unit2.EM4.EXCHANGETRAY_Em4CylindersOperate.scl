@@ -1,0 +1,154 @@
+﻿NAMESPACE Unit2.EM4
+FUNCTION EXCHANGETRAY_Em4CylindersOperate : Void
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+VERSION : 0.1
+   VAR_INPUT 
+      goHome : Bool;
+      goWork : Bool;
+      cm4Enable : Bool;
+      cm5Enable : Bool;
+      cm6Enable : Bool;
+      cm7Enable : Bool;
+   END_VAR
+
+   VAR_OUTPUT 
+      homeDone : Bool;
+      workDone : Bool;
+   END_VAR
+
+   VAR_TEMP 
+      cm4OnHome : Bool;
+      cm5OnHome : Bool;
+      cm6OnHome : Bool;
+      cm7OnHome : Bool;
+      cm4OnWork : Bool;
+      cm5OnWork : Bool;
+      cm6OnWork : Bool;
+      cm7OnWork : Bool;
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // LGF / (c)Copyright 2024
+	    //-------------------------------------------------------------------------------
+	    // Title:            Multiple Cylinder Position Control
+	    // Comment/Function: Control multiple cylinders with enable conditions
+	    // Library/Family:   Unit2 Cylinder Control
+	    // Author:           Automation Department / Cylinder Control Team
+	    // Tested with:      SIMATIC S7-1500 FW V2.9
+	    // Engineering:      TIA Portal V17
+	    // Restrictions:     Must be called in OB1
+	    // Requirements:     Cylinder hardware configured
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 2024-01-17 | Cylinder Control Team   | First released version
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(*
+	This block controls the position of four cylinders (cm4-cm7) with individual enable conditions:
+	- Commands cylinders to home position when #goHome is TRUE and cylinder is enabled
+	- Commands cylinders to work position when #goWork is TRUE and cylinder is enabled
+	- Monitors position status of each cylinder
+	- Sets #homeDone when all enabled cylinders are in home position
+	- Sets #workDone when all enabled cylinders are in work position
+	
+	åŠŸèƒ½è¯´æ˜Žï¼š
+	æœ¬å—æŽ§åˆ¶å››ä¸ªæ°”ç¼¸(cm4-cm7)çš„ä½ç½®ï¼Œå…·æœ‰å•ç‹¬çš„ä½¿èƒ½æ¡ä»¶ï¼š
+	- å½“#goHomeä¸ºTRUEä¸”æ°”ç¼¸ä½¿èƒ½æ—¶ï¼Œå‘½ä»¤æ°”ç¼¸ç§»åŠ¨åˆ°åŽŸä½
+	- å½“#goWorkä¸ºTRUEä¸”æ°”ç¼¸ä½¿èƒ½æ—¶ï¼Œå‘½ä»¤æ°”ç¼¸ç§»åŠ¨åˆ°å·¥ä½œä½ç½®
+	- ç›‘æŽ§æ¯ä¸ªæ°”ç¼¸çš„ä½ç½®çŠ¶æ€
+	- å½“æ‰€æœ‰ä½¿èƒ½çš„æ°”ç¼¸éƒ½åœ¨åŽŸä½æ—¶ï¼Œè®¾ç½®#homeDone
+	- å½“æ‰€æœ‰ä½¿èƒ½çš„æ°”ç¼¸éƒ½åœ¨å·¥ä½œä½ç½®æ—¶ï¼Œè®¾ç½®#workDone
+	*)
+	END_REGION DESCRIPTION
+	
+	REGION INITIALISATION  
+	    // No initialization required for this block
+	    // æœ¬å—ä¸éœ€è¦åˆå§‹åŒ–
+	END_REGION INITIALISATION  
+	
+	REGION PROGRAM LOGIC
+	    // Command cylinders to home or work position based on inputs and enable status
+	    // æ ¹æ®è¾“å…¥å’Œä½¿èƒ½çŠ¶æ€å‘½ä»¤æ°”ç¼¸ç§»åŠ¨åˆ°åŽŸä½æˆ–å·¥ä½œä½ç½®
+	    ControlNodes.cm4Cylinder.commands.commandHomePos := #goHome AND #cm4Enable;
+	    ControlNodes.cm5Cylinder.commands.commandHomePos := #goHome AND #cm5Enable;
+	    ControlNodes.cm6Cylinder.commands.commandHomePos := #goHome AND #cm6Enable;
+	    ControlNodes.cm7Cylinder.commands.commandHomePos := #goHome AND #cm7Enable;
+	    ControlNodes.cm4Cylinder.commands.commandWorkPos := #goWork AND #cm4Enable;
+	    ControlNodes.cm5Cylinder.commands.commandWorkPos := #goWork AND #cm5Enable;
+	    ControlNodes.cm6Cylinder.commands.commandWorkPos := #goWork AND #cm6Enable;
+	    ControlNodes.cm7Cylinder.commands.commandWorkPos := #goWork AND #cm7Enable;
+	    
+	    // Monitor cylinder 4 position status
+	    // ç›‘æŽ§æ°”ç¼¸4ä½ç½®çŠ¶æ€
+	    IF #cm4Enable THEN
+	        #cm4OnHome := ControlNodes.cm4Cylinder.monitoring.inHomePos;
+	        #cm4OnWork := ControlNodes.cm4Cylinder.monitoring.inWorkPos;
+	    ELSE
+	        #cm4OnHome := true;
+	        #cm4OnWork := true;
+	    END_IF;
+	    
+	    // Monitor cylinder 5 position status
+	    // ç›‘æŽ§æ°”ç¼¸5ä½ç½®çŠ¶æ€
+	    IF #cm5Enable THEN
+	        #cm5OnHome := ControlNodes.cm5Cylinder.monitoring.inHomePos;
+	        #cm5OnWork := ControlNodes.cm5Cylinder.monitoring.inWorkPos;
+	    ELSE
+	        #cm5OnHome := true;
+	        #cm5OnWork := true;
+	    END_IF;
+	    
+	    // Monitor cylinder 6 position status
+	    // ç›‘æŽ§æ°”ç¼¸6ä½ç½®çŠ¶æ€
+	    IF #cm6Enable THEN
+	        #cm6OnHome := ControlNodes.cm6Cylinder.monitoring.inHomePos;
+	        #cm6OnWork := ControlNodes.cm6Cylinder.monitoring.inWorkPos;
+	    ELSE
+	        #cm6OnHome := true;
+	        #cm6OnWork := true;
+	    END_IF;
+	    
+	    // Monitor cylinder 7 position status
+	    // ç›‘æŽ§æ°”ç¼¸7ä½ç½®çŠ¶æ€
+	    IF #cm7Enable THEN
+	        #cm7OnHome := ControlNodes.cm7Cylinder.monitoring.inHomePos;
+	        #cm7OnWork := ControlNodes.cm7Cylinder.monitoring.inWorkPos;
+	    ELSE
+	        #cm7OnHome := true;
+	        #cm7OnWork := true;
+	    END_IF;
+	    
+	    // Check if all enabled cylinders are in home position
+	    // æ£€æŸ¥æ‰€æœ‰ä½¿èƒ½çš„æ°”ç¼¸æ˜¯å¦éƒ½åœ¨åŽŸä½
+	    #homeDone :=
+	    #cm4OnHome
+	    AND #cm5OnHome
+	    AND #cm6OnHome
+	    AND #cm7OnHome
+	    ;
+	    
+	    // Check if all enabled cylinders are in work position
+	    // æ£€æŸ¥æ‰€æœ‰ä½¿èƒ½çš„æ°”ç¼¸æ˜¯å¦éƒ½åœ¨å·¥ä½œä½ç½®
+	    #workDone :=
+	    #cm4OnWork
+	    AND #cm5OnWork
+	    AND #cm6OnWork
+	    AND #cm7OnWork
+	    ;
+	END_REGION PROGRAM LOGIC
+	
+	REGION OUTPUTS
+	    // ENO mechanism for error handling
+	    // ENOæœºåˆ¶ç”¨äºŽé”™è¯¯å¤„ç†
+	    ENO := TRUE;
+	END_REGION OUTPUTS
+END_FUNCTION
+END_NAMESPACE
+

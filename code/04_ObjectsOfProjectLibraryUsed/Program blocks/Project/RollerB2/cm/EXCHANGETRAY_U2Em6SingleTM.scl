@@ -1,0 +1,160 @@
+﻿FUNCTION_BLOCK "LEXCHANGETRAY_U2Em6SingleTM"
+TITLE = EXCHANGETRAY_U2Em6SingleTM
+{ S7_Optimized_Access := 'TRUE' ; Published := 'TRUE' }
+AUTHOR : 'SUP/Zhang Shi Long'
+FAMILY : SUP
+VERSION : 0.1
+//Exchange Tray function
+   VAR_INPUT 
+      trayAutomaticFeedingDetectionU2Em6 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Tray automatic feeding detection sensor for U2EM6
+   END_VAR
+
+   VAR_IN_OUT 
+      configuration : "LEXCHANGETRAY_typeRollerIoSignalConfigeration_B2";   // Configuration parameters for U2EM6 module
+      moduleInterface : "LEXCHANGETRAY_typeRollerIoSignalInterface_B2";   // Module interface for U2EM6 control
+      controlNode : "LEXCHANGETRAY_typeRollerIoSignalControlNode_B2";   // Control node parameters for U2EM6
+   END_VAR
+
+   VAR 
+      statManualCommands { S7_SetPoint := 'False'} : "LEXCHANGETRAY_typeRollerIoSignalManualCommands_B2";   // Manual commands execution status
+      statProcessValues { S7_SetPoint := 'False'} : "LEXCHANGETRAY_typeRollerIoSignalProcessValues_B2";   // Process values monitoring status
+      statDiagnostics : "LBC_typeDiagnostics";   // Diagnostics information status
+      statSimActive : Bool;   // Simulation mode active status
+      statSimActivePrevious : Bool;   // Previous simulation mode status
+      statFbState : Word;   // Current function block state
+      statFbStatePrevious : Word;   // Previous function block state
+   END_VAR
+
+   VAR_TEMP 
+      tempSimActiveEdge : Bool;
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // Siemens / (c)Copyright 2020-2024
+	    //-------------------------------------------------------------------------------
+	    // Title:            Roller Simulation Signal Processing Module
+	    // 标题:             滚筒模拟信号处理模块
+	    // Comment/Function: This module processes input signals related to Roller simulation, 
+	    //                    maps input sources according to the simulation activation status, 
+	    //                    resets relevant signals, and outputs processed data.
+	    // 注释/功能:        此模块处理与 滚筒模拟相关的输入信号，
+	    //                    根据模拟激活状态映射不同输入源，
+	    //                    重置相关信号，并输出处理后的数据。
+	    // Library/Family:   EXCHANGETRAY - Library of Basic
+	    // 库/家族:         换盘机 - 基本控制模块库
+	    // Author:           Siemens Digital Industries
+	    // 作者:            西门子数字工业
+	    // Tested with:      S7-PLCSIM Advanced 6.0
+	    // 测试环境:        S7-PLCSIM Advanced 6.0
+	    // Engineering:      TIA Portal V19
+	    // 工程环境:        TIA Portal V19
+	    // Restrictions:     ENO mechanism is not used - forced to False.
+	    // 限制条件:        不使用 ENO 机制 - 强制设置为 False。
+	    // Requirements:     PLC (S7-1200 / S7-1500)
+	    // 要求:            PLC (S7-1200 / S7-1500)
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 17.04.2025 | SIMATIC Systems Support | Updated block info and comments following AIupdate.scl style.
+	    // 版本     | 日期       | 负责人                  | 更改内容
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 2025年4月17日 | SIMATIC系统支持        | 参照 LBC 风格更新块信息和注释。
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	    (/*
+	    This module processes input signals related to the Roller simulation. 
+	    It checks whether the simulation mode is active based on the configuration. 
+	    When the simulation is active, it combines the manual commands and real input signals; 
+	    otherwise, it directly uses the real input signals. 
+	    Additionally, it resets relevant manual commands when the simulation is inactive 
+	    and finally outputs the processed data to the module interface and control node.
+	    此模块处理与 滚筒模拟相关的输入信号。
+	    它根据配置检查模拟模式是否激活。
+	    当模拟激活时，它将手动命令和真实输入信号进行组合；
+	    否则，它直接使用真实输入信号。
+	    此外，当模拟未激活时，它会重置相关的手动命令，
+	    最后将处理后的数据输出到模块接口和控制节点。
+	    */)
+	END_REGION DESCRIPTION
+	
+	REGION INITIALISATION  
+	    // Reset relevant manual commands when the simulation is inactive
+	    // 模拟未激活时，重置相关的手动命令
+	    IF NOT #statSimActive OR (#controlNode.reset) THEN
+	        #controlNode.reset := FALSE;
+	        // 重置所有手动命令标志位
+	        #statManualCommands.trayAutomaticFeedingDetectionU2Em6 := FALSE;
+	    END_IF;
+	END_REGION INITIALISATION  
+	
+	REGION PROGRAM LOGIC
+	    REGION PROCESS INPUT SIGNALS
+	        REGION Input configuration parameter
+	            // Assign simulation activation status from configuration to static variable
+	            // 将配置中的模拟激活状态赋值给静态变量
+	            #statSimActive := #configuration.simActive;
+	        END_REGION Input configuration parameter
+	        
+	        // Map commands from module interface to manual commands
+	        // 将模块接口的命令映射到手动命令
+	        #statManualCommands := #moduleInterface.commands;
+	        
+	        // Map input signals based on simulation activation status
+	        // 根据模拟激活状态映射输入信号
+	        IF #statSimActive THEN
+	            // Combine manual commands and real input signals when simulation is active
+	            // 模拟激活时，组合手动命令和真实输入信号
+	            #statProcessValues.trayAutomaticFeedingDetectionU2Em6 := #statManualCommands.trayAutomaticFeedingDetectionU2Em6 OR #trayAutomaticFeedingDetectionU2Em6;
+	        ELSE
+	            // Use real input signals directly when simulation is inactive
+	            // 模拟未激活时，直接使用真实输入信号
+	            #statProcessValues.trayAutomaticFeedingDetectionU2Em6 := #trayAutomaticFeedingDetectionU2Em6;
+	        END_IF;
+	        
+	        REGION SIMULATE MODE
+	            // Simulation mode logic can be added here
+	            // 模拟模式逻辑可在此处添加
+	        END_REGION SIMULATE MODE
+	        
+	        REGION Interlock dependent edge commands
+	            // Detect the rising edge of the simulation activation signal
+	            // 检测模拟激活信号的上升沿
+	            #tempSimActiveEdge := #statSimActive AND NOT #statSimActivePrevious;
+	        END_REGION Interlock dependent edge commands
+	    END_REGION PROCESS INPUT SIGNALS
+	END_REGION PROGRAM LOGIC
+	
+	REGION OUTPUTS
+	    // Assign simulation activation status to monitoring structure
+	    // 将模拟激活状态赋值给监控结构
+	    #statProcessValues.simulated := #statSimActive;
+	    
+	    // Write manual commands to module interface
+	    // 将手动命令写入模块接口
+	    #moduleInterface.commands := #statManualCommands;
+	    
+	    // Write process values to module interface monitoring
+	    // 将过程值写入模块接口监控
+	    #moduleInterface.monitoring := #statProcessValues;
+	    
+	    // Write simulation status and processed signals to control node monitoring
+	    // 将模拟状态和处理后的信号写入控制节点监控
+	    #controlNode.monitoring.simulated := #statProcessValues.simulated;
+	    #controlNode.monitoring.trayAutomaticFeedingDetectionU2Em6 := #statProcessValues.trayAutomaticFeedingDetectionU2Em6;
+	    
+	    // ENO mechanism disabled, ENO - forced to False
+	    // ENO 机制禁用，强制设置为 False
+	    ENO := False;
+	    
+	    // Save previous value of simulation activation signal for edge detection
+	    // 保存模拟激活信号的上一个值用于边沿检测
+	    #statSimActivePrevious := #statSimActive;
+	END_REGION OUTPUTS
+END_FUNCTION_BLOCK
+

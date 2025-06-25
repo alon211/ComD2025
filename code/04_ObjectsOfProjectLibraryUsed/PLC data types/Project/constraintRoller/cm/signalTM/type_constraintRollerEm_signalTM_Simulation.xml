@@ -1,0 +1,165 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Document>
+  <Engineering version="V19" />
+  <SW.Types.PlcStruct ID="0">
+    <AttributeList>
+      <Access>Published</Access>
+      <Interface><Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v5">
+  <Section Name="None">
+    <Member Name="detectionBeforePalletPositioning" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">托盘定位前检测</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="positioningPinCylinderHomePositionDetection2" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">定位销气缸原位检测2</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="cellLiftingCylinderHomePositionDetection2" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">电池顶升气缸原位检测2</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="positioningPinCylinderWorkingPositionDetection2" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">定位销气缸工作位检测2</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="trayLiftingCylinderWorkingPositionDetection" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">托盘顶升气缸工作位检测</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="cellLiftingCylinderWorkingPositionDetection2" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">电池顶升气缸工作位检测2</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="cellLiftingCylinderHomePositionDetection1" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">电池顶升气缸原位检测1</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="trayEntryDetection" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">托盘进入检测</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="trayLiftingCylinderHomePositionDetection" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">托盘顶升气缸原位检测</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="positiveLimitForCellJackingAndTransplanting" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">电池顶升移栽正限</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="negativeLimitForCellJackingAndTransplanting" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">电池顶升移栽负限</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="cellLiftingCylinderWorkingPositionDetection1" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">电池顶升气缸工作位检测1</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="positioningPinCylinderHomePositionDetection1" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">定位销气缸原位检测1</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="positioningPinCylinderWorkingPositionDetection1" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">定位销气缸工作位检测1</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="trayInPlaceDetection" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">托盘到位检测</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="originalForCellJackingAndTransplanting" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">电池顶升移栽原点</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="palletScrewAntiReverseDetection" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">托盘螺杆防反检测</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="detectionAfterTrayPositioning" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">托盘定位后检测</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="trayLiftingCylinderHomePositionDetection1" Datatype="Bool" />
+    <Member Name="trayLiftingCylinderWorkingPositionDetection1" Datatype="Bool" />
+  </Section>
+</Sections></Interface>
+      <Name>LEXCHANGETRAY_typeConstraintRollerEm_signalTM_Simulation</Name>
+      <Namespace />
+    </AttributeList>
+    <ObjectList>
+      <MultilingualText ID="1" CompositionName="Comment">
+        <ObjectList>
+          <MultilingualTextItem ID="2" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="3" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="4" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="5" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+      <MultilingualText ID="6" CompositionName="Title">
+        <ObjectList>
+          <MultilingualTextItem ID="7" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="8" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="9" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="A" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+    </ObjectList>
+  </SW.Types.PlcStruct>
+</Document>

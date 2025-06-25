@@ -1,0 +1,118 @@
+﻿NAMESPACE Unit2.EM3
+FUNCTION "EXCHANGETRAY_CmParameterUpdate" : Void
+
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+VERSION : 0.1
+VAR_INPUT
+
+END_VAR
+
+VAR_OUTPUT
+
+END_VAR
+
+VAR_IN_OUT
+
+END_VAR
+
+VAR_TEMP
+  index:Int;
+  rows : Int;
+END_VAR
+
+VAR CONSTANT
+
+END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // LGF / (c)Copyright 2024
+	    //-------------------------------------------------------------------------------
+	    // Title:            Servo Axis Configuration Control
+	    // Comment/Function: Configure SV112 and SV113 servo axis parameters for different modes
+	    // Library/Family:   Unit2 Servo Control
+	    // Author:           Automation Department / Servo Control Team
+	    // Tested with:      SIMATIC S7-1500 FW V2.9
+	    // Engineering:      TIA Portal V17
+	    // Restrictions:     Must be called in OB1
+	    // Requirements:     SV112 and SV113 servo drives configured
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 2024-01-17 | Servo Control Team      | First released version
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(*
+	This block configures parameters for SV112 and SV113 servo axes based on operation mode:
+	- Production mode: Sets acceleration, deceleration and velocity parameters
+	                   Initializes EM action manager and communication
+	- Manual mode: Currently no specific configuration
+	- Maintenance mode: Currently no specific configuration
+	
+	功能说明：
+	本块根据运行模式配置SV112和SV113伺服轴参数：
+	- 生产模式：设置加速度、减速度和速度参数
+	           初始化EM动作管理器和通信
+	- 手动模式：当前无特定配置
+	- 维护模式：当前无特定配置
+	*)
+	END_REGION DESCRIPTION
+	
+	REGION INITIALISATION  
+	    // No initialization required for this block
+	    // 本块不需要初始化
+	END_REGION INITIALISATION  
+	
+	REGION PROGRAM LOGIC
+	    // Production mode configuration
+	    // 生产模式配置
+	    IF _.Unit2.EmNodes.unitStatus.mode.production THEN
+	        // Initialize EM action manager
+	        // 初始化EM动作管理器
+	        _.Unit2.EmNodes.actionEmManager.init := TRUE;
+	        
+	        // Configure SV112 Constraint1 Axis parameters
+	        // 配置SV112约束1轴参数
+	        ControlNodes.cm1SV112_Constraint1_Axis.commandConfiguration.posAbsolute.acceleration := Config.em3Parameters.cm1Axis112.production.distanceList[0].acceleration;
+	        ControlNodes.cm1SV112_Constraint1_Axis.commandConfiguration.posAbsolute.deceleration := Config.em3Parameters.cm1Axis112.production.distanceList[0].deceleration;
+	        ControlNodes.cm1SV112_Constraint1_Axis.commandConfiguration.posAbsolute.velocity := Config.em3Parameters.cm1Axis112.production.distanceList[0].velocity;
+	        
+	        // Configure SV113 Constraint2 Axis parameters
+	        // 配置SV113约束2轴参数
+	        ControlNodes.cm2SV113_Constraint2_Axis.commandConfiguration.posAbsolute.acceleration := Config.em3Parameters.cm2Axis113.production.distanceList[0].acceleration;
+	        ControlNodes.cm2SV113_Constraint2_Axis.commandConfiguration.posAbsolute.deceleration := Config.em3Parameters.cm2Axis113.production.distanceList[0].deceleration;
+	        ControlNodes.cm2SV113_Constraint2_Axis.commandConfiguration.posAbsolute.velocity := Config.em3Parameters.cm2Axis113.production.distanceList[0].velocity;
+	        
+	        // Initialize communication
+	        // 初始化通信
+	        _.Unit2.EmNodes.emRelations.EM3.deliver.init := true;
+	    END_IF;
+	    
+	    // Manual mode configuration
+	    // 手动模式配置
+	    IF _.Unit2.EmNodes.unitStatus.mode.manual THEN
+	        ; // Currently no specific configuration for manual mode
+	        // 当前手动模式无特定配置
+	    END_IF;
+	    
+	    // Maintenance mode configuration
+	    // 维护模式配置
+	    IF _.Unit2.EmNodes.unitStatus.mode.maintenance THEN
+	        ; // Currently no specific configuration for maintenance mode
+	        // 当前维护模式无特定配置
+	    END_IF;
+	END_REGION PROGRAM LOGIC
+	
+	REGION OUTPUTS
+	    // ENO mechanism for error handling
+	    // ENO机制用于错误处理
+	    ENO := TRUE;
+	END_REGION OUTPUTS
+END_FUNCTION
+END_NAMESPACE
+

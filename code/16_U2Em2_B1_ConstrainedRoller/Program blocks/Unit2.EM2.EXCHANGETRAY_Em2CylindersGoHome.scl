@@ -1,0 +1,83 @@
+﻿NAMESPACE Unit2.EM2
+FUNCTION EXCHANGETRAY_Em2CylindersGoHome : Void
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+VERSION : 0.1
+   VAR_INPUT 
+      goHome : Bool;
+   END_VAR
+
+   VAR_OUTPUT 
+      homeDone : Bool;
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // LGF / (c)Copyright 2024
+	    //-------------------------------------------------------------------------------
+	    // Title:            Cylinder Home Position Control
+	    // Comment/Function: æ¯æ¬¡æ‰˜ç›˜è¿è¡Œå’Œåœæ­¢æ—¶éœ€è¦åˆå§‹åŒ–çš„å˜é‡
+	    //                   Variables that need to be initialized when tray runs and stops
+	    // Library/Family:   Unit2 Cylinder Control
+	    // Author:           Automation Department / Cylinder Control Team
+	    // Tested with:      SIMATIC S7-1500 FW V2.9
+	    // Engineering:      TIA Portal V17
+	    // Restrictions:     Must be called in OB1
+	    // Requirements:     Cylinder hardware configured
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 2024-01-17 | Cylinder Control Team   | First released version
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(*
+	This block controls the home position of multiple cylinders:
+	- Cell Lifting Cylinder (cm3CellLiftingCylinder)
+	- Positioning Pin Cylinder (cm4PositioningPinCylinder)
+	- Tray Lifting Cylinder (cm2TrayLiftingCylinder)
+	
+	When #goHome is TRUE, all cylinders are commanded to move to home position.
+	The #homeDone output is set when all cylinders have reached home position.
+	
+	åŠŸèƒ½è¯´æ˜Žï¼š
+	æœ¬å—æŽ§åˆ¶å¤šä¸ªæ°”ç¼¸çš„å›žåŽŸä½æ“ä½œï¼š
+	- å•å…ƒæå‡æ°”ç¼¸ (cm3CellLiftingCylinder)
+	- å®šä½é”€æ°”ç¼¸ (cm4PositioningPinCylinder)
+	- æ‰˜ç›˜æå‡æ°”ç¼¸ (cm2TrayLiftingCylinder)
+	
+	å½“#goHomeä¸ºTRUEæ—¶ï¼Œæ‰€æœ‰æ°”ç¼¸è¢«å‘½ä»¤ç§»åŠ¨åˆ°åŽŸä½ã€‚
+	å½“æ‰€æœ‰æ°”ç¼¸éƒ½åˆ°è¾¾åŽŸä½æ—¶ï¼Œ#homeDoneè¾“å‡ºè¢«ç½®ä¸ºTRUEã€‚
+	*)
+	END_REGION DESCRIPTION
+	
+	REGION INITIALISATION  
+	    // No initialization required for this block
+	    // æœ¬å—ä¸éœ€è¦åˆå§‹åŒ–
+	END_REGION INITIALISATION  
+	
+	REGION PROGRAM LOGIC
+	    // Command all cylinders to move to home position when #goHome is TRUE
+	    // å½“#goHomeä¸ºTRUEæ—¶ï¼Œå‘½ä»¤æ‰€æœ‰æ°”ç¼¸ç§»åŠ¨åˆ°åŽŸä½
+	    ControlNodes.cm3CellLiftingCylinder.commands.commandHomePos :=
+	    ControlNodes.cm4PositioningPinCylinder.commands.commandHomePos :=
+	    ControlNodes.cm2TrayLiftingCylinder.commands.commandHomePos := #goHome;
+	    
+	    // Check if all cylinders have reached home position
+	    // æ£€æŸ¥æ‰€æœ‰æ°”ç¼¸æ˜¯å¦å·²åˆ°è¾¾åŽŸä½
+	    #homeDone := ControlNodes.cm3CellLiftingCylinder.monitoring.inHomePos
+	    AND ControlNodes.cm4PositioningPinCylinder.monitoring.inHomePos
+	    AND ControlNodes.cm2TrayLiftingCylinder.monitoring.inHomePos;
+	END_REGION PROGRAM LOGIC
+	
+	REGION OUTPUTS
+	    // ENO mechanism for error handling
+	    // ENOæœºåˆ¶ç”¨äºŽé”™è¯¯å¤„ç†
+	    ENO := TRUE;
+	END_REGION OUTPUTS
+END_FUNCTION
+END_NAMESPACE
+

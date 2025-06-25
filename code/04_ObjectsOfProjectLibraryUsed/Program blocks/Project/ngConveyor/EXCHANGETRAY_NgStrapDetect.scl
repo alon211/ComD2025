@@ -1,0 +1,389 @@
+﻿FUNCTION_BLOCK "LEXCHANGETRAY_NgStrapDetect"
+TITLE = EXCHANGETRAY_NgStrapDetect
+{ S7_Optimized_Access := 'TRUE' ; Published := 'TRUE' }
+AUTHOR : 'SUP/Zhang Shi Long'
+FAMILY : SUP
+VERSION : 0.1
+//Exchange Tray function
+   VAR_INPUT 
+      signal { ExternalWritable := 'False'} : Bool;   // Detection signal input
+   END_VAR
+
+   VAR_IN_OUT 
+      configuration : "LEXCHANGETRAY_typeNgStrapConfigeration";   // Configuration parameters
+      moduleInterface : "LEXCHANGETRAY_typeNgStrapInterface";   // Module interface
+      controlNode : "LEXCHANGETRAY_typeNgStrapControlNode";   // Control node
+   END_VAR
+
+   VAR 
+      statManualCommands { S7_SetPoint := 'False'} : "LEXCHANGETRAY_typeNgStrapManualCommands";   // Manual commands status
+      statProcessValues : "LEXCHANGETRAY_typeNgStrapProcessValues";   // Process values status
+      statDiagnostics : "LBC_typeDiagnostics";   // Diagnostics status
+      statSimActive : Bool;   // Simulation active status
+      statSignal : Bool;   // Signal status
+      statEnable : Bool;   // Enable status
+      statResetCount : Bool;   // Count reset status
+      statRaiseError : Bool;   // Error raise status
+      statResetError : Bool;   // Error reset status
+      statSimSignal : Bool;   // Simulated signal status
+      statSimActivePrevious : Bool;   // Previous simulation active status
+      statSignalPrevious : Bool;   // Previous signal status
+      statRefCount : Int;   // Reference count value
+      statCountVal : Int;   // Current count value
+      statFbState : Word;   // Function block current state
+      statFbStatePrevious : Word;   // Function block previous state
+   END_VAR
+
+   VAR_TEMP 
+      tempSimActiveEdge : Bool;
+      tempSignalEdge : Bool;
+   END_VAR
+
+   VAR CONSTANT 
+      FB_STATE_NO_PROCESSING : Word := 16#0000;   // Function block state: No processing
+      FB_STATE_ERROR_HANDLER : Word := 16#0080;   // Function block state: Error handler
+      FB_STATE_SIMULATING : Word := 16#0060;   // Function block state: Simulating
+      FB_STATE_TRIGGER_SIGNAL_SIMULATING : Word := 16#0061;   // Function block state: Trigger signal simulating
+      FB_STATE_ADD_COUNT_SIMULATING : Word := 16#0062;   // Function block state: Add count simulating
+      FB_STATE_RESET_SIGNAL_SIMULATING : Word := 16#0063;   // Function block state: Reset signal simulating
+      FB_STATE_REPEAT_CONDITION_SIMULATING : Word := 16#0064;   // Function block state: Repeat condition simulating
+      FB_STATE_COUNT_SIGNAL : Word := 16#0050;   // Function block state: Count signal
+      SUB_STATUS_NO_ERROR : Word := 16#0000;   // Sub status: No error
+      ERR_INCORRECT_COUNTING : Word := 16#8201;   // Error: Incorrect counting
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // Siemens / (c)Copyright 2020-2024
+	    //-------------------------------------------------------------------------------
+	    // Title:            NG Strap Detection Module
+	    // 标题:            NG挡板检测
+	    // Comment/Function: This module is responsible for processing input signals, managing simulation and real - world counting operations, handling errors, and outputting corresponding control signals.
+	    // 注释/功能:        此模块负责处理输入信号，管理模拟和真实世界的计数操作，处理错误，并输出相应的控制信号。
+	    // Library/Family:   EXCHANGETRAY - Library of Basic
+	    // 库/家族:         换盘机 - 基本控制模块库
+	    // Author:           Siemens Digital Industries
+	    // 作者:            西门子数字工业
+	    // Tested with:      S7-PLCSIM Advanced 6.0
+	    // 测试环境:        S7-PLCSIM Advanced 6.0
+	    // Engineering:      TIA Portal V19
+	    // 工程环境:        TIA Portal V19
+	    // Restrictions:     ENO mechanism is not used - forced to TRUE.
+	    // 限制条件:        不使用ENO机制 - 强制设置为TRUE。
+	    // Requirements:     PLC (S7-1200 / S7-1500)
+	    // 要求:            PLC (S7-1200 / S7-1500)
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 17.04.2025 | SIMATIC Systems Support | Updated block info and comments following AIupdate.scl style.
+	    // 版本     | 日期       | 负责人                  | 更改内容
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 2025年4月17日 | SIMATIC系统支持        | 参照AIupdate.scl风格更新块信息和注释。
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	    (/*
+	    This module is designed to manage the operation of a system with both simulation and real - world modes. It processes input signals from different sources, manages a state machine to control the counting process, and handles errors. When the simulation is active, it performs simulated counting operations. In the real - world mode, it counts signals based on the input.
+	
+	    此模块旨在管理具有模拟和真实世界模式的系统操作。它处理来自不同源的输入信号，管理状态机以控制计数过程，并处理错误。当模拟激活时，它执行模拟计数操作。在真实世界模式下，它根据输入对信号进行计数。
+	    */)
+	END_REGION DESCRIPTION
+	
+	REGION PROCESS INPUT SIGNALS
+	    // Determine if the simulation mode is active based on the configuration
+	    // 根据配置确定模拟模式是否激活
+	    #statSimActive := #configuration.simActive;
+	    // Map the commands from the module interface to the manual commands
+	    // 将模块接口的命令映射到手动命令
+	    #statManualCommands := #moduleInterface.commands;
+	    // Assign the enable signal from the control node to the static variable
+	    // 将控制节点的使能信号赋值给静态变量
+	    #statEnable := #controlNode.commands.enable;
+	    // Combine the real signal and simulated signal according to the simulation activation status
+	    // 根据模拟激活状态组合真实信号和模拟信号
+	    #statSignal := #signal OR (#statSimSignal AND #statSimActive);
+	    // Determine the reset count signal considering simulation and real - world commands
+	    // 考虑模拟和真实世界命令来确定复位计数信号
+	    #statResetCount := #controlNode.commands.resetCount OR (#statManualCommands.resetCount AND #statSimActive);
+	    // Determine the raise error signal considering simulation and real - world commands
+	    // 考虑模拟和真实世界命令来确定引发错误信号
+	    #statRaiseError := #controlNode.commands.raiseError OR (#statManualCommands.raiseError AND #statSimActive);
+	    // Determine the reset error signal considering simulation and real - world commands
+	    // 考虑模拟和真实世界命令来确定复位错误信号
+	    #statResetError := #controlNode.commands.resetError OR (#statManualCommands.resetError AND #statSimActive);
+	    
+	    REGION SIMULATE MODE
+	        // Simulation mode logic can be added here
+	        // 模拟模式逻辑可在此处添加
+	    END_REGION SIMULATE MODE
+	    REGION Interlock dependent edge commands
+	        // Detect the rising edge of the simulation active signal
+	        // 检测模拟激活信号的上升沿
+	        #tempSimActiveEdge := #statSimActive AND NOT #statSimActivePrevious;
+	        // Detect the rising edge of the signal
+	        // 检测信号的上升沿
+	        #tempSignalEdge := #statSignal AND NOT #statSignalPrevious;
+	    END_REGION Interlock dependent edge commands
+	    
+	END_REGION PROCESS INPUT SIGNALS
+	
+	REGION RESET
+	    // Reset the system when the simulation active signal rises or the reset error signal is active
+	    // 当模拟激活信号上升或复位错误信号激活时重置系统
+	    IF #tempSimActiveEdge OR #statResetError THEN
+	        // Reset manual commands related to error, count, and simulation
+	        // 重置与错误、计数和模拟相关的手动命令
+	        #statManualCommands.raiseError :=
+	        #statManualCommands.resetCount :=
+	        #statManualCommands.resetError :=
+	        #statManualCommands.simOK :=
+	        #statManualCommands.simStart :=
+	        // Reset simulated signal and enable signal
+	        // 重置模拟信号和使能信号
+	        #statSimSignal :=
+	        #statEnable :=
+	        // Reset reset error signal
+	        // 重置复位错误信号
+	        #statResetError :=
+	        FALSE;
+	        // Reset the count value
+	        // 重置计数值
+	        #statCountVal := 0;
+	        // Set the state machine to the no processing state
+	        // 将状态机设置为无处理状态
+	        #statFbState := #FB_STATE_NO_PROCESSING;
+	        // Set the diagnostic status to no error
+	        // 将诊断状态设置为无错误
+	        #statDiagnostics.status := #SUB_STATUS_NO_ERROR;
+	    END_IF;
+	    // Reset the count value when the reset count signal is active
+	    // 当复位计数信号激活时重置计数值
+	    IF #statResetCount THEN
+	        #statResetCount := false;
+	        #statCountVal := 0;
+	    END_IF;
+	    // Enter the error handling state when the raise error signal is active
+	    // 当引发错误信号激活时进入错误处理状态
+	    IF #statRaiseError THEN
+	        #statRaiseError := FALSE;
+	        #statFbState := #FB_STATE_ERROR_HANDLER;
+	    END_IF;
+	    // Reset the diagnostic status when the reset error signal is active
+	    // 当复位错误信号激活时重置诊断状态
+	    IF #statResetError THEN
+	        #statDiagnostics.status := #SUB_STATUS_NO_ERROR;
+	    END_IF;
+	END_REGION RESET
+	
+	REGION PARAMETER CHECK
+	    // Assign the reference count from the configuration to the static variable
+	    // 将配置中的参考计数值赋值给静态变量
+	    #statRefCount := #configuration.refCount;
+	END_REGION PARAMETER CHECK
+	
+	REGION ENABLING/DISABLING
+	    // If the simulation mode is active
+	    // 如果模拟模式激活
+	    IF #statSimActive THEN
+	        // Start the simulation when the simulation start command is received and the system is in no processing state
+	        // 当收到模拟启动命令且系统处于无处理状态时启动模拟
+	        IF #statManualCommands.simStart AND #statFbState = #FB_STATE_NO_PROCESSING THEN
+	            #statFbState := #FB_STATE_SIMULATING;
+	            #statManualCommands.simStart := false;
+	        END_IF;
+	    ELSE
+	        // If the system is in real - world mode and the enable signal is active
+	        // 如果系统处于真实世界模式且使能信号激活
+	        IF #controlNode.commands.enable AND #statFbState = #FB_STATE_NO_PROCESSING THEN
+	            // Start counting when the signal rising edge is detected
+	            // 当检测到信号上升沿时开始计数
+	            IF #tempSignalEdge THEN
+	                #statFbState := #FB_STATE_COUNT_SIGNAL;
+	            END_IF;
+	        END_IF;
+	    END_IF;
+	END_REGION ENABLING/DISABLING
+	
+	REGION STATE MACHINE
+	    REPEAT
+	        // Save the previous state of the state machine
+	        // 保存状态机的上一个状态
+	        #statFbStatePrevious := #statFbState;
+	        CASE #statFbState OF
+	            #FB_STATE_NO_PROCESSING:
+	                // Do nothing in no processing state
+	                // 无处理状态下不执行操作
+	                ;
+	            #FB_STATE_SIMULATING:
+	                REGION Simulating init
+	                    // Reset manual commands related to error, count, and simulated signal
+	                    // 重置与错误、计数和模拟信号相关的手动命令
+	                    #statManualCommands.raiseError :=
+	                    #statManualCommands.resetCount :=
+	                    #statManualCommands.resetError :=
+	                    #statSimSignal :=
+	                    FALSE;
+	                    // Reset the count value
+	                    // 重置计数值
+	                    #statCountVal := 0;
+	                    // Switch to the state of triggering signal in simulation
+	                    // 切换到模拟中触发信号的状态
+	                    #statFbState := #FB_STATE_TRIGGER_SIGNAL_SIMULATING;
+	                    // Set the diagnostic status to no error
+	                    // 将诊断状态设置为无错误
+	                    #statDiagnostics.status := #SUB_STATUS_NO_ERROR;
+	                END_REGION
+	                
+	            #FB_STATE_TRIGGER_SIGNAL_SIMULATING:
+	                REGION Trigger signal
+	                    // Trigger the simulated signal
+	                    // 触发模拟信号
+	                    #statSimSignal := TRUE;
+	                    // Switch to the state of adding count in simulation when the signal rising edge is detected
+	                    // 当检测到信号上升沿时切换到模拟中增加计数的状态
+	                    IF #tempSignalEdge THEN
+	                        #statFbState := #FB_STATE_ADD_COUNT_SIMULATING;
+	                    END_IF;
+	                END_REGION
+	                
+	            #FB_STATE_ADD_COUNT_SIMULATING:
+	                REGION Add count
+	                    // Increase the count value
+	                    // 增加计数值
+	                    #statCountVal := #statCountVal + 1;
+	                    // Switch to the state of resetting simulated signal
+	                    // 切换到重置模拟信号的状态
+	                    #statFbState := #FB_STATE_RESET_SIGNAL_SIMULATING;
+	                END_REGION
+	                
+	            #FB_STATE_RESET_SIGNAL_SIMULATING:
+	                REGION Reset simsignal
+	                    // Reset the simulated signal
+	                    // 重置模拟信号
+	                    #statSimSignal := FALSE;
+	                    // Switch to the state of checking repeat condition in simulation
+	                    // 切换到模拟中检查重复条件的状态
+	                    #statFbState := #FB_STATE_REPEAT_CONDITION_SIMULATING;
+	                END_REGION
+	                
+	            #FB_STATE_REPEAT_CONDITION_SIMULATING:
+	                REGION Condition check
+	                    // If the simulation OK command is received
+	                    // 如果收到模拟确认命令
+	                    IF #statManualCommands.simOK THEN
+	                        // Compare the count value with the reference count
+	                        // 比较计数值和参考计数值
+	                        IF #statCountVal = #statRefCount THEN
+	                            // Switch to no processing state if the count is correct
+	                            // 如果计数正确则切换到无处理状态
+	                            #statFbState := #FB_STATE_NO_PROCESSING;
+	                            #statManualCommands.simStart := FALSE;
+	                        ELSE
+	                            // Repeat the simulation if the count is incorrect
+	                            // 如果计数不正确则重复模拟
+	                            #statFbState := #FB_STATE_TRIGGER_SIGNAL_SIMULATING;
+	                        END_IF;
+	                    ELSE
+	                        // Compare the count value with the reference count when no simulation OK command is received
+	                        // 未收到模拟确认命令时比较计数值和参考计数值
+	                        IF #statCountVal > #statRefCount THEN
+	                            // Switch to no processing state if the count exceeds the reference
+	                            // 如果计数超过参考值则切换到无处理状态
+	                            #statFbState := #FB_STATE_NO_PROCESSING;
+	                            #statManualCommands.simStart := FALSE;
+	                        ELSE
+	                            // Repeat the simulation if the count is less than the reference
+	                            // 如果计数小于参考值则重复模拟
+	                            #statFbState := #FB_STATE_TRIGGER_SIGNAL_SIMULATING;
+	                        END_IF;
+	                    END_IF;
+	                END_REGION
+	                
+	            #FB_STATE_COUNT_SIGNAL:
+	                REGION Count signal
+	                    // Increase the count value in real - world mode
+	                    // 在真实世界模式下增加计数值
+	                    #statCountVal := #statCountVal + 1;
+	                    // Switch to no processing state after counting
+	                    // 计数后切换到无处理状态
+	                    #statFbState := #FB_STATE_NO_PROCESSING;
+	                END_REGION
+	                
+	            #FB_STATE_ERROR_HANDLER:
+	                REGION Error handling
+	                    // Set the diagnostic status to incorrect counting error
+	                    // 将诊断状态设置为计数错误
+	                    #statDiagnostics.status := #ERR_INCORRECT_COUNTING;
+	                END_REGION
+	        END_CASE;
+	    UNTIL (#statFbStatePrevious = #statFbState OR #statDiagnostics.status.%X15)
+	    END_REPEAT;
+	END_REGION STATE MACHINE
+	
+	REGION Setting previous values for edge detection
+	    // Save the previous value of the signal for edge detection
+	    // 保存信号的上一个值用于边沿检测
+	    #statSignalPrevious := #statSignal;
+	    // Save the previous value of the simulation active signal for edge detection
+	    // 保存模拟激活信号的上一个值用于边沿检测
+	    #statSimActivePrevious := #statSimActive;
+	END_REGION Setting previous values for edge detection
+	
+	REGION PROCESS OUTPUT SIGNALS
+	    REGION Disabling
+	        // Disabling logic can be added here
+	        // 禁用逻辑可在此处添加
+	    END_REGION Disabling
+	    REGION Error user cleared
+	        // Error user cleared logic can be added here
+	        // 用户清除错误的逻辑可在此处添加
+	    END_REGION Error user cleared
+	    REGION Error auto cleared
+	        // Error auto cleared logic can be added here
+	        // 自动清除错误的逻辑可在此处添加
+	    END_REGION Error auto cleared
+	    REGION Write monitoring structure
+	        // Assign the error status to the process values
+	        // 将错误状态赋值给过程值
+	        #statProcessValues.error := #statDiagnostics.status.%X15;
+	        // Assign the raise error, reset count, and reset error states to the manual commands
+	        // 将引发错误、复位计数和复位错误状态赋值给手动命令
+	        #statManualCommands.raiseError := #statRaiseError;
+	        #statManualCommands.resetCount := #statResetCount;
+	        #statManualCommands.resetError := #statResetError;
+	    END_REGION Write monitoring structure
+	    REGION Write Process data to module interface
+	        // Write the manual commands to the module interface
+	        // 将手动命令写入模块接口
+	        #moduleInterface.commands := #statManualCommands;
+	        // Write the simulation status, signal, count value, and error status to the module interface monitoring
+	        // 将模拟状态、信号、计数值和错误状态写入模块接口监控
+	        #moduleInterface.monitoring.simulated := #statSimActive;
+	        #moduleInterface.monitoring.signal := #statSignal;
+	        #moduleInterface.monitoring.countVal := #statCountVal;
+	        #moduleInterface.monitoring.error := #statProcessValues.error;
+	    END_REGION Write Process data to module interface
+	    REGION Write work data to interface and outputs
+	        // Write the enable, raise error, reset count, and reset error states to the control node commands
+	        // 将使能、引发错误、复位计数和复位错误状态写入控制节点命令
+	        #controlNode.commands.enable := #statEnable;
+	        #controlNode.commands.raiseError := #statRaiseError;
+	        #controlNode.commands.resetCount := #statResetCount;
+	        #controlNode.commands.resetError := #statResetError;
+	        // Write the simulation status, signal, count value, and error status to the control node monitoring
+	        // 将模拟状态、信号、计数值和错误状态写入控制节点监控
+	        #controlNode.monitoring.simulated := #statSimActive;
+	        #controlNode.monitoring.signal := #statSignal;
+	        #controlNode.monitoring.countVal := #statCountVal;
+	        #controlNode.monitoring.error := #statProcessValues.error;
+	        // ENO mechanism disabled, ENO - forced to TRUE
+	        // ENO机制禁用，强制设置为TRUE
+	        ENO := TRUE;
+	    END_REGION Write static values to outputs    
+	END_REGION PROCESS OUTPUT SIGNALS
+END_FUNCTION_BLOCK
+

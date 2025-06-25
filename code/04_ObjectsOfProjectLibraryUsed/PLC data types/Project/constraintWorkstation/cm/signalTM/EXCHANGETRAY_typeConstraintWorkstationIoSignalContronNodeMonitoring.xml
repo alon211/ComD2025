@@ -1,0 +1,114 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Document xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v5">
+  <Engineering version="V19" />
+  <SW.Types.PlcStruct ID="0">
+    <AttributeList>
+      <Access>Published</Access>
+      <Interface><Sections>
+  <Section Name="None">
+    <Member Name="simulated" Datatype="Bool" />
+    <Member Name="hookClawCylinderWorkPositionDetection2" Datatype="Bool" />
+    <Member Name="slideCylinderMedianPositionDetection1" Datatype="Bool" />
+    <Member Name="slideCylinderWorkPositionDetection1" Datatype="Bool" />
+    <Member Name="motorConstraintPot2" Datatype="Bool" />
+    <Member Name="motorConstraintNot2" Datatype="Bool" />
+    <Member Name="motorConstraintPot1" Datatype="Bool" />
+    <Member Name="motorConstraintOrg2" Datatype="Bool" />
+    <Member Name="hookClawCylinderWorkPositionDetection1" Datatype="Bool" />
+    <Member Name="hookClawCylinderHomePositionDetection1" Datatype="Bool" />
+    <Member Name="pressureGaugeSetValueDetection2_2" Datatype="Bool" />
+    <Member Name="motorConstraintNot1" Datatype="Bool" />
+    <Member Name="slideCylinderHomePositionDetection1" Datatype="Bool" />
+    <Member Name="motorConstraintOrg1" Datatype="Bool" />
+    <Member Name="slideCylinderHomePositionDetection2" Datatype="Bool" />
+    <Member Name="pressureGaugeSetValueDetection1_2" Datatype="Bool" />
+    <Member Name="pressureGaugeSetValueDetection2_1" Datatype="Bool" />
+    <Member Name="slideCylinderWorkPositionDetection2" Datatype="Bool" />
+    <Member Name="hookClawCylinderHomePositionDetection2" Datatype="Bool" />
+    <Member Name="pressureGaugeSetValueDetection1_1" Datatype="Bool" />
+    <Member Name="slideCylinderMedianPositionDetection2" Datatype="Bool" />
+  </Section>
+</Sections></Interface>
+      <Name>LEXCHANGETRAY_typeConstraintWorkstationIoSignalContronNodeMonitoring</Name>
+      <Namespace />
+    </AttributeList>
+    <ObjectList>
+      <MultilingualText ID="1" CompositionName="Comment">
+        <ObjectList>
+          <MultilingualTextItem ID="2" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text>simulated: Bool
+hookClawCylinderWorkPositionDetection2: Bool
+slideCylinderMedianPositionDetection1: Bool
+slideCylinderWorkPositionDetection1: Bool
+motorConstraintPot2: Bool
+motorConstraintNot2: Bool
+motorConstraintPot1: Bool
+motorConstraintOrg2: Bool
+hookClawCylinderWorkPositionDetection1: Bool
+hookClawCylinderHomePositionDetection1: Bool
+pressureGaugeSetValueDetection2_2: Bool
+motorConstraintNot1: Bool
+slideCylinderHomePositionDetection1: Bool
+motorConstraintOrg1: Bool
+slideCylinderHomePositionDetection2: Bool
+pressureGaugeSetValueDetection1_2: Bool
+pressureGaugeSetValueDetection2_1: Bool
+slideCylinderWorkPositionDetection2: Bool
+hookClawCylinderHomePositionDetection2: Bool
+pressureGaugeSetValueDetection1_1: Bool
+slideCylinderMedianPositionDetection2: Bool</Text>
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="3" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="4" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="5" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+      <MultilingualText ID="6" CompositionName="Title">
+        <ObjectList>
+          <MultilingualTextItem ID="7" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="8" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="9" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="A" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+    </ObjectList>
+  </SW.Types.PlcStruct>
+</Document>

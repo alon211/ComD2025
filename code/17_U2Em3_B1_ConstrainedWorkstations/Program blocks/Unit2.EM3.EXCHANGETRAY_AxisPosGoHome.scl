@@ -1,0 +1,82 @@
+﻿NAMESPACE Unit2.EM3
+FUNCTION EXCHANGETRAY_AxisPosGoHome : Void
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+VERSION : 0.1
+   VAR_INPUT 
+      goHome : Bool;
+   END_VAR
+
+   VAR_OUTPUT 
+      homeDone : Bool;
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // LGF / (c)Copyright 2024
+	    //-------------------------------------------------------------------------------
+	    // Title:            Servo Axis Homing Control
+	    // Comment/Function: æ¯æ¬¡æ‰˜ç›˜è¿è¡Œå’Œåœæ­¢æ—¶éœ€è¦åˆå§‹åŒ–çš„å˜é‡
+	    //                   Variables that need to be initialized when tray runs and stops
+	    // Library/Family:   Unit2 Servo Control
+	    // Author:           Automation Department / Servo Control Team
+	    // Tested with:      SIMATIC S7-1500 FW V2.9
+	    // Engineering:      TIA Portal V17
+	    // Restrictions:     Must be called in OB1
+	    // Requirements:     SV112 and SV113 servo drives configured
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 2024-01-17 | Servo Control Team      | First released version
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(*
+	This block controls the homing operation of two servo axes:
+	- SV112 Constraint1 Axis (cm1SV112_Constraint1_Axis)
+	- SV113 Constraint2 Axis (cm2SV113_Constraint2_Axis)
+	
+	When #goHome is TRUE, both axes are commanded to move to home position.
+	The #homeDone output is set when both axes have reached standstill state
+	and their position values are zero.
+	
+	åŠŸèƒ½è¯´æ˜Žï¼š
+	æœ¬å—æŽ§åˆ¶ä¸¤ä¸ªä¼ºæœè½´çš„å›žåŽŸç‚¹æ“ä½œï¼š
+	- SV112çº¦æŸ1è½´ (cm1SV112_Constraint1_Axis)
+	- SV113çº¦æŸ2è½´ (cm2SV113_Constraint2_Axis)
+	
+	å½“#goHomeä¸ºTRUEæ—¶ï¼Œä¸¤ä¸ªè½´è¢«å‘½ä»¤ç§»åŠ¨åˆ°åŽŸç‚¹ä½ç½®ã€‚
+	å½“ä¸¤ä¸ªè½´éƒ½è¾¾åˆ°é™æ­¢çŠ¶æ€ä¸”ä½ç½®å€¼ä¸ºé›¶æ—¶ï¼Œ#homeDoneè¾“å‡ºè¢«ç½®ä¸ºTRUEã€‚
+	*)
+	END_REGION DESCRIPTION
+	
+	REGION INITIALISATION  
+	    // No initialization required for this block
+	    // æœ¬å—ä¸éœ€è¦åˆå§‹åŒ–
+	END_REGION INITIALISATION  
+	
+	REGION PROGRAM LOGIC
+	    // Command both servo axes to home position when #goHome is TRUE
+	    // å½“#goHomeä¸ºTRUEæ—¶ï¼Œå‘½ä»¤ä¸¤ä¸ªä¼ºæœè½´å›žåŽŸç‚¹
+	    ControlNodes.cm1SV112_Constraint1_Axis.commands.home :=
+	    ControlNodes.cm2SV113_Constraint2_Axis.commands.home := #goHome;
+	    
+	    // Check if both axes have reached home position (standstill and position=0)
+	    // æ£€æŸ¥ä¸¤ä¸ªè½´æ˜¯å¦éƒ½å·²åˆ°è¾¾åŽŸç‚¹ä½ç½®ï¼ˆé™æ­¢ä¸”ä½ç½®=0ï¼‰
+	    #homeDone := ControlNodes.cm1SV112_Constraint1_Axis.monitoring.statusWord.bit07_Standstill
+	    AND ControlNodes.cm2SV113_Constraint2_Axis.monitoring.statusWord.bit07_Standstill
+	    AND ControlNodes.cm1SV112_Constraint1_Axis.monitoring.position = 0
+	    AND ControlNodes.cm2SV113_Constraint2_Axis.monitoring.position = 0;
+	END_REGION PROGRAM LOGIC
+	
+	REGION OUTPUTS
+	    // ENO mechanism for error handling
+	    // ENOæœºåˆ¶ç”¨äºŽé”™è¯¯å¤„ç†
+	    ENO := TRUE;
+	END_REGION OUTPUTS
+END_FUNCTION
+END_NAMESPACE
+

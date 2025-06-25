@@ -1,0 +1,134 @@
+﻿FUNCTION_BLOCK "LAF_StatusSclSequence"
+TITLE = LAF_SCLStatus
+{ S7_Optimized_Access := 'TRUE' ; Published := 'TRUE' }
+AUTHOR : 'Siemens Digital Industries'
+FAMILY : LAF
+VERSION : 1.2
+//The FB LAF_SCLStatus is a template for monitoring sequences of an Equipment Module programmed in SCL.
+   VAR_INPUT 
+      parentReferenceDesignator : WString[128];   // Name of the parent module for composing the module name
+      idleStep : DInt;   // Idle Step of the Sequence
+      stoppedStep : DInt;   // Immediate Stopped Step of the Sequence
+      setJobNumber { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;   // Evaluated Job Number 
+   END_VAR
+
+   VAR_OUTPUT 
+      activeJobNumber { ExternalWritable := 'False'} : DInt;   // Activated Job Number
+      previousCycleJobNumber : DInt;   // Job that was active in last cycle
+   END_VAR
+
+   VAR_IN_OUT 
+      hmiInterface : "LAF_typeSequenceInterface";
+      sequence : "LAF_typeSequence";
+   END_VAR
+
+   VAR 
+      statCurrentJob : DInt;   // Current active job
+      statStepComplete : Bool;   // Active step is completed, transition is fullfilled and the next step can be released manually
+   END_VAR
+
+   VAR CONSTANT 
+      NO_JOB_ACTIVE : DInt;   // No job is active
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // Siemens AG / (c)Copyright 2024
+	    //-------------------------------------------------------------------------------
+	    // Title:            LAF_SCLStatus
+	    // Comment/Function: The FB LAF_SCLStatus is a template for monitoring sequences
+	    //                   of an Equipment Module programmed in SCL. 
+	    // Library/Family:   Part of the Automation Framework
+	    // Author:           Siemens Digital Industries
+	    // Tested with:      S7-PLCSIM Advanced 6.0
+	    // Engineering:      TIA Portal V19
+	    // Restrictions:     -
+	    // Requirements:     -
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|------------------------------
+	    // 01.01.00 | 21.06.2024 | SIMATIC Systems Support | First released version
+	    // 01.02.00 | 30.09.2024 | SIMATIC Systems Support | Block information properties updated
+	    //                                                   Restructuring of the code
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(/*
+	This block monitors the following from the SCL sequence:
+	1. Status of the programmed Sequence.
+	2. Transfers the information about the sequence and the included steps and Jobs from the SCL Sequence.
+	*/)
+	END_REGION DESCRIPTION
+	
+	REGION Update Previous Job Number
+	    // Store the Job Number of the last cycle
+	    #previousCycleJobNumber := #statCurrentJob;
+	END_REGION Update Previous Job Number
+	
+	REGION Manual Control Enabled
+	    // Sequencer Manual Control Enable Conditions
+	    #sequence.status.manualControlEnabled := #sequence.enableManualCtrl;
+	    #sequence.status.manualModeChangeEnabled := #sequence.enableManualModeChange;
+	END_REGION Manual Control Enabled
+	
+	REGION Step active
+	    // The current step is active - no step change
+	    #sequence.status.stepActive := #sequence.status.seqActive AND (#sequence.status.nextStep = #sequence.status.currentStep);
+	END_REGION Step active
+	
+	REGION Sequencer in Idle Step
+	    // The current step is the Idle Step
+	    #sequence.status.inStepIdle := #sequence.status.currentStep = #idleStep;
+	    
+	    IF (#sequence.status.currentStep = #idleStep) THEN
+	        #statCurrentJob := #NO_JOB_ACTIVE;
+	    END_IF;
+	END_REGION
+	
+	
+	REGION Sequencer in Stopped Step
+	    // The current step is the Stopped Step
+	    #sequence.status.inStepStopped := #sequence.status.currentStep = #stoppedStep;
+	
+	    IF (#sequence.status.currentStep = #stoppedStep) THEN
+	        #statCurrentJob := #NO_JOB_ACTIVE;
+	    END_IF;
+	END_REGION Current step is IDLE OR STOPPED
+	
+	REGION Current step has been completed
+	    // stepComplete is set, when the transistion to leave the current step is true but the stepChange has been prohibited by the stepRelease so far
+	    #sequence.status.stepComplete := #sequence.status.nextStep <> #sequence.status.currentStep;
+	    #statStepComplete := #sequence.status.singleStepMode AND #sequence.status.stepComplete;
+	END_REGION Current step has been completed
+	
+	REGION Sequencer Leaving Idle Step
+	    // Sequencer leaves the Idle Step - Set current Job and Job Active
+	    IF (#sequence.status.currentStep = #idleStep) AND (#sequence.status.nextStep <> #idleStep) THEN
+	        #statCurrentJob := #setJobNumber;
+	    END_IF;
+	END_REGION Sequencer Leaving Idle Step
+	
+	REGION Update Sequence History
+	    // Write the last executed Step to the Step History
+	    IF #sequence.status.justSteppedPulse THEN
+	        "LAF_UpdateStepHistory"(#sequence);
+	    END_IF;
+	END_REGION Update Sequence History
+	
+	REGION Update Hmi Interface
+	    // Update the latest values for the Hmi Interface
+	    #hmiInterface.monitoring := #sequence.status;
+	END_REGION Update Hmi Interface
+	
+	REGION Update active Job output
+	    // Update the current job number to the activeJobNumber output
+	    #activeJobNumber := #statCurrentJob;
+	END_REGION
+	
+	
+END_FUNCTION_BLOCK
+

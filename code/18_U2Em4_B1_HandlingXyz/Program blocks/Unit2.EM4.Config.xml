@@ -1,0 +1,958 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Document>
+  <Engineering version="V19" />
+  <SW.Blocks.GlobalDB ID="0">
+    <AttributeList>
+      <Access>Published</Access>
+      <Interface><Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v5">
+  <Section Name="Static">
+    <Member Name="em" Datatype="&quot;LAF_typeEmConfiguration&quot;">
+      <AttributeList>
+        <BooleanAttribute Name="ExternalWritable" SystemDefined="true">false</BooleanAttribute>
+      </AttributeList>
+      <Comment>
+        <MultiLanguageText Lang="en-US">Configuration of EM Parameters</MultiLanguageText>
+      </Comment>
+      <Sections>
+        <Section Name="None">
+          <Member Name="referenceDesignator" Datatype="&quot;LAF_typeReferenceConfiguration&quot;">
+            <Sections>
+              <Section Name="None">
+                <Member Name="parent" Datatype="WString[128]">
+                  <StartValue>WSTRING#'U1'</StartValue>
+                </Member>
+                <Member Name="relative" Datatype="WString[25]">
+                  <StartValue>WSTRING#'EM1'</StartValue>
+                </Member>
+              </Section>
+            </Sections>
+          </Member>
+        </Section>
+      </Sections>
+    </Member>
+    <Member Name="axis" Datatype="Array[1.._.U2EM4_NO_OF_AXES] of DB_ANY">
+      <AttributeList>
+        <BooleanAttribute Name="ExternalWritable" SystemDefined="true">false</BooleanAttribute>
+      </AttributeList>
+      <Comment>
+        <MultiLanguageText Lang="en-US">Assign the axis of the EM</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="em4Parameters" Datatype="&quot;LAF_typeXyzhandlingEm4Parameters&quot;">
+      <Sections>
+        <Section Name="None">
+          <Member Name="cm1Axis119" Datatype="&quot;LAF_typeAxisParameters&quot;">
+            <Comment>
+              <MultiLanguageText Lang="en-US">X</MultiLanguageText>
+            </Comment>
+            <Sections>
+              <Section Name="None">
+                <Member Name="production" Datatype="&quot;LAF_typeAxisProductionParameters&quot;">
+                  <Sections>
+                    <Section Name="None">
+                      <Member Name="distanceList" Datatype="Array[0..99] of &quot;LAF_typeAxisMotionParameters&quot;">
+                        <Sections>
+                          <Section Name="None">
+                            <Member Name="position" Datatype="LReal">
+                              <Subelement Path="0">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="1">
+                                <StartValue>150.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="2">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="3">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="4">
+                                <StartValue>190.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="5">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="10">
+                                <StartValue>45.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="11">
+                                <StartValue>165.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="12">
+                                <StartValue>45.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="13">
+                                <StartValue>45.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="14">
+                                <StartValue>225.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="15">
+                                <StartValue>45.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="20">
+                                <StartValue>45.0</StartValue>
+                              </Subelement>
+                            </Member>
+                            <Member Name="velocity" Datatype="LReal">
+                              <Subelement Path="0">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="1">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="2">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="3">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="4">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="5">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="10">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="11">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="12">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="13">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="14">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="15">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="20">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                            </Member>
+                          </Section>
+                        </Sections>
+                        <Subelement Path="0">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">24 cells[0][0]constraintPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="1">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">24 cells[0][-1]constraintPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="2">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">24 cells[1][0]constraintPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="3">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">36 cells[0][0]constraintPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="4">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">36 cells[0][-1]constraintPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="5">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">36 cells[1][0]constraintPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="6">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="7">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="8">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="9">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="10">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">24 cells[0][0]plasticPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="11">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">24 cells[0][-1]plasticPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="12">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">24 cells[1][0]plasticPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="13">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">36 cells[0][0]plasticPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="14">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">36 cells[0][-1]plasticPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="15">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">36 cells[1][0]plasticPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="16">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="17">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="18">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="19">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="20">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">ngConveyorPostion</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="21">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="22">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="23">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="24">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="25">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="26">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="27">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="28">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="29">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="30">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">24电芯 拘束第一次抓取</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="31">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">24电芯 拘束第二次抓取</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="32">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">24电芯 拘束第三次抓取</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="33">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="34">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="35">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="36">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="37">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="38">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="39">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="40">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">36电芯 拘束第1次抓取</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="41">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">36电芯 拘束第2次抓取</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="42">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">36电芯 拘束第3次抓取</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="43">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">36电芯 拘束第4次抓取</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="44">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">36电芯 拘束第5次抓取</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="45">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="46">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="47">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="48">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="49">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="50">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">24电芯 塑料第一次抓放</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="51">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">24电芯 塑料第二次抓放</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="52">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">24电芯 塑料第三次抓放</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="53">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="54">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="55">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="56">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="57">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="58">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="59">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="60">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">36电芯 塑料第1次抓放</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="61">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">36电芯 塑料第2次抓放</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="62">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">36电芯 塑料第3次抓放</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="63">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">36电芯 塑料第4次抓放</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="64">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">36电芯 塑料第5次抓放</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                      </Member>
+                    </Section>
+                  </Sections>
+                </Member>
+              </Section>
+            </Sections>
+          </Member>
+          <Member Name="cm2Axis120" Datatype="&quot;LAF_typeAxisParameters&quot;">
+            <Comment>
+              <MultiLanguageText Lang="en-US">Y</MultiLanguageText>
+            </Comment>
+            <Sections>
+              <Section Name="None">
+                <Member Name="production" Datatype="&quot;LAF_typeAxisProductionParameters&quot;">
+                  <Sections>
+                    <Section Name="None">
+                      <Member Name="distanceList" Datatype="Array[0..99] of &quot;LAF_typeAxisMotionParameters&quot;">
+                        <Sections>
+                          <Section Name="None">
+                            <Member Name="position" Datatype="LReal">
+                              <Subelement Path="0">
+                                <StartValue>40.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="1">
+                                <StartValue>40.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="2">
+                                <StartValue>60.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="3">
+                                <StartValue>50.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="4">
+                                <StartValue>50.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="5">
+                                <StartValue>70.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="10">
+                                <StartValue>180.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="11">
+                                <StartValue>180.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="12">
+                                <StartValue>200.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="13">
+                                <StartValue>190.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="14">
+                                <StartValue>190.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="15">
+                                <StartValue>210.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="20">
+                                <StartValue>300.0</StartValue>
+                              </Subelement>
+                            </Member>
+                            <Member Name="velocity" Datatype="LReal">
+                              <Subelement Path="0">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="1">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="2">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="3">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="4">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="5">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="10">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="11">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="12">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="13">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="14">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="15">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="20">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                            </Member>
+                          </Section>
+                        </Sections>
+                        <Subelement Path="0">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">24 cells[0][0]constraintPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="1">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">24 cells[0][-1]constraintPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="2">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">24 cells[1][0]constraintPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="3">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">36 cells[0][0]constraintPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="4">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">36 cells[0][-1]constraintPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="5">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">36 cells[1][0]constraintPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="6">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="7">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="8">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="9">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="10">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">24 cells[0][0]plasticPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="11">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">24 cells[0][-1]plasticPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="12">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">24 cells[1][0]plasticPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="13">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">36 cells[0][0]plasticPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="14">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">36 cells[0][-1]plasticPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="15">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">36 cells[1][0]plasticPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="16">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="17">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="18">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="19">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="20">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">ngConveyorPostion</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                      </Member>
+                    </Section>
+                  </Sections>
+                </Member>
+              </Section>
+            </Sections>
+          </Member>
+          <Member Name="cm3Axis121" Datatype="&quot;LAF_typeAxisParameters&quot;">
+            <Comment>
+              <MultiLanguageText Lang="en-US">Z</MultiLanguageText>
+            </Comment>
+            <Sections>
+              <Section Name="None">
+                <Member Name="production" Datatype="&quot;LAF_typeAxisProductionParameters&quot;">
+                  <Sections>
+                    <Section Name="None">
+                      <Member Name="distanceList" Datatype="Array[0..99] of &quot;LAF_typeAxisMotionParameters&quot;">
+                        <Sections>
+                          <Section Name="None">
+                            <Member Name="position" Datatype="LReal">
+                              <Subelement Path="0">
+                                <StartValue>90.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="1">
+                                <StartValue>90.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="2">
+                                <StartValue>90.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="3">
+                                <StartValue>90.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="4">
+                                <StartValue>90.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="5">
+                                <StartValue>90.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="10">
+                                <StartValue>90.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="11">
+                                <StartValue>90.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="12">
+                                <StartValue>90.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="13">
+                                <StartValue>90.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="14">
+                                <StartValue>90.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="15">
+                                <StartValue>90.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="20">
+                                <StartValue>100.0</StartValue>
+                              </Subelement>
+                            </Member>
+                            <Member Name="velocity" Datatype="LReal">
+                              <Subelement Path="0">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="1">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="2">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="3">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="4">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="5">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="10">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="11">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="12">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="13">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="14">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="15">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                              <Subelement Path="20">
+                                <StartValue>30.0</StartValue>
+                              </Subelement>
+                            </Member>
+                          </Section>
+                        </Sections>
+                        <Subelement Path="0">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">24 cells[0][0]constraintPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="1">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">24 cells[0][-1]constraintPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="2">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">24 cells[1][0]constraintPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="3">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">36 cells[0][0]constraintPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="4">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">36 cells[0][-1]constraintPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="5">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">36 cells[1][0]constraintPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="6">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="7">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="8">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="9">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="10">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">24 cells[0][0]plasticPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="11">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">24 cells[0][-1]plasticPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="12">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">24 cells[1][0]plasticPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="13">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">36 cells[0][0]plasticPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="14">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">36 cells[0][-1]plasticPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="15">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">36 cells[1][0]plasticPosition</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="16">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="17">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="18">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="19">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">Structure for a Position set point</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                        <Subelement Path="20">
+                          <Comment>
+                            <MultiLanguageText Lang="en-US">ngConveyorPostion</MultiLanguageText>
+                          </Comment>
+                        </Subelement>
+                      </Member>
+                    </Section>
+                  </Sections>
+                </Member>
+              </Section>
+            </Sections>
+          </Member>
+        </Section>
+      </Sections>
+    </Member>
+  </Section>
+</Sections></Interface>
+      <MemoryReserve>100</MemoryReserve>
+      <Name>Config</Name>
+      <Namespace>Unit2.EM4</Namespace>
+      <Number>93</Number>
+      <ProgrammingLanguage>DB</ProgrammingLanguage>
+    </AttributeList>
+    <ObjectList>
+      <MultilingualText ID="1" CompositionName="Comment">
+        <ObjectList>
+          <MultilingualTextItem ID="2" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="3" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="4" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="5" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+      <MultilingualText ID="6" CompositionName="Title">
+        <ObjectList>
+          <MultilingualTextItem ID="7" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="8" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="9" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="A" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+    </ObjectList>
+  </SW.Blocks.GlobalDB>
+</Document>

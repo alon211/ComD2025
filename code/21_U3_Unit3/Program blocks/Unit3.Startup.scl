@@ -1,0 +1,50 @@
+﻿NAMESPACE Unit3
+ORGANIZATION_BLOCK Startup
+TITLE = "Complete Restart"
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+VERSION : 0.1
+   VAR_TEMP 
+      tempIndex : Int;   // Index of Unit in the array
+   END_VAR
+
+
+BEGIN
+	REGION initConfig
+	    // Statement section REGION
+	    REGION Unit Index Number
+	        //Assign the number OF the unit TO a temp FOR correct array index access.
+	        //Number is defined in PLC tags OF Software unit _.Global.
+	        Config.initConfigPar.UnitNo := _.UNIT03;
+	        Config.unit.referenceDesignator.relative := WSTRING#'U3';
+	    END_REGION Unit Index Number
+	END_REGION
+	
+	REGION Unit Index Number
+	    //Assign the number OF the unit TO a temp FOR correct array index access.
+	    //Number is defined in PLC tags OF Software unit _.Global.
+	    #tempIndex := Config.initConfigPar.UnitNo;
+	END_REGION Unit Index Number
+	
+	
+	REGION Build the Absolut Reference Designator
+	    // Set the Absoult Reference Designator in the DB Config. It is combined out of the parent reference designator and the own reference designator (=relative)
+	    IF LEN(IN := Config.unit.referenceDesignator.parent) <> 0 THEN
+	        Config.unit.referenceDesignator.combined := CONCAT_WSTRING(IN1 := Config.unit.referenceDesignator.parent, IN2 := WSTRING#'.', IN3 := Config.unit.referenceDesignator.relative);
+	    ELSE
+	        Config.unit.referenceDesignator.combined := Config.unit.referenceDesignator.relative;
+	    END_IF;
+	END_REGION
+	
+	REGION Configuration OF the OMAC State Machine
+	    // In the DB Config, the state machine can be configured in a convenient way.
+	    // LUC_StateMachineConfig translates that configuration into the configuration variables for the stateModeManager.
+	    // Additionally, the EnabledModes are copied TO the interface so that they can be shown on the HMI.
+	    _.LUC_StateMachineConfig(stateMachineConfig := Config.stateMachine,
+	                                     lpmlModeStateManagerConfig => Config.stateModeManager);
+	            _.Global.Data.unit[#tempIndex].controlModeStateManager.monitoring.curEnabledModes := Config.stateModeManager.EnabledModesCfg;
+	END_REGION
+	
+	
+END_ORGANIZATION_BLOCK
+END_NAMESPACE
+

@@ -1,0 +1,387 @@
+﻿NAMESPACE Unit2.Em5
+FUNCTION_BLOCK CallEquipment
+TITLE = CallEquipment
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+AUTHOR : Siemens_FA_SUP
+VERSION : 0.1
+//Template for the call Environment of the Equipment Module. Here the Information from the Unit is processed and used to control the main sequence for the Equipment module.
+   VAR_IN_OUT 
+      unitStatus : _.LAF_typeUnitStatus;   // Current unit status o be used in this EM
+      unitAlarmDB : _.LAF_typeAlarms;   // Summarized EM Alarms for the Unit
+      emFeedback : _.LUC_typeEmFeedback;   // Feedback of the EM to the Unit
+   END_VAR
+
+   VAR 
+      statUnitStatus { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LAF_typeUnitStatus;   // Unit Status used in this EM
+      instJobExecute { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LAF_SelectJob;
+      instJobStopping { ExternalWritable := 'False'} : _.LAF_SelectJob;
+      instJobStarting { ExternalWritable := 'False'} : _.LAF_SelectJob;
+      instJobHolding { ExternalWritable := 'False'} : _.LAF_SelectJob;
+      instJobUnHolding { ExternalWritable := 'False'} : _.LAF_SelectJob;
+      instJobRecover { ExternalWritable := 'False'} : _.LAF_SelectJob;
+      instJobReseting { ExternalWritable := 'False'} : _.LAF_SelectJob;
+      instSequence { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.Unit2.Em5.Sequence;
+      instManageBitAlarms { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LAF_ManageBitAlarms;
+      instCmReset { ExternalWritable := 'False'} : EXCHANGETRAY_PlasticWorkstationCmResetOperator;
+      instCm3SignalTM { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LEXCHANGETRAY_U2Em5SignalTM;
+      instCm1Vfd208 { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LEXCHANGETRAY_RollerVfd;
+      instCm2Cylinder { ExternalWritable := 'False'} : _.LEXCHANGETRAY_Cylinder;
+      instCm4SR1000Profinet { ExternalWritable := 'False'} : _.LEXCHANGETRAY_Sr1000_Profinet;
+      statLstUnitMode { ExternalWritable := 'False'; S7_SetPoint := 'True'} : DInt;
+   END_VAR
+
+   VAR_TEMP 
+      tempScInProduction : Bool;
+      tempScInManual : Bool;
+      tempScInMantaince : Bool;
+      tempProductionStartingSC : Bool;
+   END_VAR
+
+   VAR CONSTANT 
+      NO_JOB : DInt;   // No job
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // (company)/ (c)Copyright (year)
+	    //-------------------------------------------------------------------------------
+	    // Title:            (Title of this block)
+	    // Comment/Function: (that is implemented in the block)
+	    // Library/Family:   (that the source is dedicated to)
+	    // Author:           (department / person in charge / contact)
+	    // Tested with:      (test system with FW version)
+	    // Engineering:      TIA Portal (SW version)
+	    // Restrictions:     (OB types, etc.)
+	    // Requirements:     (hardware, technological package, etc.)
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | dd.mm.yyyy | (name of expert)        | First released version
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	    (/*
+	    This is a template block provided by the Automation Framework. It can be used to create an own project.
+	    The Block Info Header is prepared to put in your own data.
+	    Description of the block could be added here and the docu created by Code2Docu.
+	    */)
+	END_REGION DESCRIPTION
+	
+	REGION Equipment Control 
+	    // Equipment control main region
+	    // 设备控制主区域
+	    REGION interlink_em_to_unit
+	        // Interlink between EM and Unit
+	        // EM与Unit之间的连接
+	        // This block links and unlinks the EM from the unit. The command to link/unlink can be set directly by the inputs of the block (e.g. to link/unlink based on any program logic)
+	        // or through the InOut "hmiInterface". The block changes the output "isLinked" to true/false, depending on the command and if a change is allowed. A changed is allowed if the unit
+	        // is in state aborted, clearing or stopped. The output "isLinked" is send back to the unit. If the EM is not linked, the unit ignores this EM.
+	        
+	        _.LUC_InterlinkToParent(link := false,
+	                                unlink := false,
+	                                isLinked => #emFeedback.isLinked,
+	                                currentState := #unitStatus.state,
+	                                hmiInterface := HmiInterface.em.interlinkMode);
+	    END_REGION
+	    
+	    REGION control_em        
+	        // When linked, unitStatus is fully applied to unitStatusUsed.
+	        // 当链接时，unitStatus完全应用于unitStatusUsed
+	        // When NOT linked, only acknowledge AND safetyReleased from the unitStatus are applied. 
+	        // 当未链接时，仅应用来自unitStatus的acknowledge和safetyReleased
+	        // A direct EM control BY HmiInterface OR localInterface is possible.
+	        // 可以通过HmiInterface或localInterface直接控制EM
+	        _.LAF_ControlEm(isLinked := #emFeedback.isLinked,
+	                        unitStatusUsed => #statUnitStatus,
+	                        unitStatus := #unitStatus,
+	                        hmiInterface := HmiInterface.em,
+	                        localInterface := ControlNodes.em);
+	    END_REGION
+	    
+	END_REGION
+	REGION Control Modules (Sensors)  
+	    // Control modules for sensors
+	    // 传感器控制模块
+	    REGION call_em_parameters
+	        // EM parameters calling
+	        // EM参数调用
+	        
+	        _.Global.Data.unit[_.UNIT02].specialFunctions.specialFunction06 := FALSE;
+	        _.LAF_U2Em5Parameter(enable := TRUE,
+	                             configuration := Config.em5Parameters,
+	                             moduleInterface := HmiInterface.em5Parameters);
+	        Config.em5Parameters.cm4SR1000.hwd := _."U2EM5_SR1000~Read_Data_128Byte_1";
+	        Config.em5Parameters.cm4SR1000.telegram.in.busyStatusBits.statusByte := _.busyStatusByte_1_em120;
+	        
+	        Config.em5Parameters.cm4SR1000.telegram.in.completionStatusBits.statusByte := _.completionStatusByte_1_em120;
+	        Config.em5Parameters.cm4SR1000.telegram.in.errorStatusBits.statusByte := _.errorStatusByte_1_em120;
+	        Config.em5Parameters.cm4SR1000.telegram.in.handshakAndGeneralErrorStatusBits.statusByte := _.handshakeAndGeneralErrorStatusByte_1_em120;
+	        
+	    END_REGION
+	    REGION Cm3SignalTM
+	        #instCm3SignalTM(inspectionAfterPlasticTrayJackingU2EM5 := _.inspectionAfterPlasticTrayJackingU2EM5,
+	                         inspectionBeforePlasticTrayJackingU2EM5 := _.inspectionBeforePlasticTrayJackingU2EM5,
+	                         plasticTrayFeedingDetectionU2EM5 := _.plasticTrayFeedingDetectionU2EM5,
+	                         plasticTrayLiftingCylinderHomePositionDetectionU2EM5_1 := _.plasticTrayLiftingCylinderHomePositionDetectionU2EM5_1,
+	                         plasticTrayTrayInplaceDetectionU2EM5 := _.plasticTrayTrayInplaceDetectionU2EM5,
+	                         plasticTrayLiftingCylinderWorkingPositionDetectionU2EM5_1 := _.plasticTrayLiftingCylinderworkingPositionDetectionU2EM5_1,
+	                         scapegoat1SignalU2EM5 := _.scapegoat1SignalU2EM5,
+	                         scapegoat2SignalU2EM5 := _.scapegoat2SignalU2EM5,
+	                         configuration := HmiInterface.cm3SignalTM.configuration,
+	                         moduleInterface := HmiInterface.cm3SignalTM,
+	                         controlNode := ControlNodes.cm3SignalTM);
+	        
+	    END_REGION
+	    
+	END_REGION
+	
+	REGION Equipment Logic
+	    // Main equipment logic section
+	    // 设备主逻辑区域
+	    
+	    REGION Map Unit Status to Sequence Status
+	        // Function to connect the Unit Status to the Sequencer Interface
+	        _.LAF_MapUnitStatusToSequence(
+	                                      interruptJobInStopping := #unitStatus.state.stopping,
+	                                      interruptJobInHolding := #unitStatus.state.holding,
+	                                      interruptJobInSuspending := false,
+	                                      interruptJobInCompleting := false,
+	                                      unitStatus := #statUnitStatus,
+	                                      sequence := ControlNodes.sequence,
+	                                      jobs := ControlNodes.jobs);
+	    END_REGION Map Unit Status to Sequence Status
+	    
+	    REGION Select Job
+	        // Decide which Step Sequence to start depending on the OMAC State and EM conditions
+	        // First Move Block is TO Initialize the jobSelect Number
+	        ControlNodes.jobs.commands.setJobNumber := #NO_JOB;
+	        
+	        #instJobExecute(parentReferenceDesignator := Config.em.referenceDesignator.combined,
+	                        jobNumber := _.U2EM5_JOB_EXECUTE,
+	                        singleCycleJob := TRUE,
+	                        interlock := TRUE,
+	                        startCondition := #statUnitStatus.state.execute,
+	                        hmiInterface := HmiInterface.jobs,
+	                        jobs := ControlNodes.jobs);
+	        #instJobStarting(parentReferenceDesignator := Config.em.referenceDesignator.combined,
+	                         jobNumber := _.U2EM5_JOB_STARTING,
+	                         singleCycleJob := TRUE,
+	                         interlock := TRUE,
+	                         startCondition := #statUnitStatus.state.starting,
+	                         hmiInterface := HmiInterface.jobs,
+	                         jobs := ControlNodes.jobs);
+	        #instJobStopping(parentReferenceDesignator := Config.em.referenceDesignator.combined,
+	                         jobNumber := _.U2EM5_JOB_STOPPING,
+	                         singleCycleJob := TRUE,
+	                         interlock := TRUE,
+	                         startCondition := #statUnitStatus.state.stopping,
+	                         hmiInterface := HmiInterface.jobs,
+	                         jobs := ControlNodes.jobs);
+	        #instJobHolding(parentReferenceDesignator := Config.em.referenceDesignator.combined,
+	                        jobNumber := _.U2EM5_JOB_HOLODING,
+	                        singleCycleJob := TRUE,
+	                        interlock := TRUE,
+	                        startCondition := #statUnitStatus.state.holding,
+	                        hmiInterface := HmiInterface.jobs,
+	                        jobs := ControlNodes.jobs);
+	        #instJobUnHolding(parentReferenceDesignator := Config.em.referenceDesignator.combined,
+	                          jobNumber := _.U2EM5_JOB_UNHOLODING,
+	                          singleCycleJob := TRUE,
+	                          interlock := TRUE,
+	                          startCondition := #statUnitStatus.state.unholding,
+	                          hmiInterface := HmiInterface.jobs,
+	                          jobs := ControlNodes.jobs);
+	        #instJobReseting(parentReferenceDesignator := Config.em.referenceDesignator.combined,
+	                         jobNumber := _.U2EM5_JOB_RESTING,
+	                         singleCycleJob := TRUE,
+	                         interlock := TRUE,
+	                         startCondition := #statUnitStatus.state.resetting,
+	                         hmiInterface := HmiInterface.jobs,
+	                         jobs := ControlNodes.jobs);
+	        (* #instJobRecover(jobNumber:=_.U2EM5_JOB_RECOVER,
+	                         singleCycleJob:=TRUE,
+	                         interlock:=TRUE,
+	                         startCondition:=_.Global.Data.unit[1].specialFunctions.specialFunction10 AND #instJobStarting.jobStatus.completed ,
+	                         hmiInterface:=HmiInterface.jobs,
+	                         jobs:=ControlNodes.jobs);
+	         *)
+	        
+	    END_REGION Select Job
+	    
+	    REGION Set EM to initialized
+	        // Init State of the EM
+	        IF #instJobExecute.jobStatus.completed THEN
+	            ControlNodes.em.status.initialized := TRUE;
+	        END_IF;
+	        
+	        IF #statUnitStatus.state.aborting
+	            OR #statUnitStatus.state.stopping
+	            OR #statUnitStatus.state.suspending
+	            OR #statUnitStatus.state.holding
+	        THEN
+	            ControlNodes.em.status.initialized := FALSE;
+	        END_IF;
+	    END_REGION Set EM to initialized
+	    REGION Call Sequence Main
+	        
+	        #instSequence();
+	    END_REGION
+	    
+	END_REGION
+	
+	
+	    // Control modules for CMs
+	    // CM控制模块
+	    
+	REGION Control Modules (CMs)
+	    
+	    REGION enable/disable cms
+	        IF #statUnitStatus.state.idle THEN
+	            ControlNodes.cm1Vfd208.commands.sinaCommands.enableAxis :=
+	            true;
+	        END_IF;
+	        (* IF #statUnitStatus.state.aborted AND #statUnitStatus.state.stopped THEN
+	            ControlNodes.cm1Vfd208.commands.sinaCommands.enableAxis :=
+	            FALSE;
+	        END_IF; *)
+	    END_REGION
+	    
+	    REGION Cm1Axis
+	        #instCm1Vfd208(configuration := Config.em5Parameters.cm1Vfd208,
+	                       moduleInterface := HmiInterface.cm1Vfd208,
+	                       controlNode := ControlNodes.cm1Vfd208);
+	        
+	    END_REGION
+	    
+	    REGION Cm2Cylinder
+	        // HmiInterface.cm2Cylinder.configuration.setOutputHomeContinuously := TRUE;
+	        //HmiInterface.cm2Cylinder.configuration.setOutputWorkContinuously := TRUE;
+	        #instCm2Cylinder.feedbackHomePos[1] := ControlNodes.cm3SignalTM.monitoring.plasticTrayLiftingCylinderHomePositionDetectionU2EM5_1;
+	        #instCm2Cylinder.feedbackWorkPos[1] := ControlNodes.cm3SignalTM.monitoring.plasticTrayLiftingCylinderworkingPositionDetectionU2EM5_1;
+	        #instCm2Cylinder(
+	                         posStart := 1,
+	                         posEnd := 1,
+	                         enable := #unitStatus.safetyReleased,
+	                         goToHomePos => _.trayLiftingCylinderHomePositionU2Em5,
+	                         goToWorkPos => _.trayLiftingCylinderWorkPositionU2Em5,
+	                         configuration := HmiInterface.cm2Cylinder.configuration,
+	                         moduleInterface := HmiInterface.cm2Cylinder,
+	                         controlNode := ControlNodes.cm2Cylinder);
+	        #instCm2Cylinder.goToHomePos := _.trayLiftingCylinderHomePositionU2Em5;
+	        #instCm2Cylinder.goToWorkPos := _.trayLiftingCylinderWorkPositionU2Em5;
+	        
+	    END_REGION
+	    REGION Cm4Sr1000
+	        #instCm4SR1000Profinet(configuration := Config.em5Parameters.cm4SR1000,
+	                               moduleInterface := HmiInterface.cm4Sr1000,
+	                               controlNode := ControlNodes.cm4Sr1000);
+	        
+	    END_REGION
+	    
+	    
+	    
+	    REGION resetCm
+	        
+	        #instCmReset();
+	        
+	    END_REGION
+	END_REGION
+	
+	
+	REGION Feedback to Unit 
+	    // Feedback from EM to Unit
+	    // EM到Unit的反馈
+	    
+	    REGION State Complete (SC)
+	        IF NOT _.Global.Data.unit[1].specialFunctions.specialFunction10 THEN
+	            #tempProductionStartingSC := #statUnitStatus.state.starting AND #instJobStarting.jobStatus.completed;
+	        ELSE
+	            #tempProductionStartingSC := #statUnitStatus.state.starting AND #instJobRecover.jobStatus.completed;
+	        END_IF;
+	        
+	        _.LAF_DetermineStateComplete(active := #statUnitStatus.mode.production,
+	                                     resettingSC := #statUnitStatus.state.resetting AND #instJobReseting.jobStatus.completed,
+	                                     startingSC := #tempProductionStartingSC,
+	                                     stoppingSC := (#statUnitStatus.state.stopping AND #instJobStopping.statJobStatus.completed) OR #statUnitStatus.state.stopped,
+	                                     abortingSC := #statUnitStatus.state.aborting,
+	                                     clearingSC := #statUnitStatus.state.clearing,
+	                                     holdingSC := #statUnitStatus.state.holding AND #instJobHolding.statJobStatus.completed,
+	                                     unholdingSC := #statUnitStatus.state.unholding AND #instJobUnHolding.jobStatus.completed,
+	                                     suspendingSC := FALSE,
+	                                     unsuspendingSC := FALSE,
+	                                     completingSC := FALSE,
+	                                     stateComplete => #tempScInProduction);
+	        _.LAF_DetermineStateComplete(active := #statUnitStatus.mode.manual,
+	                                     resettingSC := true,
+	                                     startingSC := true,
+	                                     stoppingSC := true,
+	                                     abortingSC := true,
+	                                     clearingSC := true,
+	                                     holdingSC := true,
+	                                     unholdingSC := true,
+	                                     suspendingSC := FALSE,
+	                                     unsuspendingSC := FALSE,
+	                                     completingSC := FALSE,
+	                                     stateComplete => #tempScInManual);
+	        _.LAF_DetermineStateComplete(active := #statUnitStatus.mode.maintenance,
+	                                     resettingSC := true,
+	                                     startingSC := true,
+	                                     stoppingSC := true,
+	                                     abortingSC := true,
+	                                     clearingSC := true,
+	                                     holdingSC := true,
+	                                     unholdingSC := true,
+	                                     suspendingSC := FALSE,
+	                                     unsuspendingSC := FALSE,
+	                                     completingSC := FALSE,
+	                                     stateComplete => #tempScInMantaince);
+	        REGION StateComplete (SC) Summary
+	            // Statement section REGION
+	            
+	            #emFeedback.commands.stateComplete := #tempScInProduction OR #tempScInManual OR #tempScInMantaince;
+	            
+	        END_REGION
+	    END_REGION State Complete (SC) 
+	    
+	END_REGION Feedback to Unit
+	
+	REGION Alarms  
+	    // Alarm handling section
+	    // 报警处理区域
+	    
+	    REGION Collect Alarms
+	        // Add events here that trigger alarms and lead to the respective commands to the unit.
+	        // It is possible to trigger alarms, set unit commands or do both for the specific event
+	        CollectAlarms(resetAlarms := #statUnitStatus.acknowledgeActive,
+	                      disableAlarms := #statUnitStatus.alarmsDisabled,
+	                      commandsToUnit => #emFeedback.commands);
+	    END_REGION
+	    
+	    REGION Manage Alarms
+	        // Derive commands from the ProDiag supervision. The ProDiag supervisions contain categories which define the reaction of
+	        // these supervisions (e.g. abort, stop, hold). These are handed over as commands TO the unit level. Alternatively, if no
+	        // ProDiag should be used, you can use the LAF_ManageBitAlarms TO realize bit alarm handling. This block can be found in
+	        // LAF in folder 70_AlarmHandling.
+	        #instManageBitAlarms(
+	                             alarmDB => _.Unit2.Alarms.emAlarms[_.Unit2_EM2],
+	                             hmiInterfaceDB => HmiInterface.em.alarms,
+	                             commandsToUnit := #emFeedback.commands,
+	                             errorNoReaction := _.Unit2.Alarms.errorNoReaction,
+	                             errorAbort := _.Unit2.Alarms.errorAbort,
+	                             errorStop := _.Unit2.Alarms.errorStop,
+	                             warningNoReaction := _.Unit2.Alarms.warningNoReaction,
+	                             warningHold := _.Unit2.Alarms.warningHold,
+	                             warningSuspend := _.Unit2.Alarms.warningSuspend,
+	                             information := _.Unit2.Alarms.information,
+	                             criteriaAnalysis := _.Unit2.Alarms.criteriaAnalysis
+	        );
+	    END_REGION
+	    
+	END_REGION Alarms
+END_FUNCTION_BLOCK
+END_NAMESPACE
+

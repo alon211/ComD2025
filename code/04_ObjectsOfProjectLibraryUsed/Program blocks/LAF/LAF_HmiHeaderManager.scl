@@ -1,0 +1,450 @@
+﻿FUNCTION_BLOCK "LAF_HmiHeaderManager"
+TITLE = LAF_HmiManager
+{ S7_Optimized_Access := 'TRUE' ; Published := 'TRUE' }
+AUTHOR : 'Siemens Digital Industries'
+FAMILY : LAF
+VERSION : 1.2
+//Manages the interconection between the header in the HMI and PLC global data
+   VAR_IN_OUT 
+      hmiInterface : Array[*] of "LAF_typeHeader";
+      unitData : Array[*] of "LAF_typeUnitInterface";
+   END_VAR
+
+   VAR 
+      statFirstCall : Bool := TRUE;   // Static value to enable the initialitation of the block
+      statLowerBoundUnit : DInt;   // Maximum limit of the units array
+      statUpperBoundUnit : DInt;   // Minimum limit of the units array
+      statLowerBoundHmi : DInt;   // Maximum limit of the HMIsarray
+      statUpperBoundHmi : DInt;   // Minimum limit of the HMIs array
+      statPreviousSpecialFunction { S7_SetPoint := 'False'} : "LAF_typeSpecialFunctions";
+   END_VAR
+
+   VAR_TEMP 
+      tempIndexHmi : DInt;   // Variable to store the HMI that is used in the current loop iteration
+      tempIndex : DInt;   // Index of active HMI
+      tempIndexUnit : DInt;   // Variable for the units loop
+      tempUnitsSelected : Array[0..15] of Bool;   // Array of selected units from the HMI
+      tempCmdsRequest : "LUC_typeCommands";
+      tempEdgeSpecialFunctions : "LAF_typeSpecialFunctions";
+      tempEnableModes : Word;   // Unit modes that can be visible in the HMI
+      tempEnableStateCommands : "LUC_typeStateCommands";
+      tempActiveModes : "LUC_typeModeRequests";   // Current active modes in the unit to display in the HMI 
+      tempActiveSpecialFunctions : "LAF_typeSpecialFunctions";   // Current active Special Functions in the unit to display in the HMI 
+      tempCurrentReqSpecialFunctionsToUnit : "LAF_typeSpecialFunctions";
+      tempFirstLoopIterationState : Bool;   // Auxiliar variable to evaluate the current mode with a counter
+      tempFirstLoopIterationMode : Bool;   // Auxiliar variable to evaluate the current state with a counter
+      tempModeChangeAllowed : Bool;   // Unit modes that can be visible in the HMI according to if the mode change is allowed or not
+      tempCollectiveMode : DInt;   // Auxiliar variable to display in the HMI the current mode of the units selected
+      tempCollectiveStatus : DInt;   // Auxiliar variable to display in the HMI the current status of the units selected
+   END_VAR
+
+   VAR CONSTANT 
+      MODE_INVALID : DInt := 0;   // unit mode Invalid
+      MODE_PRODUCTION : DInt := 1;   // unit mode Production
+      MODE_MAINTENANCE : DInt := 2;   // unit mode Maintenance
+      MODE_MANUAL : DInt := 3;   // unit mode Manual
+      MODE_USER01 : DInt := 4;   // unit mode user01
+      MODE_USER02 : DInt := 5;   // unit mode user02
+      MODE_USER03 : DInt := 6;   // unit mode user03
+      MODE_USER04 : DInt := 7;   // unit mode user04
+      MODE_USER05 : DInt := 8;   // unit mode user05
+      MODE_USER06 : DInt := 9;   // unit mode user06
+      MODE_USER07 : DInt := 10;   // unit mode user07
+      MODE_USER08 : DInt := 11;   // unit mode user08
+      MODE_USER09 : DInt := 12;   // unit mode user09
+      MODE_USER10 : DInt := 13;   // unit mode user10
+      MODE_USER11 : DInt := 14;   // unit mode user11
+      MODE_USER12 : DInt := 15;   // unit mode user12
+      MODE_USER13 : DInt := 16;   // unit mode user13
+      MODE_VARIOUS : DInt := 17;   // unit mode Various
+      UNDEFINED : DInt := 0;   // state Undefined
+      CLEARING : DInt := 1;   // state Clearing
+      STOPPED : DInt := 2;   // state Stopped
+      STARTING : DInt := 3;   // state Starting
+      IDLE : DInt := 4;   // state Idle
+      SUSPENDED : DInt := 5;   // state Suspended
+      EXECUTE : DInt := 6;   // state Execute
+      STOPPING : DInt := 7;   // state Stopping
+      ABORTING : DInt := 8;   // state Aborting
+      ABORTED : DInt := 9;   // state Aborted
+      HOLDING : DInt := 10;   // state Holding
+      HELD : DInt := 11;   // state Held
+      UNHOLDING : DInt := 12;   // state Unholding
+      SUSPENDING : DInt := 13;   // state Suspending
+      UNSUSPENDING : DInt := 14;   // state Unsuspending
+      RESETTING : DInt := 15;   // state Resetting
+      COMPLETING : DInt := 16;   // state Completing
+      COMPLETED : DInt := 17;   // state Completed
+      VARIOUS : DInt := 18;   // state Various
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // Siemens AG / (c)Copyright 2024
+	    //-------------------------------------------------------------------------------
+	    // Title:            LAF_HmiHeaderManager
+	    // Comment/Function: Manages the interconection between the header in the HMI and PLC global data
+	    // Library/Family:   LAF - Library of Automation Framework
+	    // Author:           Siemens Digital Industries
+	    // Tested with:      S7-PLCSIM Advanced 6.0
+	    // Engineering:      TIA Portal V19
+	    // Restrictions:     -
+	    // Requirements:     -
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.01.00 | 21.06.2024 | SIMATIC Systems Support | First released version
+	    // 01.02.00 | 30.09.2024 | SIMATIC Systems Support | Block information properties updated
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	    (/*
+	    This main purpose of this block is to control and monitor the interconnection between the header interface of different HMIs and the global data of different units in the PLC. 
+	    The data (mode change request, state commands or special function request) is recieved just from one HMI at the same time. This is due to the configured operation lock in each panel, that only one hmi can be operated at a time.      
+	    From the panel enabled to operate, the user can select the units that are to receive commands or requests, or that are to be monitored. The specific requests o commands that are allowed to send are dependant on the current status of the selected units. 
+	 
+	#### PLC data to HMI  
+	    This block will evaluate and send to the enabled to operate HMI the properties of the buttons for modes requests and state commands and display the current state and mode of the unit.
+	    1. Mode Requests: The properties sent to the the enabled to operate HMI are the following,
+	        * Visibility: The visibility of the buttons is dinamized according to the enabled modes configured through the LUC_StateMachineConfig.
+	        * Operator Control Allowed: The operation allowment of all mode request buttons is set if the mode change is allowed. 
+	        * Active (background color of the button): This property is set if the correspondant mode is active. 
+	    2. State Commands: The properties sent to the the enabled to operate HMI are the following,
+	        * Operator Control Allowed: The operation allowment of a state command is set depending on which is the current state and which is the following one. 
+	    3. Special Functions: The properties sent to the the enabled to operate HMI are the following,
+	        * Operator Control Allowed: The operation allowment of all special functions buttons is set if the request of a special function is allowed. 
+	        * Active (background color of the button): This property is set if the correspondant special function is active. 
+	    4. Current Mode: The plc send the current active mode to display it in the the enabled to operate HMI.
+	    5. Current State: The plc send the current active state to display it in the the enabled to operate HMI.
+	
+	#### HMI data to PLC 
+	     From the enabled to operate HMI the requested modes, state commands and special functions are sent through a word variables _modeRequests_, _stateCommands_ and _specialFunctionsRequest_ and are written to the selected units data. 
+	*/)
+	END_REGION DESCRIPTION
+	
+	REGION Initialization
+	    IF #statFirstCall THEN
+	        // Detect lower and upper bound of the array for further processing   
+	        #statLowerBoundUnit := LOWER_BOUND(ARR := #unitData, DIM := 1);
+	        #statUpperBoundUnit := UPPER_BOUND(ARR := #unitData, DIM := 1);
+	        #statLowerBoundHmi := LOWER_BOUND(ARR := #hmiInterface, DIM := 1);
+	        #statUpperBoundHmi := UPPER_BOUND(ARR := #hmiInterface, DIM := 1);
+	        #statFirstCall := false;
+	    END_IF;
+	END_REGION Initialization
+	
+	REGION HMI -> PLC | Command handling
+	    //Detect the active HMI, from which commands should be applied
+	    REGION Detect active HMI
+	        //Loop through the HMIs until and HMI with new commands is found. Due to the HMI operation interlock, only one HMI can be active at a time.
+	        //Thus, the first panel found that has command changes is the active panel
+	        FOR #tempIndexHmi := #statLowerBoundHmi TO #statUpperBoundHmi DO
+	            IF (#hmiInterface[#tempIndexHmi].hmiToPlc.modeRequests <> 16#0) OR (#hmiInterface[#tempIndexHmi].hmiToPlc.stateCommands <> 16#0) OR (#hmiInterface[#tempIndexHmi].hmiToPlc.specialFunctions <> 16#0) THEN
+	                #tempIndex := #tempIndexHmi;
+	            END_IF;
+	        END_FOR;
+	    END_REGION Detect active HMI
+	    
+	    //Read the commands from the active HMI and distribute them to the selected units
+	    REGION Region read commands from HMI
+	        //Read selected units
+	        SCATTER(IN := #hmiInterface[#tempIndex].hmiToPlc.selectedUnits,
+	                OUT => #tempUnitsSelected);
+	        
+	        //Read mode requests
+	        SCATTER(IN := #hmiInterface[#tempIndex].hmiToPlc.modeRequests,
+	                OUT => #tempCmdsRequest.modeRequests);
+	        
+	        //Read state commands
+	        #tempCmdsRequest.stateCommands.start := #hmiInterface[#tempIndex].hmiToPlc.stateCommands.%X0;
+	        #tempCmdsRequest.stateCommands.stop := #hmiInterface[#tempIndex].hmiToPlc.stateCommands.%X1;
+	        #tempCmdsRequest.stateCommands.reset := #hmiInterface[#tempIndex].hmiToPlc.stateCommands.%X2;
+	        #tempCmdsRequest.stateCommands.clear := #hmiInterface[#tempIndex].hmiToPlc.stateCommands.%X3;
+	        #tempCmdsRequest.stateCommands.hold := #hmiInterface[#tempIndex].hmiToPlc.stateCommands.%X4;
+	        #tempCmdsRequest.stateCommands.suspend := #hmiInterface[#tempIndex].hmiToPlc.stateCommands.%X5;
+	        #tempCmdsRequest.stateCommands.complete := #hmiInterface[#tempIndex].hmiToPlc.stateCommands.%X6;
+	        #tempCmdsRequest.stateCommands.abort := #hmiInterface[#tempIndex].hmiToPlc.stateCommands.%X7;
+	        #tempCmdsRequest.stateCommands.unhold := #hmiInterface[#tempIndex].hmiToPlc.stateCommands.%X8;
+	        #tempCmdsRequest.stateCommands.unsuspend := #hmiInterface[#tempIndex].hmiToPlc.stateCommands.%X9;
+	        
+	        //Read rising edge of special function requests
+	        #tempEdgeSpecialFunctions.stopEndOfCycle := #hmiInterface[#tempIndex].hmiToPlc.specialFunctions.%X0 AND NOT #statPreviousSpecialFunction.stopEndOfCycle;
+	        #tempEdgeSpecialFunctions.initalPosition := #hmiInterface[#tempIndex].hmiToPlc.specialFunctions.%X1 AND NOT #statPreviousSpecialFunction.initalPosition;
+	        #tempEdgeSpecialFunctions.releaseEntry := #hmiInterface[#tempIndex].hmiToPlc.specialFunctions.%X2 AND NOT #statPreviousSpecialFunction.releaseEntry;
+	        #tempEdgeSpecialFunctions.dryRun := #hmiInterface[#tempIndex].hmiToPlc.specialFunctions.%X3 AND NOT #statPreviousSpecialFunction.dryRun;
+	        #tempEdgeSpecialFunctions.specialFunction05 := #hmiInterface[#tempIndex].hmiToPlc.specialFunctions.%X4 AND NOT #statPreviousSpecialFunction.specialFunction05;
+	        #tempEdgeSpecialFunctions.specialFunction06 := #hmiInterface[#tempIndex].hmiToPlc.specialFunctions.%X5 AND NOT #statPreviousSpecialFunction.specialFunction06;
+	        #tempEdgeSpecialFunctions.specialFunction07 := #hmiInterface[#tempIndex].hmiToPlc.specialFunctions.%X6 AND NOT #statPreviousSpecialFunction.specialFunction07;
+	        #tempEdgeSpecialFunctions.specialFunction08 := #hmiInterface[#tempIndex].hmiToPlc.specialFunctions.%X7 AND NOT #statPreviousSpecialFunction.specialFunction08;
+	        #tempEdgeSpecialFunctions.specialFunction09 := #hmiInterface[#tempIndex].hmiToPlc.specialFunctions.%X8 AND NOT #statPreviousSpecialFunction.specialFunction09;
+	        #tempEdgeSpecialFunctions.specialFunction10 := #hmiInterface[#tempIndex].hmiToPlc.specialFunctions.%X9 AND NOT #statPreviousSpecialFunction.specialFunction10;
+	        #tempEdgeSpecialFunctions.specialFunction11 := #hmiInterface[#tempIndex].hmiToPlc.specialFunctions.%X10 AND NOT #statPreviousSpecialFunction.specialFunction11;
+	        #tempEdgeSpecialFunctions.specialFunction12 := #hmiInterface[#tempIndex].hmiToPlc.specialFunctions.%X11 AND NOT #statPreviousSpecialFunction.specialFunction12;
+	        #tempEdgeSpecialFunctions.specialFunction13 := #hmiInterface[#tempIndex].hmiToPlc.specialFunctions.%X12 AND NOT #statPreviousSpecialFunction.specialFunction13;
+	        #tempEdgeSpecialFunctions.specialFunction14 := #hmiInterface[#tempIndex].hmiToPlc.specialFunctions.%X13 AND NOT #statPreviousSpecialFunction.specialFunction14;
+	        #tempEdgeSpecialFunctions.specialFunction15 := #hmiInterface[#tempIndex].hmiToPlc.specialFunctions.%X14 AND NOT #statPreviousSpecialFunction.specialFunction15;
+	        #tempEdgeSpecialFunctions.specialFunction16 := #hmiInterface[#tempIndex].hmiToPlc.specialFunctions.%X15 AND NOT #statPreviousSpecialFunction.specialFunction16;
+	        
+	        //Store status of special function requests for next cycle, to detect rising edges
+	        SCATTER(IN := #hmiInterface[#tempIndex].hmiToPlc.specialFunctions,
+	                OUT => #statPreviousSpecialFunction);
+	    END_REGION Region read commands from HMI
+	    
+	    REGION Write commands to units
+	        //Write request modes, special functions and state commands from the enabled operation HMI to the selected units data in the PLC 
+	        FOR #tempIndexUnit := #statLowerBoundUnit TO #statUpperBoundUnit DO
+	            IF #tempUnitsSelected[#tempIndexUnit] = 1 THEN
+	                //Write mode requests and state commands to units
+	                #unitData[#tempIndexUnit].controlModeStateManager.commands := #tempCmdsRequest;
+	                //In case there is a rising edge of a requested Special Function and the respective Special function is not active, then the requested Special Function would be activated/set. 
+	                //In case there is a rising edge of a requested Special Function and the respective Special function is active, then the requested Special Function would be deactivated/reset. 
+	                #tempCurrentReqSpecialFunctionsToUnit.stopEndOfCycle := #tempEdgeSpecialFunctions.stopEndOfCycle XOR #unitData[#tempIndexUnit].specialFunctions.stopEndOfCycle;
+	                #tempCurrentReqSpecialFunctionsToUnit.initalPosition := #tempEdgeSpecialFunctions.initalPosition XOR #unitData[#tempIndexUnit].specialFunctions.initalPosition;
+	                #tempCurrentReqSpecialFunctionsToUnit.releaseEntry := #tempEdgeSpecialFunctions.releaseEntry XOR #unitData[#tempIndexUnit].specialFunctions.releaseEntry;
+	                #tempCurrentReqSpecialFunctionsToUnit.dryRun := #tempEdgeSpecialFunctions.dryRun XOR #unitData[#tempIndexUnit].specialFunctions.dryRun;
+	                #tempCurrentReqSpecialFunctionsToUnit.specialFunction05 := #tempEdgeSpecialFunctions.specialFunction05 XOR #unitData[#tempIndexUnit].specialFunctions.specialFunction05;
+	                #tempCurrentReqSpecialFunctionsToUnit.specialFunction06 := #tempEdgeSpecialFunctions.specialFunction06 XOR #unitData[#tempIndexUnit].specialFunctions.specialFunction06;
+	                #tempCurrentReqSpecialFunctionsToUnit.specialFunction07 := #tempEdgeSpecialFunctions.specialFunction07 XOR #unitData[#tempIndexUnit].specialFunctions.specialFunction07;
+	                #tempCurrentReqSpecialFunctionsToUnit.specialFunction08 := #tempEdgeSpecialFunctions.specialFunction08 XOR #unitData[#tempIndexUnit].specialFunctions.specialFunction08;
+	                #tempCurrentReqSpecialFunctionsToUnit.specialFunction09 := #tempEdgeSpecialFunctions.specialFunction09 XOR #unitData[#tempIndexUnit].specialFunctions.specialFunction09;
+	                #tempCurrentReqSpecialFunctionsToUnit.specialFunction10 := #tempEdgeSpecialFunctions.specialFunction10 XOR #unitData[#tempIndexUnit].specialFunctions.specialFunction10;
+	                #tempCurrentReqSpecialFunctionsToUnit.specialFunction11 := #tempEdgeSpecialFunctions.specialFunction11 XOR #unitData[#tempIndexUnit].specialFunctions.specialFunction11;
+	                #tempCurrentReqSpecialFunctionsToUnit.specialFunction12 := #tempEdgeSpecialFunctions.specialFunction12 XOR #unitData[#tempIndexUnit].specialFunctions.specialFunction12;
+	                #tempCurrentReqSpecialFunctionsToUnit.specialFunction13 := #tempEdgeSpecialFunctions.specialFunction13 XOR #unitData[#tempIndexUnit].specialFunctions.specialFunction13;
+	                #tempCurrentReqSpecialFunctionsToUnit.specialFunction14 := #tempEdgeSpecialFunctions.specialFunction14 XOR #unitData[#tempIndexUnit].specialFunctions.specialFunction14;
+	                #tempCurrentReqSpecialFunctionsToUnit.specialFunction15 := #tempEdgeSpecialFunctions.specialFunction15 XOR #unitData[#tempIndexUnit].specialFunctions.specialFunction15;
+	                #tempCurrentReqSpecialFunctionsToUnit.specialFunction16 := #tempEdgeSpecialFunctions.specialFunction16 XOR #unitData[#tempIndexUnit].specialFunctions.specialFunction16;
+	                //Write special function request funcions to units
+	                #unitData[#tempIndexUnit].specialFunctions := #tempCurrentReqSpecialFunctionsToUnit;
+	            END_IF;
+	        END_FOR;
+	    END_REGION Write commands to units
+	END_REGION HMI -> PLC | Command handling
+	
+	REGION PLC -> HMI | Header update
+	    //Loop through all HMI, read the selected units and set the buttons properties, mode and state accordingly
+	    FOR #tempIndexHmi := #statLowerBoundHmi TO #statUpperBoundHmi DO
+	        //Read selected units
+	        SCATTER(IN := #hmiInterface[#tempIndexHmi].hmiToPlc.selectedUnits,
+	                OUT => #tempUnitsSelected);
+	        
+	        //Initialize temporary variables always new for each HMI panel
+	        #tempFirstLoopIterationMode :=
+	        #tempFirstLoopIterationState := TRUE;
+	        #tempEnableModes := 16#0;
+	        #tempActiveModes.production :=
+	        #tempActiveModes.maintenance :=
+	        #tempActiveModes.manual :=
+	        #tempActiveModes.userMode01 :=
+	        #tempActiveModes.userMode02 :=
+	        #tempActiveModes.userMode03 :=
+	        #tempActiveModes.userMode04 :=
+	        #tempActiveModes.userMode05 :=
+	        #tempActiveModes.userMode06 :=
+	        #tempActiveModes.userMode07 :=
+	        #tempActiveModes.userMode08 :=
+	        #tempActiveModes.userMode09 :=
+	        #tempActiveModes.userMode10 :=
+	        #tempActiveModes.userMode11 :=
+	        #tempActiveModes.userMode12 :=
+	        #tempActiveModes.userMode13 :=
+	        #tempModeChangeAllowed :=
+	        #tempEnableStateCommands.start :=
+	        #tempEnableStateCommands.stop :=
+	        #tempEnableStateCommands.reset :=
+	        #tempEnableStateCommands.clear :=
+	        #tempEnableStateCommands.hold :=
+	        #tempEnableStateCommands.suspend :=
+	        #tempEnableStateCommands.complete :=
+	        #tempEnableStateCommands.abort :=
+	        #tempEnableStateCommands.unhold :=
+	        #tempEnableStateCommands.unsuspend :=
+	        #tempActiveSpecialFunctions.stopEndOfCycle :=
+	        #tempActiveSpecialFunctions.initalPosition :=
+	        #tempActiveSpecialFunctions.releaseEntry :=
+	        #tempActiveSpecialFunctions.dryRun :=
+	        #tempActiveSpecialFunctions.specialFunction05 :=
+	        #tempActiveSpecialFunctions.specialFunction06 :=
+	        #tempActiveSpecialFunctions.specialFunction07 :=
+	        #tempActiveSpecialFunctions.specialFunction08 :=
+	        #tempActiveSpecialFunctions.specialFunction09 :=
+	        #tempActiveSpecialFunctions.specialFunction10 :=
+	        #tempActiveSpecialFunctions.specialFunction11 :=
+	        #tempActiveSpecialFunctions.specialFunction12 :=
+	        #tempActiveSpecialFunctions.specialFunction13 :=
+	        #tempActiveSpecialFunctions.specialFunction14 :=
+	        #tempActiveSpecialFunctions.specialFunction15 :=
+	        #tempActiveSpecialFunctions.specialFunction16 := FALSE;
+	        
+	        //Set button properties according to the current status of the selected units
+	        //Loop through all units and summarize if buttons should be visable, active and operable
+	        FOR #tempIndexUnit := #statLowerBoundUnit TO #statUpperBoundUnit DO
+	            IF #tempUnitsSelected[#tempIndexUnit] = 1 THEN
+	                REGION Mode buttons
+	                    REGION Visibility
+	                        //Evaluation of the modes that are allowed to operate with according to the units selected
+	                        #tempEnableModes.%X0 := #unitData[#tempIndexUnit].controlModeStateManager.monitoring.curEnabledModes.%X1 OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent = #MODE_PRODUCTION) OR #tempEnableModes.%X0;
+	                        #tempEnableModes.%X1 := #unitData[#tempIndexUnit].controlModeStateManager.monitoring.curEnabledModes.%X2 OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent = #MODE_MAINTENANCE) OR #tempEnableModes.%X1;
+	                        #tempEnableModes.%X2 := #unitData[#tempIndexUnit].controlModeStateManager.monitoring.curEnabledModes.%X3 OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent = #MODE_MANUAL) OR #tempEnableModes.%X2;
+	                        #tempEnableModes.%X3 := #unitData[#tempIndexUnit].controlModeStateManager.monitoring.curEnabledModes.%X4 OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent = #MODE_USER01) OR #tempEnableModes.%X3;
+	                        #tempEnableModes.%X4 := #unitData[#tempIndexUnit].controlModeStateManager.monitoring.curEnabledModes.%X5 OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent = #MODE_USER02) OR #tempEnableModes.%X4;
+	                        #tempEnableModes.%X5 := #unitData[#tempIndexUnit].controlModeStateManager.monitoring.curEnabledModes.%X6 OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent = #MODE_USER03) OR #tempEnableModes.%X5;
+	                        #tempEnableModes.%X6 := #unitData[#tempIndexUnit].controlModeStateManager.monitoring.curEnabledModes.%X7 OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent = #MODE_USER04) OR #tempEnableModes.%X6;
+	                        #tempEnableModes.%X7 := #unitData[#tempIndexUnit].controlModeStateManager.monitoring.curEnabledModes.%X8 OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent = #MODE_USER05) OR #tempEnableModes.%X7;
+	                        #tempEnableModes.%X8 := #unitData[#tempIndexUnit].controlModeStateManager.monitoring.curEnabledModes.%X9 OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent = #MODE_USER06) OR #tempEnableModes.%X8;
+	                        #tempEnableModes.%X9 := #unitData[#tempIndexUnit].controlModeStateManager.monitoring.curEnabledModes.%X10 OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent = #MODE_USER07) OR #tempEnableModes.%X9;
+	                        #tempEnableModes.%X10 := #unitData[#tempIndexUnit].controlModeStateManager.monitoring.curEnabledModes.%X11 OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent = #MODE_USER08) OR #tempEnableModes.%X10;
+	                        #tempEnableModes.%X11 := #unitData[#tempIndexUnit].controlModeStateManager.monitoring.curEnabledModes.%X12 OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent = #MODE_USER09) OR #tempEnableModes.%X11;
+	                        #tempEnableModes.%X12 := #unitData[#tempIndexUnit].controlModeStateManager.monitoring.curEnabledModes.%X13 OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent = #MODE_USER10) OR #tempEnableModes.%X12;
+	                        #tempEnableModes.%X13 := #unitData[#tempIndexUnit].controlModeStateManager.monitoring.curEnabledModes.%X14 OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent = #MODE_USER11) OR #tempEnableModes.%X13;
+	                        #tempEnableModes.%X14 := #unitData[#tempIndexUnit].controlModeStateManager.monitoring.curEnabledModes.%X15 OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent = #MODE_USER12) OR #tempEnableModes.%X14;
+	                        #tempEnableModes.%X15 := #unitData[#tempIndexUnit].controlModeStateManager.monitoring.curEnabledModes.%X16 OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent = #MODE_USER13) OR #tempEnableModes.%X15;
+	                        
+	                        //Mode requests that are allowed or enabled in the HMI according to the unit selected
+	                        #hmiInterface[#tempIndexHmi].plcToHmi.modeRequestsButtons.visibility := #tempEnableModes;
+	                    END_REGION Visibility
+	                    
+	                    REGION Active
+	                        // Evaluation of the current active modes in the selected units. 
+	                        #tempActiveModes.production := #tempActiveModes.production OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent = #MODE_PRODUCTION);
+	                        #tempActiveModes.maintenance := #tempActiveModes.maintenance OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent = #MODE_MAINTENANCE);
+	                        #tempActiveModes.manual := #tempActiveModes.manual OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent = #MODE_MANUAL);
+	                        #tempActiveModes.userMode01 := #tempActiveModes.userMode01 OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent = #MODE_USER01);
+	                        #tempActiveModes.userMode02 := #tempActiveModes.userMode02 OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent = #MODE_USER02);
+	                        #tempActiveModes.userMode03 := #tempActiveModes.userMode03 OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent = #MODE_USER03);
+	                        #tempActiveModes.userMode04 := #tempActiveModes.userMode04 OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent = #MODE_USER04);
+	                        #tempActiveModes.userMode05 := #tempActiveModes.userMode05 OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent = #MODE_USER05);
+	                        #tempActiveModes.userMode06 := #tempActiveModes.userMode06 OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent = #MODE_USER06);
+	                        #tempActiveModes.userMode07 := #tempActiveModes.userMode07 OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent = #MODE_USER07);
+	                        #tempActiveModes.userMode08 := #tempActiveModes.userMode08 OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent = #MODE_USER08);
+	                        #tempActiveModes.userMode09 := #tempActiveModes.userMode09 OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent = #MODE_USER09);
+	                        #tempActiveModes.userMode10 := #tempActiveModes.userMode10 OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent = #MODE_USER10);
+	                        #tempActiveModes.userMode11 := #tempActiveModes.userMode11 OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent = #MODE_USER11);
+	                        #tempActiveModes.userMode12 := #tempActiveModes.userMode12 OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent = #MODE_USER12);
+	                        #tempActiveModes.userMode13 := #tempActiveModes.userMode13 OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent = #MODE_USER13);
+	                        
+	                        //Currrent active modes to show in the HMI according to the units selected
+	                        GATHER(IN := #tempActiveModes,
+	                               OUT => #hmiInterface[#tempIndexHmi].plcToHmi.modeRequestsButtons.active);
+	                    END_REGION Active
+	                    
+	                    REGION Operator control allowed
+	                        // Evaluation of the current mode requests that are allowed to operate. 
+	                        #tempModeChangeAllowed := #tempModeChangeAllowed OR NOT (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.allowedUnitModes = 0);
+	                        //Evaluation of the possibility of changing the mode according to the selected unit
+	                        #hmiInterface[#tempIndexHmi].plcToHmi.modeRequestsButtons.operatorControlAllowed.%X0 := #tempModeChangeAllowed;
+	                    END_REGION Operator control allowed
+	                END_REGION Mode buttons
+	                
+	                REGION State buttons
+	                    REGION Operator control allowed
+	                        // Evaluation of the state commands that are allowed to operate according to the current status of the selected unit
+	                        #tempEnableStateCommands.reset := #tempEnableStateCommands.reset OR ((NOT #unitData[#tempIndexUnit].controlModeStateManager.monitoring.curDisabledStates.%X4) AND ((#unitData[#tempIndexUnit].controlModeStateManager.monitoring.stateCurrent = #STOPPED) OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.stateCurrent = #COMPLETED)));
+	                        #tempEnableStateCommands.start := #tempEnableStateCommands.start OR ((NOT #unitData[#tempIndexUnit].controlModeStateManager.monitoring.curDisabledStates.%X6) AND (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.stateCurrent = #IDLE));
+	                        #tempEnableStateCommands.stop := #tempEnableStateCommands.stop OR ((NOT #unitData[#tempIndexUnit].controlModeStateManager.monitoring.curDisabledStates.%X2) AND (NOT ((#unitData[#tempIndexUnit].controlModeStateManager.monitoring.stateCurrent = #ABORTED) OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.stateCurrent = #ABORTING) OR
+	                        (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.stateCurrent = #CLEARING) OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.stateCurrent = #STOPPING)
+	                        OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.stateCurrent = #STOPPED))));
+	                        #tempEnableStateCommands.hold := #tempEnableStateCommands.hold OR ((NOT #unitData[#tempIndexUnit].controlModeStateManager.monitoring.curDisabledStates.%X11) AND (((#unitData[#tempIndexUnit].controlModeStateManager.monitoring.stateCurrent = #EXECUTE) AND (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.curHoldCmdCfg.%X6)) OR
+	                        ((#unitData[#tempIndexUnit].controlModeStateManager.monitoring.stateCurrent = #SUSPENDED) AND (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.curHoldCmdCfg.%X5)) OR ((#unitData[#tempIndexUnit].controlModeStateManager.monitoring.stateCurrent = #STARTING) AND (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.curHoldCmdCfg.%X3)) OR
+	                        ((#unitData[#tempIndexUnit].controlModeStateManager.monitoring.stateCurrent = #IDLE) AND (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.curHoldCmdCfg.%X4)) OR ((#unitData[#tempIndexUnit].controlModeStateManager.monitoring.stateCurrent = #UNHOLDING) AND (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.curHoldCmdCfg.%X12)) OR
+	                        ((#unitData[#tempIndexUnit].controlModeStateManager.monitoring.stateCurrent = #SUSPENDING) AND (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.curHoldCmdCfg.%X13)) OR ((#unitData[#tempIndexUnit].controlModeStateManager.monitoring.stateCurrent = #UNSUSPENDING) AND (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.curHoldCmdCfg.%X14)) OR
+	                        ((#unitData[#tempIndexUnit].controlModeStateManager.monitoring.stateCurrent = #COMPLETING) AND (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.curHoldCmdCfg.%X16)) OR ((#unitData[#tempIndexUnit].controlModeStateManager.monitoring.stateCurrent = #COMPLETED) AND (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.curHoldCmdCfg.%X17))));
+	                        #tempEnableStateCommands.unhold := #tempEnableStateCommands.unhold OR ((NOT #unitData[#tempIndexUnit].controlModeStateManager.monitoring.curDisabledStates.%X6) AND (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.stateCurrent = #HELD));
+	                        #tempEnableStateCommands.suspend := #tempEnableStateCommands.suspend OR ((NOT #unitData[#tempIndexUnit].controlModeStateManager.monitoring.curDisabledStates.%X5) AND (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.stateCurrent = #EXECUTE));
+	                        #tempEnableStateCommands.unsuspend := #tempEnableStateCommands.unsuspend OR ((NOT #unitData[#tempIndexUnit].controlModeStateManager.monitoring.curDisabledStates.%X6) AND (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.stateCurrent = #SUSPENDED));
+	                        #tempEnableStateCommands.abort := #tempEnableStateCommands.abort OR ((NOT #unitData[#tempIndexUnit].controlModeStateManager.monitoring.curDisabledStates.%X9) AND NOT ((#unitData[#tempIndexUnit].controlModeStateManager.monitoring.stateCurrent = #ABORTING) OR (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.stateCurrent = #ABORTED)));
+	                        #tempEnableStateCommands.clear := #tempEnableStateCommands.clear OR ((NOT #unitData[#tempIndexUnit].controlModeStateManager.monitoring.curDisabledStates.%X2) AND (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.stateCurrent = #ABORTED));
+	                        #tempEnableStateCommands.complete := #tempEnableStateCommands.complete OR ((NOT #unitData[#tempIndexUnit].controlModeStateManager.monitoring.curDisabledStates.%X17) AND (((#unitData[#tempIndexUnit].controlModeStateManager.monitoring.stateCurrent = #HELD) AND (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.curCompleteCmdCfg.%X11)) OR
+	                        ((#unitData[#tempIndexUnit].controlModeStateManager.monitoring.stateCurrent = #EXECUTE) AND (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.curCompleteCmdCfg.%X6)) OR ((#unitData[#tempIndexUnit].controlModeStateManager.monitoring.stateCurrent = #SUSPENDED) AND (#unitData[#tempIndexUnit].controlModeStateManager.monitoring.curCompleteCmdCfg.%X5))));
+	                        //State Commands that are allowed or enabled in the HMI according to the unit selected
+	                        #hmiInterface[#tempIndexHmi].plcToHmi.stateCommandsButtons.operatorControlAllowed.%X0 := #tempEnableStateCommands.start;
+	                        #hmiInterface[#tempIndexHmi].plcToHmi.stateCommandsButtons.operatorControlAllowed.%X1 := #tempEnableStateCommands.stop;
+	                        #hmiInterface[#tempIndexHmi].plcToHmi.stateCommandsButtons.operatorControlAllowed.%X2 := #tempEnableStateCommands.reset;
+	                        #hmiInterface[#tempIndexHmi].plcToHmi.stateCommandsButtons.operatorControlAllowed.%X3 := #tempEnableStateCommands.clear;
+	                        #hmiInterface[#tempIndexHmi].plcToHmi.stateCommandsButtons.operatorControlAllowed.%X4 := #tempEnableStateCommands.hold;
+	                        #hmiInterface[#tempIndexHmi].plcToHmi.stateCommandsButtons.operatorControlAllowed.%X5 := #tempEnableStateCommands.suspend;
+	                        #hmiInterface[#tempIndexHmi].plcToHmi.stateCommandsButtons.operatorControlAllowed.%X6 := #tempEnableStateCommands.complete;
+	                        #hmiInterface[#tempIndexHmi].plcToHmi.stateCommandsButtons.operatorControlAllowed.%X7 := #tempEnableStateCommands.abort;
+	                        #hmiInterface[#tempIndexHmi].plcToHmi.stateCommandsButtons.operatorControlAllowed.%X8 := #tempEnableStateCommands.unhold;
+	                        #hmiInterface[#tempIndexHmi].plcToHmi.stateCommandsButtons.operatorControlAllowed.%X9 := #tempEnableStateCommands.unsuspend;
+	                    END_REGION Operator control allowed
+	                END_REGION State buttons
+	                
+	                REGION Special function buttons
+	                    REGION Active
+	                        // Evaluation of the current active special functions according to the selected units
+	                        #tempActiveSpecialFunctions.stopEndOfCycle := #tempActiveSpecialFunctions.stopEndOfCycle OR (#unitData[#tempIndexUnit].specialFunctions.stopEndOfCycle);
+	                        #tempActiveSpecialFunctions.initalPosition := #tempActiveSpecialFunctions.initalPosition OR (#unitData[#tempIndexUnit].specialFunctions.initalPosition);
+	                        #tempActiveSpecialFunctions.releaseEntry := #tempActiveSpecialFunctions.releaseEntry OR (#unitData[#tempIndexUnit].specialFunctions.releaseEntry);
+	                        #tempActiveSpecialFunctions.dryRun := #tempActiveSpecialFunctions.dryRun OR (#unitData[#tempIndexUnit].specialFunctions.dryRun);
+	                        #tempActiveSpecialFunctions.specialFunction05 := #tempActiveSpecialFunctions.specialFunction05 OR (#unitData[#tempIndexUnit].specialFunctions.specialFunction05);
+	                        #tempActiveSpecialFunctions.specialFunction06 := #tempActiveSpecialFunctions.specialFunction06 OR (#unitData[#tempIndexUnit].specialFunctions.specialFunction06);
+	                        #tempActiveSpecialFunctions.specialFunction07 := #tempActiveSpecialFunctions.specialFunction07 OR (#unitData[#tempIndexUnit].specialFunctions.specialFunction07);
+	                        #tempActiveSpecialFunctions.specialFunction08 := #tempActiveSpecialFunctions.specialFunction08 OR (#unitData[#tempIndexUnit].specialFunctions.specialFunction08);
+	                        #tempActiveSpecialFunctions.specialFunction09 := #tempActiveSpecialFunctions.specialFunction09 OR (#unitData[#tempIndexUnit].specialFunctions.specialFunction09);
+	                        #tempActiveSpecialFunctions.specialFunction10 := #tempActiveSpecialFunctions.specialFunction10 OR (#unitData[#tempIndexUnit].specialFunctions.specialFunction10);
+	                        #tempActiveSpecialFunctions.specialFunction11 := #tempActiveSpecialFunctions.specialFunction11 OR (#unitData[#tempIndexUnit].specialFunctions.specialFunction11);
+	                        #tempActiveSpecialFunctions.specialFunction12 := #tempActiveSpecialFunctions.specialFunction12 OR (#unitData[#tempIndexUnit].specialFunctions.specialFunction12);
+	                        #tempActiveSpecialFunctions.specialFunction13 := #tempActiveSpecialFunctions.specialFunction13 OR (#unitData[#tempIndexUnit].specialFunctions.specialFunction13);
+	                        #tempActiveSpecialFunctions.specialFunction14 := #tempActiveSpecialFunctions.specialFunction14 OR (#unitData[#tempIndexUnit].specialFunctions.specialFunction14);
+	                        #tempActiveSpecialFunctions.specialFunction15 := #tempActiveSpecialFunctions.specialFunction15 OR (#unitData[#tempIndexUnit].specialFunctions.specialFunction15);
+	                        #tempActiveSpecialFunctions.specialFunction16 := #tempActiveSpecialFunctions.specialFunction16 OR (#unitData[#tempIndexUnit].specialFunctions.specialFunction16);
+	                        
+	                        //Current active special functions to show in the HMI according to the units selected
+	                        #hmiInterface[#tempIndexHmi].plcToHmi.specialFunctionButtons.active.%X0 := #tempActiveSpecialFunctions.stopEndOfCycle;
+	                        #hmiInterface[#tempIndexHmi].plcToHmi.specialFunctionButtons.active.%X1 := #tempActiveSpecialFunctions.initalPosition;
+	                        #hmiInterface[#tempIndexHmi].plcToHmi.specialFunctionButtons.active.%X2 := #tempActiveSpecialFunctions.releaseEntry;
+	                        #hmiInterface[#tempIndexHmi].plcToHmi.specialFunctionButtons.active.%X3 := #tempActiveSpecialFunctions.dryRun;
+	                        #hmiInterface[#tempIndexHmi].plcToHmi.specialFunctionButtons.active.%X4 := #tempActiveSpecialFunctions.specialFunction05;
+	                        #hmiInterface[#tempIndexHmi].plcToHmi.specialFunctionButtons.active.%X5 := #tempActiveSpecialFunctions.specialFunction06;
+	                        #hmiInterface[#tempIndexHmi].plcToHmi.specialFunctionButtons.active.%X6 := #tempActiveSpecialFunctions.specialFunction07;
+	                        #hmiInterface[#tempIndexHmi].plcToHmi.specialFunctionButtons.active.%X7 := #tempActiveSpecialFunctions.specialFunction08;
+	                        #hmiInterface[#tempIndexHmi].plcToHmi.specialFunctionButtons.active.%X8 := #tempActiveSpecialFunctions.specialFunction09;
+	                        #hmiInterface[#tempIndexHmi].plcToHmi.specialFunctionButtons.active.%X9 := #tempActiveSpecialFunctions.specialFunction10;
+	                        #hmiInterface[#tempIndexHmi].plcToHmi.specialFunctionButtons.active.%X10 := #tempActiveSpecialFunctions.specialFunction11;
+	                        #hmiInterface[#tempIndexHmi].plcToHmi.specialFunctionButtons.active.%X11 := #tempActiveSpecialFunctions.specialFunction12;
+	                        #hmiInterface[#tempIndexHmi].plcToHmi.specialFunctionButtons.active.%X12 := #tempActiveSpecialFunctions.specialFunction13;
+	                        #hmiInterface[#tempIndexHmi].plcToHmi.specialFunctionButtons.active.%X13 := #tempActiveSpecialFunctions.specialFunction14;
+	                        #hmiInterface[#tempIndexHmi].plcToHmi.specialFunctionButtons.active.%X14 := #tempActiveSpecialFunctions.specialFunction15;
+	                        #hmiInterface[#tempIndexHmi].plcToHmi.specialFunctionButtons.active.%X15 := #tempActiveSpecialFunctions.specialFunction16;
+	                    END_REGION Active  
+	                END_REGION Special function buttons 
+	                
+	                REGION Displayed mode
+	                    //Evaluation of the current active mode according to the selected units 
+	                    //Loop through all units. If the mode differs from the mode of the previous unit, set unit mode to "MODE_VARIOUS"
+	                    IF #tempFirstLoopIterationMode THEN
+	                        #tempCollectiveMode := #unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent;
+	                    ELSIF NOT (#tempCollectiveMode = #unitData[#tempIndexUnit].controlModeStateManager.monitoring.unitModeCurrent) THEN
+	                        //setting the collective current mode as various if all the units are not on the same mode
+	                        #tempCollectiveMode := #MODE_VARIOUS;
+	                    END_IF;
+	                    #tempFirstLoopIterationMode := false;
+	                    //Current mode to display in the HMI according to the units selected
+	                    #hmiInterface[#tempIndexHmi].plcToHmi.displayedMode := #tempCollectiveMode;
+	                END_REGION Displayed mode
+	                
+	                REGION Displayed state
+	                    //Evaluation of the current active state according to the selected units
+	                    //Loop through all units. If the mode differs from the mode of the previous unit, set unit mode to "MODE_VARIOUS"
+	                    IF #tempFirstLoopIterationState THEN
+	                        #tempCollectiveStatus := #unitData[#tempIndexUnit].controlModeStateManager.monitoring.stateCurrent;
+	                    ELSIF NOT (#tempCollectiveStatus = #unitData[#tempIndexUnit].controlModeStateManager.monitoring.stateCurrent) THEN
+	                        //setting the collective current state as various if all the units are not on the same state
+	                        #tempCollectiveStatus := #VARIOUS;
+	                    END_IF;
+	                    #tempFirstLoopIterationState := FALSE;
+	                    //Current state to display in the HMI according to the units selected
+	                    #hmiInterface[#tempIndexHmi].plcToHmi.displayedState := #tempCollectiveStatus;
+	                END_REGION Displayed state
+	            END_IF;
+	        END_FOR;
+	    END_FOR;
+	END_REGION PLC -> HMI | Header update
+	
+END_FUNCTION_BLOCK
+

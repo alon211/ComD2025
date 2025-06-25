@@ -1,0 +1,30 @@
+﻿NAMESPACE Unit3
+ORGANIZATION_BLOCK Main
+TITLE = "Main Program Sweep (Cycle)"
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+VERSION : 0.1
+   VAR_TEMP 
+      tempIndex : DInt;   // Index of Unit in the array
+   END_VAR
+
+
+BEGIN
+	REGION Call Unit
+	    // Assign the number of the unit to a temp for correct array index access.
+	    // Number is defined in PLC tags of Software Unit Global.
+	    
+	    #tempIndex := Config.initConfigPar.UnitNo;
+	    
+	(*   CallUnit_DB(safetyReleased := _.Safety.DataFromSafety.statusZone1.safetyReleased,
+	                acknowledgeSafety => _.Safety.DataToSafety.ackFromUnit1,
+	                globalStatus := _.Global.Data.general,
+	                unitInterface := _.Global.Data.unit[#tempIndex]); *)
+	  CallUnit_DB(safetyReleased:=TRUE,
+	              globalStatus:=_.Global.Data.general,
+	              unitInterface:=_.Global.Data.unit[#tempIndex]);
+	  
+	END_REGION
+	
+END_ORGANIZATION_BLOCK
+END_NAMESPACE
+

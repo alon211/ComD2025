@@ -1,0 +1,98 @@
+﻿NAMESPACE Unit2.EM1
+FUNCTION "EXCHANGETRAY_RollerCmParameterUpdate" : Void
+
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+VERSION : 0.1
+VAR_INPUT
+
+END_VAR
+
+VAR_OUTPUT
+
+END_VAR
+
+VAR_IN_OUT
+
+END_VAR
+
+VAR_TEMP
+
+END_VAR
+
+VAR CONSTANT
+
+END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // LGF / (c)Copyright 2024
+	    //-------------------------------------------------------------------------------
+	    // Title:            Mode Parameter Configuration
+	    // Comment/Function: Configure parameters based on different operation modes
+	    // Library/Family:   Unit2 Control
+	    // Author:           Control System Department
+	    // Tested with:      SIMATIC S7-1500
+	    // Engineering:      TIA Portal V17
+	    // Restrictions:     None
+	    // Requirements:     None
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge     | Changes applied
+	    //----------|------------|---------------------|------------------------------
+	    // 01.00.00 | 2024-01-17 | Control System Dept | First released version
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(*
+	This block handles the parameter configuration for different operation modes:
+	- Production mode: Sets production parameters and initializes delivery
+	- Manual mode: Configures manual operation parameters
+	- Maintenance mode: Sets maintenance-specific parameters
+	
+	功能说明：
+	- 生产模式：设置生产参数并初始化传送
+	- 手动模式：配置手动操作参数
+	- 维护模式：设置维护特定参数
+	*)
+	END_REGION DESCRIPTION
+	
+	REGION INITIALISATION  
+	    // Initialize functionality if needed
+	    // 初始化功能（如需要）
+	END_REGION INITIALISATION  
+	
+	REGION PROGRAM LOGIC
+	    // Production mode parameter configuration
+	    // 生产模式参数配置
+	    IF _.Unit2.EmNodes.unitStatus.mode.production THEN
+	        _.Unit2.EM1.ControlNodes.cm1Vfd205.commandConfiguration.highVel := Config.em1Parameters.cm1Vfd205.production.highVel;
+	        _.Unit2.EM1.ControlNodes.cm1Vfd205.commandConfiguration.lowVel := Config.em1Parameters.cm1Vfd205.production.lowVel;
+	        "_".Unit2.EmNodes.emRelations.EM1.deliver.init := TRUE;
+	    END_IF;
+	    
+	    // Manual mode parameter configuration
+	    // 手动模式参数配置
+	    IF _.Unit2.EmNodes.unitStatus.mode.manual THEN
+	        HmiInterface.cm1Vfd205.commandConfiguration.highVel := Config.em1Parameters.cm1Vfd205.manual.highVel;
+	        HmiInterface.cm1Vfd205.commandConfiguration.lowVel := Config.em1Parameters.cm1Vfd205.manual.lowVel;
+	    END_IF;
+	    
+	    // Maintenance mode parameter configuration
+	    // 维护模式参数配置
+	    IF _.Unit2.EmNodes.unitStatus.mode.maintenance THEN
+	        HmiInterface.cm1Vfd205.commandConfiguration.highVel := Config.em1Parameters.cm1Vfd205.maintenance.highVel;
+	        HmiInterface.cm1Vfd205.commandConfiguration.lowVel := Config.em1Parameters.cm1Vfd205.maintenance.lowVel;
+	    END_IF;
+	END_REGION PROGRAM LOGIC
+	
+	REGION OUTPUTS
+	    // Set ENO to indicate successful execution
+	    // 设置ENO表示成功执行
+	    ENO := TRUE;
+	END_REGION OUTPUTS
+END_FUNCTION
+END_NAMESPACE
+

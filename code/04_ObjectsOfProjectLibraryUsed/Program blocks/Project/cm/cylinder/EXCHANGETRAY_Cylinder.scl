@@ -1,0 +1,143 @@
+﻿FUNCTION_BLOCK "LEXCHANGETRAY_Cylinder"
+TITLE = EXCHANGETRAY_Cylinder
+{ S7_Optimized_Access := 'TRUE' ; Published := 'TRUE' }
+AUTHOR : 'SUP/Zhang Shi Long'
+FAMILY : SUP
+VERSION : 0.1
+//Exchange Tray function
+   VAR_INPUT 
+      feedbackHomePos { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Array[0..6] of Bool;   // Feedback signal for cylinder home position
+      feedbackWorkPos { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Array[0..6] of Bool;   // Feedback signal for cylinder work position
+      posStart { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt := 1;   // Position start
+      posEnd { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;   // Position end
+      enable { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Cylinder enable signal
+      enableManualCmds { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Enable manual control commands
+   END_VAR
+
+   VAR_OUTPUT 
+      goToHomePos { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Internal command to move to home position
+      goToWorkPos { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Internal command to move to work position
+   END_VAR
+
+   VAR_IN_OUT 
+      configuration : "LBC_Simple_typeTwoWayActuatorConfiguration";   // Cylinder configuration parameters
+      moduleInterface : "LBC_Simple_typeTwoWayActuatorInterface";   // Module interface
+      controlNode : "LBC_Simple_typeTwoWayActuatorControlNode";   // Control node
+   END_VAR
+
+   VAR 
+      index { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;   // Index or counter
+      instTwoWayActuator { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : "LBC_Simple_TwoWayActuator";   // Instance of two-way actuator
+   END_VAR
+
+   VAR_TEMP 
+      tempFeedbackHomePosMapping : Bool;
+      tempFeedbackWorkPosMapping : Bool;
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // Siemens / (c)Copyright 2020-2024
+	    //-------------------------------------------------------------------------------
+	    // Title:            Two-Way Actuator Feedback Mapping Module
+	    // 标题:             双向执行器反馈映射模块
+	    // Comment/Function: This module handles feedback signal mapping for two-way actuators, 
+	    //                    including home/working position validation and error clearing logic.
+	    // 注释/功能:        此模块处理双向执行器的反馈信号映射，
+	    //                    包含原位/工作位验证及错误清除逻辑。
+	    // Library/Family:   EXCHANGETRAY - Library of Basic
+	    // 库/家族:         换盘机 - 基本控制模块库
+	    // Author:           Siemens Digital Industries
+	    // 作者:            西门子数字工业
+	    // Tested with:      S7-PLCSIM Advanced 6.0
+	    // 测试环境:        S7-PLCSIM Advanced 6.0
+	    // Engineering:      TIA Portal V19
+	    // 工程环境:        TIA Portal V19
+	    // Restrictions:     ENO mechanism is not used - forced to TRUE.
+	    // 限制条件:        不使用 ENO 机制 - 强制设置为 TRUE。
+	    // Requirements:     PLC (S7-1200 / S7-1500)
+	    // 要求:            PLC (S7-1200 / S7-1500)
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 17.04.2025 | SIMATIC Systems Support | Updated block info and comments following AIupdate.scl style.
+	    // 版本     | 日期       | 负责人                  | 更改内容
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 2025年4月17日 | SIMATIC系统支持        | 参照 LBC 风格更新块信息和注释。
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	    (/*
+	    This module performs feedback signal mapping for two-way actuators. 
+	    It validates home/working position signals across a range of indices 
+	    and clears error flags when specific status codes are detected.
+	    
+	    此模块为双向执行器执行反馈信号映射。
+	    它在指定索引范围内验证原位/工作位信号，
+	    并在检测到特定状态码时清除错误标志。
+	    */)
+	END_REGION DESCRIPTION
+	
+	REGION INITIALISATION  
+	    // Reset temporary feedback flags
+	    // 重置临时反馈标志
+	    #tempFeedbackHomePosMapping := TRUE;
+	    #tempFeedbackWorkPosMapping := TRUE;
+	END_REGION INITIALISATION  
+	
+	REGION PROGRAM LOGIC
+	    REGION PROCESS INPUT SIGNALS
+	        REGION Input configuration parameter
+	            // Validate home position signals across specified index range
+	            // 验证指定索引范围内的原位信号
+	            FOR #index := #posStart TO #posEnd DO
+	                #tempFeedbackHomePosMapping := #tempFeedbackHomePosMapping AND #feedbackHomePos[#index];
+	            END_FOR;
+	            
+	            // Validate working position signals across specified index range
+	            // 验证指定索引范围内的工作位信号
+	            FOR #index := #posStart TO #posEnd DO
+	                #tempFeedbackWorkPosMapping := #tempFeedbackWorkPosMapping AND #feedbackWorkPos[#index];
+	            END_FOR;
+	        END_REGION Input configuration parameter
+	        
+	        REGION ACTUATOR CONTROL
+	            // Call two-way actuator function block with mapped feedback signals
+	            // 使用映射后的反馈信号调用双向执行器功能块
+	            #instTwoWayActuator(
+	                                enable := #enable,
+	                                feedbackHomePos := #tempFeedbackHomePosMapping,
+	                                feedbackWorkPos := #tempFeedbackWorkPosMapping,
+	                                enableManualCmds := #enableManualCmds,
+	                                goToHomePos => #goToHomePos,
+	                                goToWorkPos => #goToWorkPos,
+	                                configuration := #configuration,
+	                                moduleInterface := #moduleInterface,
+	                                controlNode := #controlNode
+	            );
+	        END_REGION ACTUATOR CONTROL
+	    END_REGION PROCESS INPUT SIGNALS
+	END_REGION PROGRAM LOGIC
+	
+	REGION ERROR HANDLING
+	    REGION Error auto cleared
+	        // Automatically clear error flags when specific status codes are detected
+	        // 在检测到特定状态码时自动清除错误标志
+	        IF #controlNode.monitoring.status = 16#8402 OR #controlNode.monitoring.status = 16#8403 THEN
+	            #moduleInterface.monitoring.error := FALSE;
+	            #controlNode.monitoring.error := FALSE;
+	        END_IF;
+	    END_REGION Error auto cleared
+	END_REGION ERROR HANDLING
+	
+	REGION OUTPUTS
+	    // ENO mechanism disabled, ENO - forced to TRUE
+	    // ENO 机制禁用，强制设置为 TRUE
+	    ENO := TRUE;
+	END_REGION OUTPUTS
+END_FUNCTION_BLOCK
+

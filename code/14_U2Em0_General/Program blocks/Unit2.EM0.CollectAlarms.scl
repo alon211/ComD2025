@@ -1,0 +1,173 @@
+﻿NAMESPACE Unit2.EM0
+FUNCTION CollectAlarms : Void
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+VERSION : 0.1
+   VAR_INPUT 
+      resetAlarms : Bool;   // Reset the currently pending alarms
+      disableAlarms : Bool;   // Disable all the Alarms - pending alarms will stay until a reset is triggered
+   END_VAR
+
+   VAR_OUTPUT 
+      commandsToUnit : _.LUC_typeStateCommands;   // Feedback to the unit
+   END_VAR
+
+
+BEGIN
+	// Collects alarms from the respective level AND categorises the alarms into the different alarm classes. Filling the alarm DB with specific alarm messages which are defined in the Comment OF the defined alarm. The definition OF possible alarms within a equipment is handled here.
+	// 
+	
+	REGION Reeset Alarms
+	    // Statement section REGION
+	    IF #resetAlarms THEN
+	        _.LAF_ClearAlarms(commandsToUnit => #commandsToUnit,
+	                          errorNoReaction := Alarms.errorNoReaction,
+	                          errorAbort := Alarms.errorAbort,
+	                          errorStop := Alarms.errorStop,
+	                          warningNoReaction := Alarms.warningNoReaction,
+	                          warningHold := Alarms.warningHold,
+	                          warningSuspend := Alarms.warningSuspend,
+	                          information := Alarms.information,
+	                          criteriaAnalysis := Alarms.criteriaAnalysis);
+	    END_IF;
+	END_REGION Reset Alarms
+	
+	REGION Disable alarms
+	    // Statement section REGION
+	    IF #disableAlarms THEN
+	        RETURN;
+	    END_IF;
+	END_REGION Disable Alamrs
+	
+	
+	REGION Error no reaction
+	    
+	    REGION error no reaction 1
+	        Alarms.errorNoReaction[0] := FALSE;
+	    END_REGION error no reaction 1
+	    
+	    REGION error no reaction 2
+	        Alarms.errorNoReaction[1] := FALSE;
+	    END_REGION error no reaction 2
+	    
+	END_REGION error no reaction
+	
+	REGION error and abort
+	    
+	    REGION error and abort 1
+	        Alarms.errorAbort[0] := FALSE;
+	    END_REGION error and abort 1
+	    
+	    REGION error and abort 2
+	        Alarms.errorAbort[1] := FALSE;
+	    END_REGION error and abort 2
+	    
+	    REGION command evaluation
+	        IF Alarms.errorAbort[0] OR Alarms.errorAbort[1] THEN
+	            #commandsToUnit.abort := TRUE;
+	        ELSE
+	            #commandsToUnit.abort := FALSE;
+	        END_IF;
+	    END_REGION
+	    
+	END_REGION error and abort
+	
+	REGION error and stop
+	    
+	    REGION error and stop 1
+	        Alarms.errorStop[0] := FALSE;
+	    END_REGION error and stop 1
+	    
+	    REGION error and stop 2
+	        Alarms.errorStop[1] := FALSE;
+	    END_REGION error and stop 2
+	    
+	    REGION command evaluation
+	        IF Alarms.errorStop[0] OR Alarms.errorStop[1] THEN
+	            #commandsToUnit.stop := TRUE;
+	        ELSE
+	            #commandsToUnit.stop := FALSE;
+	        END_IF;
+	    END_REGION
+	    
+	END_REGION error and stop
+	
+	REGION warning no reaction
+	    
+	    REGION warning no reaction 1
+	        Alarms.warningNoReaction[0] := FALSE;
+	    END_REGION warning no reaction 1
+	    
+	    REGION warning no reaction 2
+	        Alarms.warningNoReaction[1] := FALSE;
+	    END_REGION warning no reaction 2
+	    
+	END_REGION warning no reaction
+	
+	REGION warning hold
+	    
+	    REGION warning hold 1
+	        Alarms.warningHold[0] := FALSE;
+	    END_REGION warning hold 1
+	    
+	    REGION warning hold 2
+	        Alarms.warningHold[1] := FALSE;
+	    END_REGION warning hold 2 
+	    
+	    REGION command evaluation
+	        IF Alarms.warningHold[0] OR Alarms.warningHold[1] THEN
+	            #commandsToUnit.hold := TRUE;
+	        ELSE
+	            #commandsToUnit.hold := FALSE;
+	        END_IF;
+	    END_REGION
+	    
+	END_REGION warning hold
+	
+	REGION warning suspend
+	    
+	    REGION warning suspend 1
+	        Alarms.warningSuspend[0] := FALSE;
+	    END_REGION warning suspend 1
+	    
+	    REGION warning suspend 2
+	        Alarms.warningSuspend[1] := FALSE;
+	    END_REGION warning suspend 2
+	    
+	    REGION command evaluation
+	        IF Alarms.warningSuspend[0] OR Alarms.warningSuspend[1] THEN
+	            #commandsToUnit.suspend := TRUE;
+	        ELSE
+	            #commandsToUnit.suspend := FALSE;
+	        END_IF;
+	    END_REGION
+	    
+	END_REGION warning suspend
+	
+	REGION information
+	    
+	    REGION information 1
+	        Alarms.information[0] := false;
+	    END_REGION inforation 1
+	    
+	    REGION information 2
+	        Alarms.information[1] := FALSE;
+	    END_REGION information 2 
+	    
+	END_REGION information
+	
+	REGION Criteria Analysis 
+	    
+	    REGION criteria analysis 1        
+	        Alarms.criteriaAnalysis[0] := FALSE;
+	    END_REGION
+	    
+	    REGION criteria analysis 2        
+	        Alarms.criteriaAnalysis[1] := FALSE;
+	    END_REGION
+	    
+	END_REGION criteria analysis 2
+	
+	
+END_FUNCTION
+END_NAMESPACE
+

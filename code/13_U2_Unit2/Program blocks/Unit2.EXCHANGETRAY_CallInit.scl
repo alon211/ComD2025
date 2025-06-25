@@ -1,0 +1,75 @@
+﻿NAMESPACE Unit2
+FUNCTION EXCHANGETRAY_CallInit : Void
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+VERSION : 0.1
+   VAR_IN_OUT 
+      constraintRoller : _.LEXCHANGETRAY_typeConstraintRollerEm_deliver_interface;
+      handlingXyz : _.LEXCHANGETRAY_typeHandlingXyzEm_deliver_interface;
+      constraintWorkstation : _.LEXCHANGETRAY_typeConstraintWorkstation_deliver_interface;
+      plasticWorkstation : _.LEXCHANGETRAY_typePlasticEm5_deliver_interface;
+      B1Roller : _.LEXCHANGETRAY_typeRoller_deliver_interface;
+      B2Roller : _.LEXCHANGETRAY_typeRoller_deliver_interface_B2;
+   END_VAR
+
+
+BEGIN
+	
+	IF #constraintWorkstation.init THEN
+	    #constraintWorkstation.constraintRoller.feedback.transferEnable:=
+	    #constraintWorkstation.constraintRoller.feedback.unConstrainted:=
+	    #constraintWorkstation.constraintRoller.feedback.unConstrainting:=
+	    #constraintWorkstation.constraintRoller.req.transferEnable:= FALSE;
+	 
+	    #constraintWorkstation.init := FALSE;
+	END_IF;
+	IF #handlingXyz.init THEN
+	    #handlingXyz.constraintRoller.feedback.catchOut:=
+	    #handlingXyz.constraintRoller.feedback.xPosDone:=
+	    #handlingXyz.constraintRoller.req.transferEnable:= FALSE;
+	    #handlingXyz.NgConvyorRoller.req.transferEnable :=
+	    #handlingXyz.plasticRoller.req.transferEnable := FALSE;
+	    #handlingXyz.init := FALSE;
+	END_IF;
+	IF #constraintRoller.init THEN
+	    #constraintRoller.roller.feedback.inFeedEnabled := FALSE;
+	    #constraintRoller.roller.feedback.outFeeding := FALSE;
+	    #constraintRoller.roller.req.outFeedReq := FALSE;
+	    
+	    #constraintRoller.constraintWorkstation.req.transferEnable :=
+	    #constraintRoller.constraintWorkstation.req.unConstraint :=
+	    #constraintRoller.constraintWorkstation.req.Constraint := FALSE;
+	    
+	    #constraintRoller.handlingXyz.req.transferEnable := FALSE;
+	    
+	    #constraintRoller.init := FALSE;
+	END_IF;
+	
+	IF #plasticWorkstation.init THEN
+	    #plasticWorkstation.roller.feedback.inFeedEnabled := FALSE;
+	    #plasticWorkstation.roller.feedback.outFeeding := FALSE;
+	    #plasticWorkstation.roller.req.outFeedReq := FALSE;
+	    
+	    #plasticWorkstation.init := FALSE;
+	END_IF;
+	
+	IF #B1Roller.init THEN
+	    #B1Roller.logistics.feedback.inFeedEnabled := FALSE;
+	    #B1Roller.logistics.feedback.outFeeding := FALSE;
+	    #B1Roller.logistics.req.outFeedReq := FALSE;
+	    #B1Roller.workStationRoller.feedback.inFeedEnabled := FALSE;
+	    #B1Roller.workStationRoller.feedback.outFeeding := FALSE;
+	    #B1Roller.workStationRoller.req.outFeedReq := FALSE;
+	    #B1Roller.init := FALSE;
+	END_IF;
+	IF #B2Roller.init THEN
+	    #B2Roller.logistics.feedback.inFeedEnabled := FALSE;
+	    #B2Roller.logistics.feedback.outFeeding := FALSE;
+	    #B2Roller.logistics.req.outFeedReq := FALSE;
+	    #B2Roller.workStationRoller.feedback.inFeedEnabled := FALSE;
+	    #B2Roller.workStationRoller.feedback.outFeeding := FALSE;
+	    #B2Roller.workStationRoller.req.outFeedReq := FALSE;
+	    #B2Roller.init := FALSE;
+	END_IF;
+END_FUNCTION
+END_NAMESPACE
+

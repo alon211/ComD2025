@@ -1,0 +1,97 @@
+﻿NAMESPACE Unit2.EM4
+FUNCTION EXCHANGETRAY_Em4AxisGoHome : Void
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+VERSION : 0.1
+   VAR_OUTPUT 
+      homeDone : Bool;
+   END_VAR
+
+   VAR_TEMP 
+      cm1PosHomeDone : Bool;   // åŽŸç‚¹å·²ç»å½’ä½
+      cm2PosHomeDone : Bool;   // åŽŸç‚¹å·²ç»å½’ä½
+      cm3PosHomeDone : Bool;   // åŽŸç‚¹å·²ç»å½’ä½
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // LGF / (c)Copyright 2024
+	    //-------------------------------------------------------------------------------
+	    // Title:            Multi-Axis Home Position Control
+	    // Comment/Function: æ¯æ¬¡æ‰˜ç›˜è¿è¡Œå’Œåœæ­¢æ—¶éœ€è¦åˆå§‹åŒ–çš„å˜é‡
+	    //                   Variables that need to be initialized when tray runs and stops
+	    // Library/Family:   Unit2 Axis Control
+	    // Author:           Automation Department / Axis Control Team
+	    // Tested with:      SIMATIC S7-1500 FW V2.9
+	    // Engineering:      TIA Portal V17
+	    // Restrictions:     Must be called in OB1
+	    // Requirements:     Axis hardware configured
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 2024-01-17 | Axis Control Team       | First released version
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(*
+	This block controls the home position operation of three axes:
+	- Axis 1 (cm1AxisControl)
+	- Axis 2 (cm2AxisControl)
+	- Axis 3 (cm3AxisControl)
+	
+	The block sets the target position to 0 for all axes and commands absolute positioning.
+	It then checks if all axes have reached position 0 using LGF_CompareLReal function.
+	The #homeDone output is set when all axes have reached home position (position = 0).
+	
+	åŠŸèƒ½è¯´æ˜Žï¼š
+	æœ¬å—æŽ§åˆ¶ä¸‰ä¸ªè½´çš„å›žåŽŸç‚¹æ“ä½œï¼š
+	- è½´1 (cm1AxisControl)
+	- è½´2 (cm2AxisControl)
+	- è½´3 (cm3AxisControl)
+	
+	æœ¬å—å°†æ‰€æœ‰è½´çš„ç›®æ ‡ä½ç½®è®¾ç½®ä¸º0å¹¶å‘½ä»¤ç»å¯¹å®šä½ã€‚
+	ç„¶åŽä½¿ç”¨LGF_CompareLRealå‡½æ•°æ£€æŸ¥æ‰€æœ‰è½´æ˜¯å¦å·²è¾¾åˆ°ä½ç½®0ã€‚
+	å½“æ‰€æœ‰è½´éƒ½åˆ°è¾¾åŽŸç‚¹ä½ç½®ï¼ˆä½ç½®=0ï¼‰æ—¶ï¼Œ#homeDoneè¾“å‡ºè¢«ç½®ä¸ºTRUEã€‚
+	*)
+	END_REGION DESCRIPTION
+	
+	REGION INITIALISATION  
+	    // No initialization required for this block
+	    // æœ¬å—ä¸éœ€è¦åˆå§‹åŒ–
+	END_REGION INITIALISATION  
+	
+	REGION PROGRAM LOGIC
+	    // Set target position to 0 for all axes
+	    // å°†æ‰€æœ‰è½´çš„ç›®æ ‡ä½ç½®è®¾ç½®ä¸º0
+	    ControlNodes.cm1AxisControl.commandConfiguration.posAbsolute.position := 0;
+	    ControlNodes.cm2AxisControl.commandConfiguration.posAbsolute.position := 0;
+	    ControlNodes.cm3AxisControl.commandConfiguration.posAbsolute.position := 0;
+	    
+	    // Command absolute positioning for all axes when not already in positioning mode
+	    // å½“ä¸åœ¨å®šä½æ¨¡å¼æ—¶ï¼Œå‘½ä»¤æ‰€æœ‰è½´è¿›è¡Œç»å¯¹å®šä½
+	    ControlNodes.cm1AxisControl.commands.posAbsolute := NOT ControlNodes.cm1AxisControl.monitoring.statusWord.bit08_PositioningCommand;
+	    ControlNodes.cm2AxisControl.commands.posAbsolute := NOT ControlNodes.cm2AxisControl.monitoring.statusWord.bit08_PositioningCommand;
+	    ControlNodes.cm3AxisControl.commands.posAbsolute := NOT ControlNodes.cm3AxisControl.monitoring.statusWord.bit08_PositioningCommand;
+	    
+	    // Check if each axis has reached home position (position = 0)
+	    // æ£€æŸ¥æ¯ä¸ªè½´æ˜¯å¦å·²åˆ°è¾¾åŽŸç‚¹ä½ç½®ï¼ˆä½ç½®=0ï¼‰
+	    #cm1PosHomeDone := _.LGF_CompareLReal(valueA := ControlNodes.cm1AxisControl.monitoring.position, valueB := 0);
+	    #cm2PosHomeDone := _.LGF_CompareLReal(valueA := ControlNodes.cm2AxisControl.monitoring.position, valueB := 0);
+	    #cm3PosHomeDone := _.LGF_CompareLReal(valueA := ControlNodes.cm3AxisControl.monitoring.position, valueB := 0);
+	    
+	    // Set homeDone when all axes have reached home position
+	    // å½“æ‰€æœ‰è½´éƒ½åˆ°è¾¾åŽŸç‚¹ä½ç½®æ—¶ï¼Œè®¾ç½®homeDone
+	    #homeDone := #cm1PosHomeDone AND #cm2PosHomeDone AND #cm3PosHomeDone;
+	END_REGION PROGRAM LOGIC
+	
+	REGION OUTPUTS
+	    // ENO mechanism for error handling
+	    // ENOæœºåˆ¶ç”¨äºŽé”™è¯¯å¤„ç†
+	    ENO := TRUE;
+	END_REGION OUTPUTS
+END_FUNCTION
+END_NAMESPACE
+

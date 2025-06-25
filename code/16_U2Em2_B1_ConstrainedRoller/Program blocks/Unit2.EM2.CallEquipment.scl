@@ -1,0 +1,463 @@
+﻿NAMESPACE Unit2.EM2
+FUNCTION_BLOCK CallEquipment
+TITLE = CallEquipment
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+AUTHOR : Siemens_FA_SUP
+VERSION : 0.1
+//Template for the call Environment of the Equipment Module. Here the Information from the Unit is processed and used to control the main sequence for the Equipment module.
+   VAR_IN_OUT 
+      unitStatus : _.LAF_typeUnitStatus;   // Current unit status o be used in this EM
+      unitAlarmDB : _.LAF_typeAlarms;   // Summarized EM Alarms for the Unit
+      emFeedback : _.LUC_typeEmFeedback;   // Feedback of the EM to the Unit
+   END_VAR
+
+   VAR 
+      statUnitStatus { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LAF_typeUnitStatus;   // Unit Status used in this EM
+      instJobExecute { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LAF_SelectJob;
+      instJobStopping { ExternalWritable := 'False'} : _.LAF_SelectJob;
+      instJobStarting { ExternalWritable := 'False'} : _.LAF_SelectJob;
+      instJobHolding { ExternalWritable := 'False'} : _.LAF_SelectJob;
+      instJobUnHolding { ExternalWritable := 'False'} : _.LAF_SelectJob;
+      instJobReseting { ExternalWritable := 'False'} : _.LAF_SelectJob;
+      instSequence { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.Unit2.EM2.Sequence;
+      instManageBitAlarms { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LAF_ManageBitAlarms;
+      instCmReset { ExternalWritable := 'False'} : EXCHANGETRAY_ConstraintRollerCmResetOperator;
+      instcm1Vfd206 { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LEXCHANGETRAY_RollerVfd;
+      instcm6SignalTM { ExternalWritable := 'False'} : _.LEXCHANGETRAY_U2Em2SingleTM;
+      instCm5AxisPos { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LBC_AxisSimpleControl;
+      instCm2TrayLiftingCylinder { ExternalWritable := 'False'} : _.LEXCHANGETRAY_Cylinder;
+      instCm3CellLiftingCylinder { ExternalWritable := 'False'} : _.LEXCHANGETRAY_Cylinder;
+      instCm4PositioningPinCylinder { ExternalWritable := 'False'} : _.LEXCHANGETRAY_Cylinder;
+      instCm7Pc { ExternalWritable := 'False'} : _.LEXCHANGETRAY_PcAcuator;
+      instCm8Scanner { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LEXCHANGETRAY_Sr1000_Profinet;
+      statLstUnitMode { ExternalWritable := 'False'; S7_SetPoint := 'True'} : DInt;
+   END_VAR
+
+   VAR_TEMP 
+      tempScInProduction : Bool;
+      tempScInManual : Bool;
+      tempScInMantaince : Bool;
+   END_VAR
+
+   VAR CONSTANT 
+      NO_JOB : DInt;   // No job
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK_INFO_HEADER
+	    // Block information header section
+	    // 块信息头部分
+	    //===============================================================================
+	    // Siemens / (c)Copyright 2023
+	    //-------------------------------------------------------------------------------
+	    // Title:            Unit2.EM2.CallEquipment
+	    // Comment/Function: Equipment module control logic for ConstrainedRoller
+	    // Library/Family:   ExchangeTray Automation Framework
+	    // Author:           Siemens_FA_SUP
+	    // Tested with:      SIMATIC S7-1500 V2.9
+	    // Engineering:      TIA Portal V17
+	    // Restrictions:     OB35 cyclic execution
+	    // Requirements:    LAF library V3.2
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 01.01.2023 | Siemens_FA_SUP         | Initial version
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	    // Block description and documentation section
+	    // 块描述和文档部分
+	    (/*
+	    This is a template block provided by the Automation Framework. It can be used to create an own project.
+	    The Block Info Header is prepared to put in your own data.
+	    Description of the block could be added here and the docu created by Code2Docu.
+	    */)
+	END_REGION DESCRIPTION
+	
+	REGION Equipment Control
+	    // Equipment control section for managing device operations
+	    // 设备控制部分，用于管理设备操作
+	    // Equipment control logic for managing the relationship between EM and Unit
+	    // 设备控制逻辑，用于管理EM和Unit之间的关系
+	    
+	    REGION Interlink EM TO Unit
+	        // Manage data exchange and communication between Equipment Module and Unit
+	        // 管理设备模块和单元之间的数据交换和通信
+	        // This block links and unlinks the EM from the unit. The command to link/unlink can be set directly by the inputs of the block (e.g. to link/unlink based on any program logic)
+	        // or through the InOut "hmiInterface". The block changes the output "isLinked" to true/false, depending on the command and if a change is allowed. A changed is allowed if the unit
+	        // is in state aborted, clearing or stopped. The output "isLinked" is send back to the unit. If the EM is not linked, the unit ignores this EM.
+	        
+	        _.LUC_InterlinkToParent(link := false,
+	                                unlink := false,
+	                                isLinked => #emFeedback.isLinked,
+	                                currentState := #unitStatus.state,
+	                                hmiInterface := HmiInterface.em.interlinkMode);
+	    END_REGION
+	    
+	    REGION Control EM        
+	        // When linked, unitStatus is fully applied to unitStatusUsed.
+	        // When NOT linked, only acknowledge AND safetyReleased from the unitStatus are applied. A direct EM control BY HmiInterface OR localInterface is possible.
+	        _.LAF_ControlEm(isLinked := #emFeedback.isLinked,
+	                        unitStatusUsed => #statUnitStatus,
+	                        unitStatus := #unitStatus,
+	                        hmiInterface := HmiInterface.em,
+	                        localInterface := ControlNodes.em);
+	    END_REGION
+	    
+	END_REGION
+	REGION Control Modules (Sensors) 
+	    REGION call emParameters
+	        
+	        _.LAF_U2Em2Parameter(enable := TRUE,
+	                             configuration := Config.em2Parameters,
+	                             moduleInterface := HmiInterface.em2Parameters);
+	        Config.em2Parameters.cm8Scanner.hwd := _."U2EM2_SR1000~Read_Data_128Byte_1";
+	        Config.em2Parameters.cm8Scanner.telegram.in.busyStatusBits.statusByte := _.errorStatusByte_1_U2Em2;
+	        
+	        Config.em2Parameters.cm8Scanner.telegram.in.completionStatusBits.statusByte := _.completionStatusByte_1_U2Em2;
+	        Config.em2Parameters.cm8Scanner.telegram.in.errorStatusBits.statusByte := _.errorStatusByte_1_U2Em2;
+	        Config.em2Parameters.cm8Scanner.telegram.in.handshakAndGeneralErrorStatusBits.statusByte := _.handshakeAndGeneralErrorStatusByte_1_U2Em2;
+	        
+	    END_REGION
+	    REGION cm6SignalTM
+	        #instcm6SignalTM(detectionBeforePalletPositioning := _.detectionBeforePalletPositioningU2Em2,
+	                         positioningPinCylinderHomePositionDetection2 := _.positioningPinCylinderHomePositionDetectionU2Em2_2,
+	                         cellLiftingCylinderHomePositionDetection2 := _.cellLiftingCylinderHomePositionDetectionU2Em2_2,
+	                         positioningPinCylinderWorkingPositionDetection2 := _.positioningPinCylinderWorkingPositionDetectionU2Em2_2,
+	                         trayLiftingCylinderWorkingPositionDetection1 := _.trayLiftingCylinderWorkingPositionDetectionU2Em2_1,
+	                         cellLiftingCylinderWorkingPositionDetection2 := _.cellLiftingCylinderWorkingPositionDetectionU2Em2_2,
+	                         cellLiftingCylinderHomePositionDetection1 := _.cellLiftingCylinderHomePositionDetectionU2Em2_1,
+	                         trayEntryDetection := _.trayEntryDetectionU2Em2,
+	                         trayLiftingCylinderHomePositionDetection1 := _.trayLiftingCylinderHomePositionDetectionU2Em2_1,
+	                         positiveLimitForCellJackingAndTransplanting := _.positiveLimitForCellJackingAndTransplantingU2Em2,
+	                         negativeLimitForCellJackingAndTransplanting := _.negativeLimitForCellJackingAndTransplantingU2Em2,
+	                         cellLiftingCylinderWorkingPositionDetection1 := _.cellLiftingCylinderWorkingPositionDetectionU2Em2_1,
+	                         positioningPinCylinderHomePositionDetection1 := _.positioningPinCylinderHomePositionDetectionU2Em2_1,
+	                         positioningPinCylinderWorkingPositionDetection1 := _.positioningPinCylinderWorkingPositionDetectionU2Em2_1,
+	                         trayInPlaceDetection := _.trayInPlaceDetectionU2Em2,
+	                         originalForCellJackingAndTransplanting := _.originalForCellJackingAndTransplantingU2Em2,
+	                         palletScrewAntiReverseDetection := _."palletScrewAnti-reverseDetectionU2Em2",
+	                         detectionAfterTrayPositioning := _.detectionAfterTrayPositioningU2Em2,
+	                         trayLiftingCylinderHomePositionDetection2 := _.trayLiftingCylinderHomePositionDetectionU2Em2_2,
+	                         trayLiftingCylinderWorkingPositionDetection2 := _.trayLiftingCylinderWorkingPositionDetectionU2Em2_2,
+	                         configuration := HmiInterface.cm6SignalTM.configuration,
+	                         moduleInterface := HmiInterface.cm6SignalTM,
+	                         controlNode := ControlNodes.cm6SignalTM
+	        );
+	        
+	    END_REGION
+	END_REGION
+	REGION Equipment Logic
+	    // Implementation of equipment specific logic and operations
+	    // 实现设备特定的逻辑和操作
+	    
+	    REGION Map Unit Status to Sequence Status
+	        // Function to connect the Unit Status to the Sequencer Interface
+	        _.LAF_MapUnitStatusToSequence(
+	                                      interruptJobInStopping := #unitStatus.state.stopping,
+	                                      interruptJobInHolding := #unitStatus.state.holding,
+	                                      interruptJobInSuspending := false,
+	                                      interruptJobInCompleting := false,
+	                                      unitStatus := #statUnitStatus,
+	                                      sequence := ControlNodes.sequence,
+	                                      jobs := ControlNodes.jobs);
+	    END_REGION Map Unit Status to Sequence Status
+	    
+	    REGION Select Job
+	        // Decide which Step Sequence to start depending on the OMAC State and EM conditions
+	        // First Move Block is TO Initialize the jobSelect Number
+	        ControlNodes.jobs.commands.setJobNumber := #NO_JOB;
+	        
+	        #instJobExecute(parentReferenceDesignator := Config.em.referenceDesignator.combined,
+	                        jobNumber := _.U2EM2_JOB_EXECUTE,
+	                        singleCycleJob := FALSE,
+	                        interlock := TRUE,
+	                        startCondition := #statUnitStatus.state.execute,
+	                        hmiInterface := HmiInterface.jobs,
+	                        jobs := ControlNodes.jobs);
+	        #instJobStarting(parentReferenceDesignator := Config.em.referenceDesignator.combined,
+	                         jobNumber := _.U2EM2_JOB_STARTING,
+	                         singleCycleJob := TRUE,
+	                         interlock := TRUE,
+	                         startCondition := #statUnitStatus.state.starting,
+	                         hmiInterface := HmiInterface.jobs,
+	                         jobs := ControlNodes.jobs);
+	        #instJobStopping(parentReferenceDesignator := Config.em.referenceDesignator.combined,
+	                         jobNumber := _.U2EM2_JOB_STOPPING,
+	                         singleCycleJob := TRUE,
+	                         interlock := TRUE,
+	                         startCondition := #statUnitStatus.state.stopping,
+	                         hmiInterface := HmiInterface.jobs,
+	                         jobs := ControlNodes.jobs);
+	        #instJobHolding(parentReferenceDesignator := Config.em.referenceDesignator.combined,
+	                        jobNumber := _.U2EM2_JOB_HOLODING,
+	                        singleCycleJob := TRUE,
+	                        interlock := TRUE,
+	                        startCondition := #statUnitStatus.state.holding,
+	                        hmiInterface := HmiInterface.jobs,
+	                        jobs := ControlNodes.jobs);
+	        #instJobUnHolding(parentReferenceDesignator := Config.em.referenceDesignator.combined,
+	                          jobNumber := _.U2EM2_JOB_UNHOLODING,
+	                          singleCycleJob := TRUE,
+	                          interlock := TRUE,
+	                          startCondition := #statUnitStatus.state.unholding,
+	                          hmiInterface := HmiInterface.jobs,
+	                          jobs := ControlNodes.jobs);
+	        #instJobReseting(parentReferenceDesignator := Config.em.referenceDesignator.combined,
+	                         jobNumber := _.U2EM2_JOB_RESTING,
+	                         singleCycleJob := TRUE,
+	                         interlock := TRUE,
+	                         startCondition := #statUnitStatus.state.resetting,
+	                         hmiInterface := HmiInterface.jobs,
+	                         jobs := ControlNodes.jobs);
+	        
+	    END_REGION Select Job
+	    
+	    REGION Set EM to initialized
+	        // Init State of the EM
+	        IF #instJobExecute.jobStatus.completed THEN
+	            ControlNodes.em.status.initialized := TRUE;
+	        END_IF;
+	        
+	        IF #statUnitStatus.state.aborting
+	            OR #statUnitStatus.state.stopping
+	            OR #statUnitStatus.state.suspending
+	            OR #statUnitStatus.state.holding
+	        THEN
+	            ControlNodes.em.status.initialized := FALSE;
+	        END_IF;
+	    END_REGION Set EM to initialized
+	    
+	    REGION Call Sequence Main
+	        
+	        #instSequence();
+	    END_REGION
+	    
+	END_REGION
+	
+	REGION Control Modules (CMs)
+	    // Control and management of all control modules
+	    // 控制和管理所有控制模块
+	    
+	    REGION Control Modules (CMs)
+	        // Implementation of control module operations and configurations
+	        // 实现控制模块的操作和配置
+	        REGION configCMs
+	            // Configure and initialize control modules with required parameters
+	            // 配置并初始化控制模块所需的参数
+	            REGION cm1Vfd206
+	                Config.em2Parameters.cm1Vfd206.general.hwID := _."U2EM2_VFD206~PROFINET_interface~Standard_telegram_1";
+	                
+	            END_REGION
+	            
+	        END_REGION
+	        REGION enable/disable cms
+	            IF #statUnitStatus.state.idle THEN
+	                ControlNodes.cm5AxisControl.commands.enableAxis:=
+	                ControlNodes.cm1Vfd206.commands.sinaCommands.enableAxis := true;
+	            END_IF;
+	            (* IF #statUnitStatus.state.aborted AND #statUnitStatus.state.stopped THEN
+	                
+	                ControlNodes.cm1Vfd206.commands.sinaCommands.enableAxis := false;
+	            END_IF; *)
+	        END_REGION
+	        
+	        REGION cm1Vfd206
+	            
+	            #instcm1Vfd206(
+	                           
+	                           configuration := Config.em2Parameters.cm1Vfd206,
+	                           moduleInterface := HmiInterface.cm1Vfd206,
+	                           controlNode := ControlNodes.cm1Vfd206
+	            );
+	            
+	            ControlNodes.cm1Vfd206.commands.sinaCommands.reset :=
+	            ControlNodes.cm1Vfd206.commands.vfdSportsIncReset := false;
+	            
+	        END_REGION
+	        
+	        REGION Cm2TrayLiftingCylinder
+	            HmiInterface.cm2TrayLiftingCylinder.configuration.setOutputHomeContinuously := TRUE;
+	            HmiInterface.cm2TrayLiftingCylinder.configuration.setOutputWorkContinuously := TRUE;
+	            #instCm2TrayLiftingCylinder.feedbackHomePos[1] := ControlNodes.cm6SignalTM.monitoring.trayLiftingCylinderHomePositionDetection1;
+	            #instCm2TrayLiftingCylinder.feedbackHomePos[2] := ControlNodes.cm6SignalTM.monitoring.trayLiftingCylinderHomePositionDetection2;
+	            #instCm2TrayLiftingCylinder.feedbackWorkPos[1] := ControlNodes.cm6SignalTM.monitoring.trayLiftingCylinderWorkingPositionDetection1;
+	            #instCm2TrayLiftingCylinder.feedbackWorkPos[2] := ControlNodes.cm6SignalTM.monitoring.trayLiftingCylinderWorkingPositionDetection2;
+	            #instCm2TrayLiftingCylinder(
+	                                        posStart := 1,
+	                                        posEnd := 2,
+	                                        enable := #unitStatus.safetyReleased,
+	                                        configuration := HmiInterface.cm2TrayLiftingCylinder.configuration,
+	                                        moduleInterface := HmiInterface.cm2TrayLiftingCylinder,
+	                                        controlNode := ControlNodes.cm2TrayLiftingCylinder);
+	            _.trayLiftingCylinderHomePositionU2Em2 := #instCm2TrayLiftingCylinder.goToHomePos;
+	            _.trayLiftingCylinderWorkPositionU2Em2 := #instCm2TrayLiftingCylinder.goToWorkPos;
+	            _.Unit2.EmNodes.emRelations.EM2.deliver.constraintWorkstation.feedback.trayLiftingCylinderWorkPos := ControlNodes.cm2TrayLiftingCylinder.monitoring.inWorkPos;
+	            
+	        END_REGION
+	        REGION Cm3CellLiftingCylinder
+	            HmiInterface.cm3CellLiftingCylinder.configuration.setOutputHomeContinuously := TRUE;
+	            HmiInterface.cm3CellLiftingCylinder.configuration.setOutputWorkContinuously := TRUE;
+	            #instCm3CellLiftingCylinder.feedbackHomePos[1] := ControlNodes.cm6SignalTM.monitoring.cellLiftingCylinderHomePositionDetection1;
+	            #instCm3CellLiftingCylinder.feedbackHomePos[2] := ControlNodes.cm6SignalTM.monitoring.cellLiftingCylinderHomePositionDetection2;
+	            #instCm3CellLiftingCylinder.feedbackWorkPos[1] := ControlNodes.cm6SignalTM.monitoring.cellLiftingCylinderWorkingPositionDetection1;
+	            #instCm3CellLiftingCylinder.feedbackWorkPos[2] := ControlNodes.cm6SignalTM.monitoring.cellLiftingCylinderWorkingPositionDetection2;
+	            #instCm3CellLiftingCylinder(
+	                                        posStart := 1,
+	                                        posEnd := 2,
+	                                        enable := #unitStatus.safetyReleased,
+	                                        configuration := HmiInterface.cm3CellLiftingCylinder.configuration,
+	                                        moduleInterface := HmiInterface.cm3CellLiftingCylinder,
+	                                        controlNode := ControlNodes.cm3CellLiftingCylinder);
+	            _.cellLiftingCylinderHomePositionU2Em2 := #instCm3CellLiftingCylinder.goToHomePos;
+	            _.cellLiftingCylinderWorkPositionU2Em2 := #instCm3CellLiftingCylinder.goToWorkPos;
+	            
+	        END_REGION
+	        REGION Cm4PositioningPinCylinder
+	            HmiInterface.cm4PositioningPinCylinder.configuration.setOutputHomeContinuously := TRUE;
+	            HmiInterface.cm4PositioningPinCylinder.configuration.setOutputWorkContinuously := TRUE;
+	            #instCm4PositioningPinCylinder.feedbackHomePos[1] := ControlNodes.cm6SignalTM.monitoring.positioningPinCylinderHomePositionDetection1;
+	            #instCm4PositioningPinCylinder.feedbackHomePos[2] := ControlNodes.cm6SignalTM.monitoring.positioningPinCylinderHomePositionDetection2;
+	            #instCm4PositioningPinCylinder.feedbackWorkPos[1] := ControlNodes.cm6SignalTM.monitoring.positioningPinCylinderWorkingPositionDetection1;
+	            #instCm4PositioningPinCylinder.feedbackWorkPos[2] := ControlNodes.cm6SignalTM.monitoring.positioningPinCylinderWorkingPositionDetection2;
+	            #instCm4PositioningPinCylinder(
+	                                           posStart := 1,
+	                                           posEnd := 2,
+	                                           enable := #unitStatus.safetyReleased,
+	                                           configuration := HmiInterface.cm4PositioningPinCylinder.configuration,
+	                                           moduleInterface := HmiInterface.cm4PositioningPinCylinder,
+	                                           controlNode := ControlNodes.cm4PositioningPinCylinder);
+	            
+	            _.positioningPinCylinderHomePositionU2Em2_1 := #instCm4PositioningPinCylinder.goToHomePos;
+	            _.positioningPinCylinderWorkingPositionU2Em2_1 := #instCm4PositioningPinCylinder.goToWorkPos;
+	            
+	        END_REGION
+	        REGION cm5AxisPos
+	            ControlNodes.cm5AxisControl.commands.readValues := TRUE;
+	            #instCm5AxisPos(enable := TRUE,
+	                            enableManualCmds := NOT #unitStatus.mode.production,
+	                            axis := _.U2EM2_SV118_Positioning_Axis,
+	                            configuration := HmiInterface.cm5AxisControl.configuration,
+	                            moduleInterface := HmiInterface.cm5AxisControl,
+	                            controlNode := ControlNodes.cm5AxisControl);
+	            
+	        END_REGION
+	        
+	        REGION cm7Pc
+	            #instCm7Pc(
+	                       controlNode := ControlNodes.cm7Pc,
+	                       hmiInterface := HmiInterface.cm7Pc);
+	            
+	        END_REGION
+	        REGION cm8Scanner
+	            
+	            #instCm8Scanner(
+	                            configuration := _.Unit2.EM2.Config.em2Parameters.cm8Scanner,
+	                            moduleInterface := HmiInterface.cm8Scanner,
+	                            controlNode := ControlNodes.cm8Scanner);
+	            
+	        END_REGION
+	        REGION resetCm
+	            // Reset control module based on unit status
+	            // 根据单元状态重置控制模块
+	            // Statement section REGION
+	            
+	            #instCmReset();  // Execute reset command for control modules // 执行控制模块的复位命令
+	            
+	        END_REGION
+	    END_REGION ;
+	END_REGION
+	
+	REGION Feedback to Unit 
+	    // Process and send feedback information from equipment module to unit
+	    // 处理并向单元发送来自设备模块的反馈信息
+	    
+	    REGION State Complete (SC)
+	        _.LAF_DetermineStateComplete(active := #statUnitStatus.mode.production,
+	                                     resettingSC := #statUnitStatus.state.resetting AND #instJobReseting.jobStatus.completed,
+	                                     startingSC := #statUnitStatus.state.starting AND #instJobStarting.jobStatus.completed,
+	                                     stoppingSC := TRUE,
+	                                     abortingSC := #statUnitStatus.state.aborting,
+	                                     clearingSC := #statUnitStatus.state.clearing,
+	                                     holdingSC := #statUnitStatus.state.holding AND #instJobHolding.statJobStatus.completed,
+	                                     unholdingSC := #statUnitStatus.state.unholding AND #instJobUnHolding.jobStatus.completed,
+	                                     suspendingSC := FALSE,
+	                                     unsuspendingSC := FALSE,
+	                                     completingSC := FALSE,
+	                                     stateComplete => #tempScInProduction);
+	        
+	        _.LAF_DetermineStateComplete(active := #statUnitStatus.mode.manual,
+	                                     resettingSC := true,
+	                                     startingSC := true,
+	                                     stoppingSC := true,
+	                                     abortingSC := true,
+	                                     clearingSC := true,
+	                                     holdingSC := true,
+	                                     unholdingSC := true,
+	                                     suspendingSC := FALSE,
+	                                     unsuspendingSC := FALSE,
+	                                     completingSC := FALSE,
+	                                     stateComplete => #tempScInManual);
+	        _.LAF_DetermineStateComplete(active := #statUnitStatus.mode.maintenance,
+	                                     resettingSC := true,
+	                                     startingSC := true,
+	                                     stoppingSC := true,
+	                                     abortingSC := true,
+	                                     clearingSC := true,
+	                                     holdingSC := true,
+	                                     unholdingSC := true,
+	                                     suspendingSC := FALSE,
+	                                     unsuspendingSC := FALSE,
+	                                     completingSC := FALSE,
+	                                     stateComplete => #tempScInMantaince);
+	        REGION StateComplete (SC) Summary
+	            // Statement section REGION
+	            
+	            #emFeedback.commands.stateComplete := #tempScInProduction OR #tempScInManual OR #tempScInMantaince;
+	            
+	        END_REGION
+	    END_REGION State Complete (SC) 
+	    
+	END_REGION Feedback to Unit
+	
+	REGION Alarms 
+	    // Handle and process alarm conditions and notifications
+	    // 处理和管理报警条件和通知
+	    
+	    REGION Collect Alarms
+	        // Aggregate and process all alarm conditions from different sources
+	        // 聚合并处理来自不同来源的所有报警条件
+	        // Add events here that trigger alarms and lead to the respective commands to the unit.
+	        // It is possible to trigger alarms, set unit commands or do both for the specific event
+	        CollectAlarms(resetAlarms := #statUnitStatus.acknowledgeActive,
+	                      disableAlarms := #statUnitStatus.alarmsDisabled,
+	                      commandsToUnit => #emFeedback.commands);
+	    END_REGION
+	    
+	    REGION Manage Alarms
+	        // Derive commands from the ProDiag supervision. The ProDiag supervisions contain categories which define the reaction of
+	        // these supervisions (e.g. abort, stop, hold). These are handed over as commands TO the unit level. Alternatively, if no
+	        // ProDiag should be used, you can use the LAF_ManageBitAlarms TO realize bit alarm handling. This block can be found in
+	        // LAF in folder 70_AlarmHandling.
+	        #instManageBitAlarms(
+	                             alarmDB => _.Unit2.Alarms.emAlarms[_.Unit2_EM2],
+	                             hmiInterfaceDB => HmiInterface.em.alarms,
+	                             commandsToUnit := #emFeedback.commands,
+	                             errorNoReaction := _.Unit2.Alarms.errorNoReaction,
+	                             errorAbort := _.Unit2.Alarms.errorAbort,
+	                             errorStop := _.Unit2.Alarms.errorStop,
+	                             warningNoReaction := _.Unit2.Alarms.warningNoReaction,
+	                             warningHold := _.Unit2.Alarms.warningHold,
+	                             warningSuspend := _.Unit2.Alarms.warningSuspend,
+	                             information := _.Unit2.Alarms.information,
+	                             criteriaAnalysis := _.Unit2.Alarms.criteriaAnalysis
+	        );
+	    END_REGION
+	    
+	END_REGION Alarms
+END_FUNCTION_BLOCK
+END_NAMESPACE
+

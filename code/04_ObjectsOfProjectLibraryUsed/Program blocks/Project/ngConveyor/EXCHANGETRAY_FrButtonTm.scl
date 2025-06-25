@@ -1,0 +1,399 @@
+﻿FUNCTION_BLOCK "LEXCHANGETRAY_FrButtonTm"
+TITLE = EXCHANGETRAY_FrButtonTm
+{ S7_Optimized_Access := 'TRUE' ; Published := 'TRUE' }
+AUTHOR : 'SUP/Zhang Shi Long'
+FAMILY : SUP
+VERSION : 0.1
+//Exchange Tray function
+   VAR_INPUT 
+      conveyorEnable { ExternalWritable := 'False'} : Bool;   // Conveyor enable signal
+      xyzHandlingEnable { ExternalWritable := 'False'} : Bool;   // XYZ axis handling enable signal
+   END_VAR
+
+   VAR_IN_OUT 
+      configuration : "EXCHANGETRAY_typeFrButtonConfigeration";   // Configuration parameters
+      moduleInterface : "EXCHANGETRAY_typeFrButtonInterface";   // Module interface
+      controlNode : "EXCHANGETRAY_typeFrButtonControlNode";   // Control node
+   END_VAR
+
+   VAR 
+      statManualCommands { S7_SetPoint := 'False'} : "EXCHANGETRAY_typeFrButtonManualCommands";   // Manual commands status
+      statProcessValues { S7_SetPoint := 'False'} : "EXCHANGETRAY_typeFrButtonProcessValues";   // Process values status
+      statDiagnostics : "LBC_typeDiagnostics";   // Diagnostics status
+      statEnable : Bool;   // Enable status
+      statResetError : Bool;   // Error reset status
+      statEnablePrevious : Bool;   // Previous enable status
+      statFbState : Word;   // Function block current state
+      statFbStatePrevious : Word;   // Function block previous state
+      statLightOn : Bool;   // Light on statusintputcommands
+      statbackForwardButton : Bool;   // Back/Forward button status
+      statForwardButton : Bool;   // Forward button status
+      statConveyorEnable : Bool;   // Conveyor enable status
+      statXyzHandlingEnable : Bool;   // XYZ axis handling enable status
+      statAutoConveyorSC : Bool;   // Auto conveyor state change
+      statXyzHandlingSC : Bool;   // XYZ handling state change
+      statLightOnTimeDelayIn : Bool;   // Light on time delay input status
+      statBackForwardButtonTimeDelayIn : Bool;   // Back/Forward button time delay input status
+      statLightOffTimeDelayIn : Bool;   // Light off time delay input statusconfigeration
+      statPressTime : Time;   // Button press timeinst
+      instBackForwardButtonTimeDelay {InstructionName := 'TON_TIME'; LibVersion := '1.0'} : TON_TIME;   // Back/Forward button time delay instance
+      instLightOnTimeDelay {InstructionName := 'TON_TIME'; LibVersion := '1.0'} : TON_TIME;   // Light on time delay instance
+      instLightOffTimeDelay {InstructionName := 'TON_TIME'; LibVersion := '1.0'} : TON_TIME;   // Light off time delay instance
+   END_VAR
+
+   VAR_TEMP 
+      tempEnableEdge : Bool;
+   END_VAR
+
+   VAR CONSTANT 
+      FB_STATE_NO_PROCESSING : Word := 16#0000;   // Function block state: No processing
+      FB_STATE_ERROR_HANDLER : Word := 16#0080;   // Function block state: Error handler实际控制
+      FB_STATE_MANUAL_CONVEYOR_MODE : Word := 16#0040;   // Function block state: Manual conveyor mode
+      FB_STATE_WAITINGENTER_MANUAL_MODE : Word := 16#0041;   // Function block state: Waiting to enter manual mode
+      FB_STATE_ENTER_MANUAL_MODE : Word := 16#0042;   // Function block state: Entering manual mode
+      FB_STATE_WAITINGEXIT_MANUAL_MODE : Word := 16#0043;   // Function block state: Waiting to exit manual mode
+      FB_STATE_AUTO_CONVEYOR_MODE : Word := 16#0050;   // Function block state: Auto conveyor mode
+      FB_STATE_XYZ_MODE : Word := 16#0060;   // Function block state: XYZ modeFB状态
+      SUB_STATUS_NO_ERROR : Word := 16#0000;   // Sub status: No error
+      ERR_INCORRECT_COUNTING : Word := 16#8201;   // Error: Incorrect counting
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // Siemens / (c)Copyright 2020-2024
+	    //-------------------------------------------------------------------------------
+	    // Title:            Project Template Module
+	    // 标题:            项目模板模块
+	    // Comment/Function: Controls the operation modes and button states of a conveyor and XYZ handling system.
+	    // 注释/功能:        控制输送机和XYZ处理系统的操作模式和按钮状态。
+	    // Library/Family:   EXCHANGETRAY - Library of Basic
+	    // 库/家族:         换盘机 - 基本控制模块库
+	    // Author:           Siemens Digital Industries
+	    // 作者:            西门子数字工业
+	    // Tested with:      S7-PLCSIM Advanced 6.0
+	    // 测试环境:        S7-PLCSIM Advanced 6.0
+	    // Engineering:      TIA Portal V19
+	    // 工程环境:        TIA Portal V19
+	    // Restrictions:     ENO mechanism is not used - forced to TRUE.
+	    // 限制条件:        不使用ENO机制 - 强制设置为TRUE。
+	    // Requirements:     PLC (S7-1200 / S7-1500)
+	    // 要求:            PLC (S7-1200 / S7-1500)
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 17.04.2025 | SIMATIC Systems Support | Updated block info and comments following LBC_TwoWayActuatorCn.scl style.
+	    // 版本     | 日期       | 负责人                  | 更改内容
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 2025年4月17日 | SIMATIC系统支持        | 参照LBC_TwoWayActuatorCn.scl风格更新块信息和注释。
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	    (/*
+	    This module is responsible for processing input signals, managing the state machine of the conveyor and XYZ handling system,
+	    and outputting corresponding control signals. When the `enable` input is TRUE, the module starts operating.
+	    It supports multiple operation modes, including automatic conveyor mode, XYZ handling mode, and manual mode.
+	
+	    此模块负责处理输入信号，管理输送机和XYZ处理系统的状态机，并输出相应的控制信号。
+	    当`enable`输入为TRUE时，模块开始运行。它支持多种操作模式，包括自动输送机模式、XYZ处理模式和手动模式。
+	    */)
+	END_REGION DESCRIPTION
+	
+	REGION PROCESS INPUT SIGNALS
+	    // Map the commands from the module interface to the manual commands
+	    // 将模块接口的命令映射到手动命令
+	    #statManualCommands := #moduleInterface.commands;
+	    // Assign the enable signal from the control node to the static variable
+	    // 将控制节点的使能信号赋值给静态变量
+	    #statEnable := #controlNode.commands.enable;
+	    // Mapping input and sim input or control nodes commands and module interface commands
+	    // 映射输入和模拟输入，或控制节点命令和模块接口命令
+	    #statConveyorEnable := #conveyorEnable;
+	    #statXyzHandlingEnable := #xyzHandlingEnable;
+	    
+	    #statAutoConveyorSC := #controlNode.commands.autoConveyorSC;
+	    #statbackForwardButton := #moduleInterface.commands.backForwardButton;
+	    #statForwardButton := #moduleInterface.commands.forwardButton;
+	    #statXyzHandlingSC := #controlNode.commands.xyzHandlingSC;
+	    #statResetError := #moduleInterface.commands.resetError;
+	    REGION SIMULATE MODE
+	        // Simulation mode logic can be added here
+	        // 模拟模式逻辑可在此处添加
+	    END_REGION SIMULATE MODE
+	    REGION Interlock dependent edge commands
+	        // Detect the rising edge of the enable signal
+	        // 检测使能信号的上升沿
+	        #tempEnableEdge := #statEnable AND NOT #statEnablePrevious;
+	        
+	    END_REGION Interlock dependent edge commands
+	    
+	END_REGION PROCESS INPUT SIGNALS
+	
+	REGION RESET
+	    // Reset the system when the enable signal rises or the reset error signal is active
+	    // 当使能信号上升或复位错误信号激活时重置系统
+	    IF #tempEnableEdge OR #statResetError THEN
+	        #statManualCommands.resetError := FALSE;
+	        #statLightOn := FALSE;
+	        #statResetError := FALSE;
+	        // Set the state machine to the no processing state
+	        // 将状态机设置为无处理状态
+	        #statFbState := #FB_STATE_NO_PROCESSING;
+	        // Set the diagnostic status to no error
+	        // 将诊断状态设置为无错误
+	        #statDiagnostics.status := #SUB_STATUS_NO_ERROR;
+	    END_IF;
+	    
+	END_REGION RESET
+	
+	REGION PARAMETER CHECK
+	    // Commands handle in here
+	    // 命令在此处处理
+	    
+	    // Start control node step
+	    // 启动控制节点步骤
+	    
+	    // Reset the diagnostic status when the reset error signal is active
+	    // 当复位错误信号激活时重置诊断状态
+	    IF #statResetError THEN
+	        #statDiagnostics.status := #SUB_STATUS_NO_ERROR;
+	    END_IF;
+	    REGION Input configuration parameter
+	        // Assign the press time from the configuration to the static variable
+	        // 将配置中的按压时间赋值给静态变量
+	        #statPressTime := #configuration.pressTime;
+	        
+	    END_REGION
+	    
+	END_REGION PARAMETER CHECK
+	
+	REGION ENABLING/DISABLING
+	    // Enabling and disabling logic can be added here
+	    // 启用和禁用逻辑可在此处添加
+	    
+	END_REGION ENABLING/DISABLING
+	
+	REGION STATE MACHINE
+	    REPEAT
+	        // Save the previous state of the state machine
+	        // 保存状态机的上一个状态
+	        #statFbStatePrevious := #statFbState;
+	        CASE #statFbState OF
+	            #FB_STATE_NO_PROCESSING:
+	                // Turn off the light when in no processing state
+	                // 处于无处理状态时关闭灯光
+	                #statLightOn := FALSE;
+	                IF #statConveyorEnable AND #statEnable THEN
+	                    // Switch to auto conveyor mode
+	                    // 切换到自动输送机模式
+	                    #statFbState := #FB_STATE_AUTO_CONVEYOR_MODE;
+	                END_IF;
+	                IF #xyzHandlingEnable AND #statEnable THEN
+	                    // Switch to XYZ mode
+	                    // 切换到XYZ模式
+	                    #statFbState := #FB_STATE_XYZ_MODE;
+	                END_IF;
+	                IF #instBackForwardButtonTimeDelay.Q AND #statEnable THEN
+	                    // Switch to waiting enter manual mode
+	                    // 切换到等待进入手动模式
+	                    #statFbState := #FB_STATE_WAITINGENTER_MANUAL_MODE;
+	                END_IF;
+	            #FB_STATE_AUTO_CONVEYOR_MODE:
+	                REGION Abs pos for conveyor
+	                    IF #statAutoConveyorSC THEN
+	                        // Switch back to no processing state
+	                        // 切换回无处理状态
+	                        #statFbState := #FB_STATE_NO_PROCESSING;
+	                    END_IF;
+	                END_REGION
+	            #FB_STATE_XYZ_MODE:
+	                REGION Xyz handling
+	                    IF #statXyzHandlingSC THEN
+	                        // Switch back to no processing state
+	                        // 切换回无处理状态
+	                        #statFbState := #FB_STATE_NO_PROCESSING;
+	                    END_IF;
+	                END_REGION
+	            #FB_STATE_WAITINGENTER_MANUAL_MODE:
+	                REGION Waitng Enter manual mode
+	                    // Turn on the light when waiting to enter manual mode
+	                    // 等待进入手动模式时打开灯光
+	                    #statLightOn := NOT #statLightOffTimeDelayIn;
+	                    IF NOT #statbackForwardButton THEN
+	                        // Switch to enter manual mode
+	                        // 切换到进入手动模式
+	                        #statFbState := #FB_STATE_ENTER_MANUAL_MODE;
+	                    END_IF;
+	                END_REGION
+	            #FB_STATE_ENTER_MANUAL_MODE:
+	                REGION Enter manual mode
+	                    // Turn off the light when entering manual mode
+	                    // 进入手动模式时关闭灯光
+	                    #statLightOn := FALSE;
+	                    IF #instBackForwardButtonTimeDelay.Q THEN
+	                        // Switch to waiting exit manual mode
+	                        // 切换到等待退出手动模式
+	                        #statFbState := #FB_STATE_WAITINGEXIT_MANUAL_MODE;
+	                    END_IF;
+	                END_REGION
+	            #FB_STATE_WAITINGEXIT_MANUAL_MODE:
+	                REGION Exit manual mode
+	                    // Turn on the light when waiting to exit manual mode
+	                    // 等待退出手动模式时打开灯光
+	                    #statLightOn := NOT #statLightOffTimeDelayIn;
+	                    IF NOT #statbackForwardButton THEN
+	                        // Switch back to no processing state
+	                        // 切换回无处理状态
+	                        #statFbState := #FB_STATE_NO_PROCESSING;
+	                    END_IF;
+	                END_REGION
+	            #FB_STATE_ERROR_HANDLER:
+	                REGION Error handling
+	                    // Set the diagnostic status to incorrect counting error
+	                    // 将诊断状态设置为计数错误
+	                    #statDiagnostics.status := #ERR_INCORRECT_COUNTING;
+	                END_REGION
+	        END_CASE;
+	    UNTIL (#statFbStatePrevious = #statFbState OR #statDiagnostics.status.%X15)
+	    END_REPEAT;
+	    
+	    REGION Timedelay handling
+	        // Calculate the input for the back forward button time delay
+	        // 计算后退前进按钮延时的输入
+	        #statBackForwardButtonTimeDelayIn :=
+	        (#statFbState = #FB_STATE_NO_PROCESSING AND #statbackForwardButton)
+	        OR
+	        (#statFbState = #FB_STATE_ENTER_MANUAL_MODE AND #statbackForwardButton);
+	        
+	        // Calculate the input for the light on time delay
+	        // 计算灯光开启延时的输入
+	        #statLightOnTimeDelayIn :=
+	        (#statFbState = #FB_STATE_WAITINGENTER_MANUAL_MODE AND #statbackForwardButton)
+	        OR
+	        (#statFbState = #FB_STATE_WAITINGEXIT_MANUAL_MODE AND #statbackForwardButton);
+	        
+	        // Calculate the input for the light off time delay
+	        // 计算灯光关闭延时的输入
+	        #statLightOffTimeDelayIn := #instLightOnTimeDelay.Q;
+	    END_REGION
+	    
+	    REGION Processvalue handling
+	        IF #statEnable THEN
+	            IF #statFbState = #FB_STATE_WAITINGENTER_MANUAL_MODE OR #statFbState = #FB_STATE_WAITINGEXIT_MANUAL_MODE THEN
+	                // Set the back forward button light state
+	                // 设置后退前进按钮灯光状态
+	                #statProcessValues.backForwardButtonlight := #statLightOn;
+	            ELSIF #statFbState = #FB_STATE_NO_PROCESSING THEN
+	                #statProcessValues.backForwardButtonlight := #statbackForwardButton;
+	            ELSE
+	                #statProcessValues.backForwardButtonlight := FALSE;
+	            END_IF;
+	        ELSE
+	            #statProcessValues.backForwardButtonlight := #statbackForwardButton;
+	        END_IF;
+	        
+	        IF (
+	            #statFbState = #FB_STATE_XYZ_MODE
+	            OR
+	            #statFbState = #FB_STATE_AUTO_CONVEYOR_MODE
+	            OR
+	            #statFbState = #FB_STATE_NO_PROCESSING
+	            )
+	            AND
+	            #statEnable
+	        THEN
+	            #statProcessValues.forwardButtonlight := FALSE;
+	        ELSIF #statFbState = #FB_STATE_WAITINGENTER_MANUAL_MODE OR #statFbState = #FB_STATE_WAITINGEXIT_MANUAL_MODE THEN
+	            #statProcessValues.forwardButtonlight := #statLightOn;
+	        ELSE
+	            #statProcessValues.forwardButtonlight := #statForwardButton;
+	        END_IF;
+	        // Assign the back forward button state to the process values
+	        // 将后退前进按钮状态赋值给过程值
+	        #statProcessValues.backForwardButton := #statbackForwardButton;
+	        // Assign the forward button state to the process values
+	        // 将前进按钮状态赋值给过程值
+	        #statProcessValues.forwardButton := #statForwardButton;
+	        // Assign the current mode to the process values
+	        // 将当前模式赋值给过程值
+	        #statProcessValues.mode := #statFbState;
+	    END_REGION
+	    
+	END_REGION STATE MACHINE
+	
+	REGION Setting previous values for edge detection
+	    // Save the previous value of the enable signal for edge detection
+	    // 保存使能信号的上一个值用于边沿检测
+	    #statEnablePrevious := #statEnable;
+	END_REGION Setting previous values for edge detection
+	
+	REGION PROCESS OUTPUT SIGNALS
+	    REGION Call instance
+	        // Call the back forward button time delay instance
+	        // 调用后退前进按钮延时实例
+	        #instBackForwardButtonTimeDelay(IN := #statBackForwardButtonTimeDelayIn,
+	                                        PT := #statPressTime);
+	        // Call the light on time delay instance
+	        // 调用灯光开启延时实例
+	        #instLightOnTimeDelay(IN := #statLightOnTimeDelayIn AND NOT #instLightOffTimeDelay.Q,
+	                              PT := T#200MS);
+	        // Call the light off time delay instance
+	        // 调用灯光关闭延时实例
+	        #instLightOffTimeDelay(IN := #statLightOffTimeDelayIn,
+	                               PT := T#200MS);
+	    END_REGION
+	    
+	    REGION Disabling
+	        // Disabling logic can be added here
+	        // 禁用逻辑可在此处添加
+	    END_REGION Disabling
+	    REGION Error user cleared
+	        // Error user cleared logic can be added here
+	        // 用户清除错误的逻辑可在此处添加
+	    END_REGION Error user cleared
+	    REGION Error auto cleared
+	        // Error auto cleared logic can be added here
+	        // 自动清除错误的逻辑可在此处添加
+	    END_REGION Error auto cleared
+	    REGION Write monitoring structure
+	        // Assign the reset error state to the manual commands
+	        // 将复位错误状态赋值给手动命令
+	        #statManualCommands.resetError := #statResetError;
+	    END_REGION Write monitoring structure
+	    REGION Write Process data to module interface
+	        // Write the manual commands to the module interface
+	        // 将手动命令写入模块接口
+	        #moduleInterface.commands := #statManualCommands;
+	        // Write the process values to the module interface monitoring
+	        // 将过程值写入模块接口监控
+	        #moduleInterface.monitoring := #statProcessValues;
+	    END_REGION Write Process data to module interface
+	    REGION Write work data to interface and outputs
+	        // Write the enable state to the control node
+	        // 将使能状态写入控制节点
+	        #controlNode.commands.enable := #statEnable;
+	        // Write the current mode to the control node monitoring
+	        // 将当前模式写入控制节点监控
+	        #controlNode.monitoring.mode := #statProcessValues.mode;
+	        // Write the back forward button state to the control node monitoring
+	        // 将后退前进按钮状态写入控制节点监控
+	        #controlNode.monitoring.backForwardButton := #statProcessValues.backForwardButton;
+	        // Write the back forward button light state to the control node monitoring
+	        // 将后退前进按钮灯光状态写入控制节点监控
+	        #controlNode.monitoring.backForwardButtonlight := #statProcessValues.backForwardButtonlight;
+	        // Write the forward button state to the control node monitoring
+	        // 将前进按钮状态写入控制节点监控
+	        #controlNode.monitoring.forwardButton := #statProcessValues.forwardButton;
+	        // Write the forward button light state to the control node monitoring
+	        // 将前进按钮灯光状态写入控制节点监控
+	        #controlNode.monitoring.forwardButtonlight := #statProcessValues.forwardButtonlight;
+	        // ENO mechanism disabled, ENO - forced to TRUE
+	        // ENO机制禁用，强制设置为TRUE
+	        ENO := TRUE;
+	    END_REGION Write static values to outputs    
+	END_REGION PROCESS OUTPUT SIGNALS
+END_FUNCTION_BLOCK
+

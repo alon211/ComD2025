@@ -1,0 +1,94 @@
+﻿FUNCTION_BLOCK "LEXCHANGETRAY_SrScannerResetMerge"
+TITLE = EXCHANGETRAY_SrScannerResetMerge
+{ S7_Optimized_Access := 'TRUE' ; Published := 'TRUE' }
+AUTHOR : 'SUP/Zhang Shi Long'
+FAMILY : SUP
+VERSION : 0.1
+//Exchange Tray function
+   VAR_INPUT 
+      ack { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal for scanner reset
+      reset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Reset signal for scanner
+   END_VAR
+
+   VAR_IN_OUT 
+      srScanner : "LEXCHANGETRAY_typeScanner_controlInterface";   // Internal scanner control variable
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // Siemens / (c)Copyright 2020-2024
+	    //-------------------------------------------------------------------------------
+	    // Title:            Barcode Scanner Reset Module
+	    // 标题:             条码扫描枪复位模块
+	    // Comment/Function: Implements scanner command reset logic based on system triggers
+	    //                   - Resets active command sequences on acknowledgment/reset
+	    //                   - Maintains state consistency during operation
+	    // 注释/功能:        实现基于系统触发的扫描枪命令复位逻辑
+	    //                   - 在确认/复位信号触发时重置激活命令序列
+	    //                   - 操作过程中保持状态一致性
+	    // Library/Family:   EXCHANGETRAY - Peripheral Control Library
+	    // 库/家族:         换盘机 - 外设控制库
+	    // Author:           SIMATIC Systems Support
+	    // 作者:            SIMATIC系统支持团队
+	    // Tested with:      S7-PLCSIM Advanced 6.0 / SIMATIC IOT2040
+	    // 测试环境:        S7-PLCSIM Advanced 6.0 / SIMATIC IOT2040
+	    // Engineering:      TIA Portal V19
+	    // 工程环境:        TIA Portal V19
+	    // Restrictions:     Must be executed in OB1 (Main Cycle)
+	    // 限制条件:        必须在OB1(主循环)中执行
+	    // Requirements:     PLC (S7-1200 / S7-1500) with Ethernet communication
+	    // 要求:            配备以太网通信的S7-1200/S7-1500 PLC
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 2025-04-19 | SIMATIC Systems Support | Initial implementation for scanner reset logic
+	    // 版本     | 日期       | 负责人                  | 更改内容
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 2025-04-19 | SIMATIC系统支持        | 扫码枪复位逻辑初始实现
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	    (/*
+	    This module implements standardized reset logic for barcode scanner command management.
+	    It ensures proper sequence termination through:
+	    - Acknowledgment-based command reset (`#ack`)
+	    - System-wide reset coordination (`#reset`)
+	    - State machine integrity preservation
+	    
+	    此模块实现条码扫描枪命令管理的标准复位逻辑，通过以下方式确保正确终止序列：
+	    - 基于确认的命令复位(`#ack`)
+	    - 系统级复位协调(`#reset`)
+	    - 状态机完整性保持
+	    */)
+	END_REGION DESCRIPTION
+	
+	REGION INITIALISATION  
+	    // TODO: Initialize functionality: reset of variables, diagnostics, etc.
+	    // 
+	    
+	END_REGION INITIALISATION  
+	
+	REGION PROGRAM LOGIC
+	    REGION ack trigger reset
+	        IF (#ack OR #reset) AND NOT (#srScanner.cmd.cmdStep = 0) THEN
+	            #srScanner.cmd.cmdStep := 0;
+	            
+	        END_IF;
+	    END_REGION
+	    
+	END_REGION PROGRAM LOGIC
+	
+	REGION OUTPUTS
+	    // TODO: Write application specific temp values to outputs
+	    // 
+	    
+	    // if ENO mechanism is used for error handling, set to false in case of error
+	    ENO := TRUE;
+	END_REGION OUTPUTS
+	
+END_FUNCTION_BLOCK
+

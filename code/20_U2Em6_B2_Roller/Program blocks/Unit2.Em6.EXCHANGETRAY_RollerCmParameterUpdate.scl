@@ -1,0 +1,108 @@
+﻿NAMESPACE Unit2.Em6
+FUNCTION "EXCHANGETRAY_RollerCmParameterUpdate" : Void
+
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+VERSION : 0.1
+VAR_INPUT
+
+END_VAR
+
+VAR_OUTPUT
+
+END_VAR
+
+VAR_IN_OUT
+
+END_VAR
+
+VAR_TEMP
+
+END_VAR
+
+VAR CONSTANT
+
+END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // LGF / (c)Copyright 2024
+	    //-------------------------------------------------------------------------------
+	    // Title:            VFD207 Mode Parameter Configuration
+	    // Comment/Function: Configure VFD207 parameters based on different operation modes
+	    // Library/Family:   Unit2 Motor Control
+	    // Author:           Automation Department / Motor Control Team
+	    // Tested with:      SIMATIC S7-1500 FW V2.9
+	    // Engineering:      TIA Portal V17
+	    // Restrictions:     Must be called in OB1
+	    // Requirements:     VFD207 drive configured
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 2024-01-17 | Motor Control Team      | First released version
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(*
+	This block configures VFD207 parameters based on the current operation mode:
+	- Production mode: Sets high/low velocity parameters and initializes delivery
+	- Manual mode: Sets high/low velocity parameters for manual operation
+	- Maintenance mode: Sets high/low velocity parameters for maintenance operation
+	
+	功能说明：
+	本块根据当前运行模式配置VFD207参数：
+	- 生产模式：设置高/低速度参数并初始化传送
+	- 手动模式：设置手动操作的高/低速度参数
+	- 维护模式：设置维护操作的高/低速度参数
+	*)
+	END_REGION DESCRIPTION
+	
+	REGION INITIALISATION  
+	    // No initialization required for this block
+	    // 本块不需要初始化
+	END_REGION INITIALISATION  
+	
+	REGION PROGRAM LOGIC
+	    // Production mode configuration
+	    // 生产模式配置
+	    IF _.Unit2.EmNodes.unitStatus.mode.production THEN
+	        // Configure VFD207 velocity parameters for production mode
+	        // 为生产模式配置VFD207速度参数
+	        ControlNodes.cm1Vfd207.commandConfiguration.highVel := Config.em6Parameters.cm1Vfd207.production.highVel;
+	        ControlNodes.cm1Vfd207.commandConfiguration.lowVel := Config.em6Parameters.cm1Vfd207.production.lowVel;
+	        
+	        // Initialize delivery
+	        // 初始化传送
+	        "_".Unit2.EmNodes.emRelations.EM1.deliver.init := TRUE;
+	    END_IF;
+	    
+	    // Manual mode configuration
+	    // 手动模式配置
+	    IF _.Unit2.EmNodes.unitStatus.mode.manual THEN
+	        // Configure VFD207 velocity parameters for manual mode
+	        // 为手动模式配置VFD207速度参数
+	        HmiInterface.cm1Vfd207.commandConfiguration.highVel := Config.em6Parameters.cm1Vfd207.manual.highVel;
+	        HmiInterface.cm1Vfd207.commandConfiguration.lowVel := Config.em6Parameters.cm1Vfd207.manual.lowVel;
+	    END_IF;
+	    
+	    // Maintenance mode configuration
+	    // 维护模式配置
+	    IF _.Unit2.EmNodes.unitStatus.mode.maintenance THEN
+	        // Configure VFD207 velocity parameters for maintenance mode
+	        // 为维护模式配置VFD207速度参数
+	        HmiInterface.cm1Vfd207.commandConfiguration.highVel := Config.em6Parameters.cm1Vfd207.maintenance.highVel;
+	        HmiInterface.cm1Vfd207.commandConfiguration.lowVel := Config.em6Parameters.cm1Vfd207.maintenance.lowVel;
+	    END_IF;
+	END_REGION PROGRAM LOGIC
+	
+	REGION OUTPUTS
+	    // ENO mechanism for error handling
+	    // ENO机制用于错误处理
+	    ENO := TRUE;
+	END_REGION OUTPUTS
+END_FUNCTION
+END_NAMESPACE
+

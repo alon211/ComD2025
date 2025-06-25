@@ -1,0 +1,891 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Document>
+  <Engineering version="V19" />
+  <SW.Blocks.FB ID="0">
+    <AttributeList>
+      <Access>Published</Access>
+      <HeaderAuthor>MR</HeaderAuthor>
+      <Interface><Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v5">
+  <Section Name="Input" />
+  <Section Name="Output" />
+  <Section Name="InOut">
+    <Member Name="getValue_sp3_1" Datatype="Array[0..2] of DInt">
+      <Comment>
+        <MultiLanguageText Lang="en-US">Function/variable to retrieve value from SP3_1</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="getValue_sp4_1" Datatype="Array[0..2] of DInt">
+      <Comment>
+        <MultiLanguageText Lang="en-US">Function/variable to retrieve value from SP4_1</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="controlNode" Datatype="&quot;typePressureGuageRs485ControlNode&quot;">
+      <Comment>
+        <MultiLanguageText Lang="en-US">Node for controlling system operations</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="hmiInterface" Datatype="&quot;typePressureGuageRs485Interface&quot;">
+      <Comment>
+        <MultiLanguageText Lang="en-US">Interface for Human-Machine Interaction</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="step_rs485" Datatype="Int">
+      <AttributeList>
+        <BooleanAttribute Name="ExternalAccessible" SystemDefined="true">false</BooleanAttribute>
+        <BooleanAttribute Name="ExternalVisible" SystemDefined="true">false</BooleanAttribute>
+        <BooleanAttribute Name="ExternalWritable" SystemDefined="true">false</BooleanAttribute>
+      </AttributeList>
+      <Comment>
+        <MultiLanguageText Lang="en-US">Step configuration or status for RS485 communication</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="writeMode" Datatype="Bool">
+      <AttributeList>
+        <BooleanAttribute Name="ExternalAccessible" SystemDefined="true">false</BooleanAttribute>
+        <BooleanAttribute Name="ExternalVisible" SystemDefined="true">false</BooleanAttribute>
+        <BooleanAttribute Name="ExternalWritable" SystemDefined="true">false</BooleanAttribute>
+      </AttributeList>
+      <Comment>
+        <MultiLanguageText Lang="en-US">Mode configuration for write operations</MultiLanguageText>
+      </Comment>
+    </Member>
+  </Section>
+  <Section Name="Static">
+    <Member Name="statUp" Datatype="Bool">
+      <AttributeList>
+        <BooleanAttribute Name="ExternalAccessible" SystemDefined="true">false</BooleanAttribute>
+        <BooleanAttribute Name="ExternalVisible" SystemDefined="true">false</BooleanAttribute>
+        <BooleanAttribute Name="ExternalWritable" SystemDefined="true">false</BooleanAttribute>
+      </AttributeList>
+      <Comment>
+        <MultiLanguageText Lang="en-US">System uptime status flag</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="statCommLoad" Datatype="Struct">
+      <AttributeList>
+        <BooleanAttribute Name="ExternalAccessible" SystemDefined="true">false</BooleanAttribute>
+        <BooleanAttribute Name="ExternalVisible" SystemDefined="true">false</BooleanAttribute>
+        <BooleanAttribute Name="ExternalWritable" SystemDefined="true">false</BooleanAttribute>
+      </AttributeList>
+      <Comment>
+        <MultiLanguageText Lang="en-US">Communication load statistics structure</MultiLanguageText>
+      </Comment>
+      <Member Name="done" Datatype="Bool" />
+      <Member Name="error" Datatype="Bool" />
+    </Member>
+    <Member Name="statStatusSp1_1" Datatype="Struct">
+      <AttributeList>
+        <BooleanAttribute Name="ExternalAccessible" SystemDefined="true">false</BooleanAttribute>
+        <BooleanAttribute Name="ExternalVisible" SystemDefined="true">false</BooleanAttribute>
+        <BooleanAttribute Name="ExternalWritable" SystemDefined="true">false</BooleanAttribute>
+      </AttributeList>
+      <Comment>
+        <MultiLanguageText Lang="en-US">Status structure for SP1_1</MultiLanguageText>
+      </Comment>
+      <Member Name="getDone" Datatype="Bool" />
+      <Member Name="getBusy" Datatype="Bool" />
+      <Member Name="getError" Datatype="Bool" />
+      <Member Name="putDone" Datatype="Bool" />
+      <Member Name="putBusy" Datatype="Bool" />
+      <Member Name="putError" Datatype="Bool" />
+    </Member>
+    <Member Name="statStatusSp2_1" Datatype="Struct">
+      <AttributeList>
+        <BooleanAttribute Name="ExternalAccessible" SystemDefined="true">false</BooleanAttribute>
+        <BooleanAttribute Name="ExternalVisible" SystemDefined="true">false</BooleanAttribute>
+        <BooleanAttribute Name="ExternalWritable" SystemDefined="true">false</BooleanAttribute>
+      </AttributeList>
+      <Comment>
+        <MultiLanguageText Lang="en-US">Status structure for SP2_1</MultiLanguageText>
+      </Comment>
+      <Member Name="getDone" Datatype="Bool" />
+      <Member Name="getBusy" Datatype="Bool" />
+      <Member Name="getError" Datatype="Bool" />
+      <Member Name="putDone" Datatype="Bool" />
+      <Member Name="putBusy" Datatype="Bool" />
+      <Member Name="putError" Datatype="Bool" />
+    </Member>
+    <Member Name="statStatusSp3_1" Datatype="Struct">
+      <AttributeList>
+        <BooleanAttribute Name="ExternalAccessible" SystemDefined="true">false</BooleanAttribute>
+        <BooleanAttribute Name="ExternalVisible" SystemDefined="true">false</BooleanAttribute>
+        <BooleanAttribute Name="ExternalWritable" SystemDefined="true">false</BooleanAttribute>
+      </AttributeList>
+      <Comment>
+        <MultiLanguageText Lang="en-US">Status structure for SP3_1</MultiLanguageText>
+      </Comment>
+      <Member Name="getDone" Datatype="Bool" />
+      <Member Name="getBusy" Datatype="Bool" />
+      <Member Name="getError" Datatype="Bool" />
+      <Member Name="putDone" Datatype="Bool" />
+      <Member Name="putBusy" Datatype="Bool" />
+      <Member Name="putError" Datatype="Bool" />
+    </Member>
+    <Member Name="statStatusSp4_1" Datatype="Struct">
+      <AttributeList>
+        <BooleanAttribute Name="ExternalAccessible" SystemDefined="true">false</BooleanAttribute>
+        <BooleanAttribute Name="ExternalVisible" SystemDefined="true">false</BooleanAttribute>
+        <BooleanAttribute Name="ExternalWritable" SystemDefined="true">false</BooleanAttribute>
+      </AttributeList>
+      <Comment>
+        <MultiLanguageText Lang="en-US">Status structure for SP4_1</MultiLanguageText>
+      </Comment>
+      <Member Name="getDone" Datatype="Bool" />
+      <Member Name="getBusy" Datatype="Bool" />
+      <Member Name="getError" Datatype="Bool" />
+      <Member Name="putDone" Datatype="Bool" />
+      <Member Name="putBusy" Datatype="Bool" />
+      <Member Name="putError" Datatype="Bool" />
+    </Member>
+    <Member Name="instModbusCommLoad" Datatype="Modbus_Comm_Load" Version="5.0">
+      <AttributeList>
+        <BooleanAttribute Name="ExternalAccessible" SystemDefined="true">false</BooleanAttribute>
+        <BooleanAttribute Name="ExternalVisible" SystemDefined="true">false</BooleanAttribute>
+        <BooleanAttribute Name="ExternalWritable" SystemDefined="true">false</BooleanAttribute>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+      <Comment>
+        <MultiLanguageText Lang="en-US">Modbus communication load instance</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="instModbusMaster" Datatype="Modbus_Master" Version="5.1">
+      <AttributeList>
+        <BooleanAttribute Name="ExternalAccessible" SystemDefined="true">false</BooleanAttribute>
+        <BooleanAttribute Name="ExternalVisible" SystemDefined="true">false</BooleanAttribute>
+        <BooleanAttribute Name="ExternalWritable" SystemDefined="true">false</BooleanAttribute>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+      <Comment>
+        <MultiLanguageText Lang="en-US">Modbus master instance configuration</MultiLanguageText>
+      </Comment>
+    </Member>
+  </Section>
+  <Section Name="Temp" />
+  <Section Name="Constant">
+    <Member Name="STEP1" Datatype="Int">
+      <StartValue>1</StartValue>
+    </Member>
+    <Member Name="STEP2" Datatype="Int">
+      <StartValue>2</StartValue>
+    </Member>
+    <Member Name="STEP3" Datatype="Int">
+      <StartValue>3</StartValue>
+    </Member>
+    <Member Name="STEP4" Datatype="Int">
+      <StartValue>4</StartValue>
+    </Member>
+    <Member Name="STEP5" Datatype="Int">
+      <StartValue>5</StartValue>
+    </Member>
+    <Member Name="STEP6" Datatype="Int">
+      <StartValue>6</StartValue>
+    </Member>
+    <Member Name="STEP7" Datatype="Int">
+      <StartValue>7</StartValue>
+    </Member>
+    <Member Name="STEP8" Datatype="Int">
+      <StartValue>8</StartValue>
+    </Member>
+    <Member Name="STEP9" Datatype="Int">
+      <StartValue>9</StartValue>
+    </Member>
+    <Member Name="STEP10" Datatype="Int">
+      <StartValue>10</StartValue>
+    </Member>
+    <Member Name="STEP11" Datatype="Int">
+      <StartValue>11</StartValue>
+    </Member>
+    <Member Name="STEP12" Datatype="Int">
+      <StartValue>12</StartValue>
+    </Member>
+    <Member Name="STEP13" Datatype="Int">
+      <StartValue>13</StartValue>
+    </Member>
+    <Member Name="STEP14" Datatype="Int">
+      <StartValue>14</StartValue>
+    </Member>
+    <Member Name="STEP15" Datatype="Int">
+      <StartValue>15</StartValue>
+    </Member>
+    <Member Name="STEP16" Datatype="Int">
+      <StartValue>16</StartValue>
+    </Member>
+    <Member Name="STEP17" Datatype="Int">
+      <StartValue>17</StartValue>
+    </Member>
+    <Member Name="STEP18" Datatype="Int">
+      <StartValue>18</StartValue>
+    </Member>
+    <Member Name="BAUD" Datatype="UDInt">
+      <StartValue>19200</StartValue>
+    </Member>
+    <Member Name="PARITY" Datatype="UInt">
+      <StartValue>0</StartValue>
+    </Member>
+    <Member Name="MB_ADDR_1" Datatype="UInt">
+      <StartValue>1</StartValue>
+    </Member>
+    <Member Name="MB_ADDR_2" Datatype="UInt">
+      <StartValue>2</StartValue>
+    </Member>
+    <Member Name="MB_ADDR_3" Datatype="UInt">
+      <StartValue>3</StartValue>
+    </Member>
+    <Member Name="MB_ADDR_4" Datatype="UInt">
+      <StartValue>4</StartValue>
+    </Member>
+    <Member Name="MODE_READ" Datatype="USInt">
+      <StartValue>0</StartValue>
+    </Member>
+    <Member Name="MODE_WRITE" Datatype="USInt">
+      <StartValue>1</StartValue>
+    </Member>
+    <Member Name="DATA_ADDR" Datatype="UDInt">
+      <StartValue>40421</StartValue>
+    </Member>
+    <Member Name="DATA_LEN_READ" Datatype="UInt">
+      <StartValue>2</StartValue>
+    </Member>
+  </Section>
+</Sections></Interface>
+      <IsIECCheckEnabled>true</IsIECCheckEnabled>
+      <MemoryReserve>100</MemoryReserve>
+      <Name>LEXCHANGETRAY_PressureGaugeRs485</Name>
+      <Namespace />
+      <Number>557</Number>
+      <ProgrammingLanguage>LAD</ProgrammingLanguage>
+      <SetENOAutomatically>false</SetENOAutomatically>
+    </AttributeList>
+    <ObjectList>
+      <MultilingualText ID="1" CompositionName="Comment">
+        <ObjectList>
+          <MultilingualTextItem ID="2" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text>PressureGaugeRs485</Text>
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="3" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="4" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="5" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+      <SW.Blocks.CompileUnit ID="6" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource><StructuredText xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/StructuredText/v4">
+  <Access Scope="LocalVariable" UId="21">
+    <Symbol UId="22">
+      <Component Name="hmiInterface" UId="23" />
+      <Token Text="." UId="24" />
+      <Component Name="monitoring" UId="25" />
+      <Token Text="." UId="26" />
+      <Component Name="simulation" UId="27" />
+    </Symbol>
+  </Access>
+  <Blank UId="28" />
+  <Token Text=":=" UId="29" />
+  <Blank UId="30" />
+  <Access Scope="LocalVariable" UId="31">
+    <Symbol UId="32">
+      <Component Name="controlNode" UId="33" />
+      <Token Text="." UId="34" />
+      <Component Name="commands" UId="35" />
+      <Token Text="." UId="36" />
+      <Component Name="simulation" UId="37" />
+    </Symbol>
+  </Access>
+  <Token Text=";" UId="38" />
+  <NewLine UId="39" />
+  <Access Scope="LocalVariable" UId="40">
+    <Symbol UId="41">
+      <Component Name="hmiInterface" UId="42" />
+      <Token Text="." UId="43" />
+      <Component Name="monitoring" UId="44" />
+      <Token Text="." UId="45" />
+      <Component Name="enable" UId="46" />
+    </Symbol>
+  </Access>
+  <Blank UId="47" />
+  <Token Text=":=" UId="48" />
+  <Blank UId="49" />
+  <Access Scope="LocalVariable" UId="50">
+    <Symbol UId="51">
+      <Component Name="controlNode" UId="52" />
+      <Token Text="." UId="53" />
+      <Component Name="commands" UId="54" />
+      <Token Text="." UId="55" />
+      <Component Name="quality" UId="56" />
+    </Symbol>
+  </Access>
+  <Token Text=";" UId="57" />
+  <NewLine Num="2" UId="58" />
+</StructuredText></NetworkSource>
+          <ProgrammingLanguage>SCL</ProgrammingLanguage>
+        </AttributeList>
+        <ObjectList>
+          <MultilingualText ID="7" CompositionName="Comment">
+            <ObjectList>
+              <MultilingualTextItem ID="8" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="9" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="A" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="B" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+          <MultilingualText ID="C" CompositionName="Title">
+            <ObjectList>
+              <MultilingualTextItem ID="D" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text>假的程序后续需要修改</Text>
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="E" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="F" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="10" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+        </ObjectList>
+      </SW.Blocks.CompileUnit>
+      <SW.Blocks.CompileUnit ID="11" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource><FlgNet xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/FlgNet/v5">
+  <Parts>
+    <Access Scope="LocalVariable" UId="21">
+      <Symbol>
+        <Component Name="step_rs485" />
+      </Symbol>
+    </Access>
+    <Access Scope="LocalConstant" UId="22">
+      <Constant Name="STEP3" />
+    </Access>
+    <Access Scope="LocalConstant" UId="23">
+      <Constant Name="MB_ADDR_3" />
+    </Access>
+    <Access Scope="LocalConstant" UId="24">
+      <Constant Name="MODE_READ" />
+    </Access>
+    <Access Scope="LocalConstant" UId="25">
+      <Constant Name="DATA_ADDR" />
+    </Access>
+    <Access Scope="LocalConstant" UId="26">
+      <Constant Name="DATA_LEN_READ" />
+    </Access>
+    <Access Scope="LocalVariable" UId="27">
+      <Symbol>
+        <Component Name="getValue_sp3_1" />
+      </Symbol>
+    </Access>
+    <Access Scope="LocalVariable" UId="28">
+      <Symbol>
+        <Component Name="statStatusSp3_1" />
+        <Component Name="getDone" />
+      </Symbol>
+    </Access>
+    <Access Scope="LocalVariable" UId="29">
+      <Symbol>
+        <Component Name="statStatusSp3_1" />
+        <Component Name="getBusy" />
+      </Symbol>
+    </Access>
+    <Access Scope="LocalVariable" UId="30">
+      <Symbol>
+        <Component Name="statStatusSp3_1" />
+        <Component Name="getError" />
+      </Symbol>
+    </Access>
+    <Access Scope="LocalVariable" UId="31">
+      <Symbol>
+        <Component Name="statStatusSp3_1" />
+        <Component Name="getDone" />
+      </Symbol>
+    </Access>
+    <Access Scope="LocalVariable" UId="32">
+      <Symbol>
+        <Component Name="statStatusSp3_1" />
+        <Component Name="getError" />
+      </Symbol>
+    </Access>
+    <Access Scope="LocalConstant" UId="33">
+      <Constant Name="STEP4" />
+    </Access>
+    <Access Scope="LocalVariable" UId="34">
+      <Symbol>
+        <Component Name="step_rs485" />
+      </Symbol>
+    </Access>
+    <Part Name="Eq" UId="35">
+      <TemplateValue Name="SrcType" Type="Type">Int</TemplateValue>
+    </Part>
+    <Part Name="Modbus_Master" Version="5.1" UId="36">
+      <Instance Scope="LocalVariable" UId="37">
+        <Component Name="instModbusMaster" />
+      </Instance>
+    </Part>
+    <Part Name="Contact" UId="38" />
+    <Part Name="Contact" UId="39" />
+    <Part Name="O" UId="40">
+      <TemplateValue Name="Card" Type="Cardinality">2</TemplateValue>
+    </Part>
+    <Part Name="Move" UId="41" DisabledENO="true">
+      <TemplateValue Name="Card" Type="Cardinality">1</TemplateValue>
+    </Part>
+  </Parts>
+  <Wires>
+    <Wire UId="43">
+      <Powerrail />
+      <NameCon UId="36" Name="en" />
+      <NameCon UId="35" Name="pre" />
+      <NameCon UId="38" Name="in" />
+      <NameCon UId="39" Name="in" />
+    </Wire>
+    <Wire UId="44">
+      <IdentCon UId="21" />
+      <NameCon UId="35" Name="in1" />
+    </Wire>
+    <Wire UId="45">
+      <IdentCon UId="22" />
+      <NameCon UId="35" Name="in2" />
+    </Wire>
+    <Wire UId="46">
+      <NameCon UId="35" Name="out" />
+      <NameCon UId="36" Name="REQ" />
+    </Wire>
+    <Wire UId="47">
+      <IdentCon UId="23" />
+      <NameCon UId="36" Name="MB_ADDR" />
+    </Wire>
+    <Wire UId="48">
+      <IdentCon UId="24" />
+      <NameCon UId="36" Name="MODE" />
+    </Wire>
+    <Wire UId="49">
+      <IdentCon UId="25" />
+      <NameCon UId="36" Name="DATA_ADDR" />
+    </Wire>
+    <Wire UId="50">
+      <IdentCon UId="26" />
+      <NameCon UId="36" Name="DATA_LEN" />
+    </Wire>
+    <Wire UId="51">
+      <IdentCon UId="27" />
+      <NameCon UId="36" Name="DATA_PTR" />
+    </Wire>
+    <Wire UId="52">
+      <NameCon UId="36" Name="DONE" />
+      <IdentCon UId="28" />
+    </Wire>
+    <Wire UId="53">
+      <NameCon UId="36" Name="BUSY" />
+      <IdentCon UId="29" />
+    </Wire>
+    <Wire UId="54">
+      <NameCon UId="36" Name="ERROR" />
+      <IdentCon UId="30" />
+    </Wire>
+    <Wire UId="55">
+      <NameCon UId="36" Name="STATUS" />
+      <OpenCon UId="42" />
+    </Wire>
+    <Wire UId="56">
+      <IdentCon UId="31" />
+      <NameCon UId="38" Name="operand" />
+    </Wire>
+    <Wire UId="57">
+      <NameCon UId="38" Name="out" />
+      <NameCon UId="40" Name="in1" />
+    </Wire>
+    <Wire UId="58">
+      <IdentCon UId="32" />
+      <NameCon UId="39" Name="operand" />
+    </Wire>
+    <Wire UId="59">
+      <NameCon UId="39" Name="out" />
+      <NameCon UId="40" Name="in2" />
+    </Wire>
+    <Wire UId="60">
+      <NameCon UId="40" Name="out" />
+      <NameCon UId="41" Name="en" />
+    </Wire>
+    <Wire UId="61">
+      <IdentCon UId="33" />
+      <NameCon UId="41" Name="in" />
+    </Wire>
+    <Wire UId="62">
+      <NameCon UId="41" Name="out1" />
+      <IdentCon UId="34" />
+    </Wire>
+  </Wires>
+</FlgNet></NetworkSource>
+          <ProgrammingLanguage>LAD</ProgrammingLanguage>
+        </AttributeList>
+        <ObjectList>
+          <MultilingualText ID="12" CompositionName="Comment">
+            <ObjectList>
+              <MultilingualTextItem ID="13" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="14" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="15" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="16" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+          <MultilingualText ID="17" CompositionName="Title">
+            <ObjectList>
+              <MultilingualTextItem ID="18" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text>step 3   SP3_1 Get  pressure value</Text>
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="19" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="1A" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="1B" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+        </ObjectList>
+      </SW.Blocks.CompileUnit>
+      <SW.Blocks.CompileUnit ID="1C" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource><FlgNet xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/FlgNet/v5">
+  <Parts>
+    <Access Scope="LocalVariable" UId="21">
+      <Symbol>
+        <Component Name="step_rs485" />
+      </Symbol>
+    </Access>
+    <Access Scope="LocalConstant" UId="22">
+      <Constant Name="STEP4" />
+    </Access>
+    <Access Scope="LocalConstant" UId="23">
+      <Constant Name="MB_ADDR_4" />
+    </Access>
+    <Access Scope="LocalConstant" UId="24">
+      <Constant Name="MODE_READ" />
+    </Access>
+    <Access Scope="LocalConstant" UId="25">
+      <Constant Name="DATA_ADDR" />
+    </Access>
+    <Access Scope="LocalConstant" UId="26">
+      <Constant Name="DATA_LEN_READ" />
+    </Access>
+    <Access Scope="LocalVariable" UId="27">
+      <Symbol>
+        <Component Name="getValue_sp4_1" />
+      </Symbol>
+    </Access>
+    <Access Scope="LocalVariable" UId="28">
+      <Symbol>
+        <Component Name="statStatusSp4_1" />
+        <Component Name="getDone" />
+      </Symbol>
+    </Access>
+    <Access Scope="LocalVariable" UId="29">
+      <Symbol>
+        <Component Name="statStatusSp4_1" />
+        <Component Name="getBusy" />
+      </Symbol>
+    </Access>
+    <Access Scope="LocalVariable" UId="30">
+      <Symbol>
+        <Component Name="statStatusSp4_1" />
+        <Component Name="getError" />
+      </Symbol>
+    </Access>
+    <Access Scope="LocalVariable" UId="31">
+      <Symbol>
+        <Component Name="statStatusSp4_1" />
+        <Component Name="getDone" />
+      </Symbol>
+    </Access>
+    <Access Scope="LocalVariable" UId="32">
+      <Symbol>
+        <Component Name="statStatusSp4_1" />
+        <Component Name="getError" />
+      </Symbol>
+    </Access>
+    <Access Scope="LocalConstant" UId="33">
+      <Constant Name="STEP5" />
+    </Access>
+    <Access Scope="LocalVariable" UId="34">
+      <Symbol>
+        <Component Name="step_rs485" />
+      </Symbol>
+    </Access>
+    <Part Name="Eq" UId="35">
+      <TemplateValue Name="SrcType" Type="Type">Int</TemplateValue>
+    </Part>
+    <Part Name="Modbus_Master" Version="5.1" UId="36">
+      <Instance Scope="LocalVariable" UId="37">
+        <Component Name="instModbusMaster" />
+      </Instance>
+    </Part>
+    <Part Name="Contact" UId="38" />
+    <Part Name="Contact" UId="39" />
+    <Part Name="O" UId="40">
+      <TemplateValue Name="Card" Type="Cardinality">2</TemplateValue>
+    </Part>
+    <Part Name="Move" UId="41" DisabledENO="true">
+      <TemplateValue Name="Card" Type="Cardinality">1</TemplateValue>
+    </Part>
+  </Parts>
+  <Wires>
+    <Wire UId="43">
+      <Powerrail />
+      <NameCon UId="36" Name="en" />
+      <NameCon UId="35" Name="pre" />
+      <NameCon UId="38" Name="in" />
+      <NameCon UId="39" Name="in" />
+    </Wire>
+    <Wire UId="44">
+      <IdentCon UId="21" />
+      <NameCon UId="35" Name="in1" />
+    </Wire>
+    <Wire UId="45">
+      <IdentCon UId="22" />
+      <NameCon UId="35" Name="in2" />
+    </Wire>
+    <Wire UId="46">
+      <NameCon UId="35" Name="out" />
+      <NameCon UId="36" Name="REQ" />
+    </Wire>
+    <Wire UId="47">
+      <IdentCon UId="23" />
+      <NameCon UId="36" Name="MB_ADDR" />
+    </Wire>
+    <Wire UId="48">
+      <IdentCon UId="24" />
+      <NameCon UId="36" Name="MODE" />
+    </Wire>
+    <Wire UId="49">
+      <IdentCon UId="25" />
+      <NameCon UId="36" Name="DATA_ADDR" />
+    </Wire>
+    <Wire UId="50">
+      <IdentCon UId="26" />
+      <NameCon UId="36" Name="DATA_LEN" />
+    </Wire>
+    <Wire UId="51">
+      <IdentCon UId="27" />
+      <NameCon UId="36" Name="DATA_PTR" />
+    </Wire>
+    <Wire UId="52">
+      <NameCon UId="36" Name="DONE" />
+      <IdentCon UId="28" />
+    </Wire>
+    <Wire UId="53">
+      <NameCon UId="36" Name="BUSY" />
+      <IdentCon UId="29" />
+    </Wire>
+    <Wire UId="54">
+      <NameCon UId="36" Name="ERROR" />
+      <IdentCon UId="30" />
+    </Wire>
+    <Wire UId="55">
+      <NameCon UId="36" Name="STATUS" />
+      <OpenCon UId="42" />
+    </Wire>
+    <Wire UId="56">
+      <IdentCon UId="31" />
+      <NameCon UId="38" Name="operand" />
+    </Wire>
+    <Wire UId="57">
+      <NameCon UId="38" Name="out" />
+      <NameCon UId="40" Name="in1" />
+    </Wire>
+    <Wire UId="58">
+      <IdentCon UId="32" />
+      <NameCon UId="39" Name="operand" />
+    </Wire>
+    <Wire UId="59">
+      <NameCon UId="39" Name="out" />
+      <NameCon UId="40" Name="in2" />
+    </Wire>
+    <Wire UId="60">
+      <NameCon UId="40" Name="out" />
+      <NameCon UId="41" Name="en" />
+    </Wire>
+    <Wire UId="61">
+      <IdentCon UId="33" />
+      <NameCon UId="41" Name="in" />
+    </Wire>
+    <Wire UId="62">
+      <NameCon UId="41" Name="out1" />
+      <IdentCon UId="34" />
+    </Wire>
+  </Wires>
+</FlgNet></NetworkSource>
+          <ProgrammingLanguage>LAD</ProgrammingLanguage>
+        </AttributeList>
+        <ObjectList>
+          <MultilingualText ID="1D" CompositionName="Comment">
+            <ObjectList>
+              <MultilingualTextItem ID="1E" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="1F" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="20" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="21" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+          <MultilingualText ID="22" CompositionName="Title">
+            <ObjectList>
+              <MultilingualTextItem ID="23" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text>step 4   SP4_1 Get  pressure value</Text>
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="24" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="25" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="26" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+        </ObjectList>
+      </SW.Blocks.CompileUnit>
+      <MultilingualText ID="27" CompositionName="Title">
+        <ObjectList>
+          <MultilingualTextItem ID="28" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text>PressureGaugeRs485</Text>
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="29" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="2A" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="2B" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+    </ObjectList>
+  </SW.Blocks.FB>
+</Document>

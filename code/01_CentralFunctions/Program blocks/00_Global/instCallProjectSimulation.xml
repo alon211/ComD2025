@@ -1,0 +1,200 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Document>
+  <Engineering version="V19" />
+  <SW.Blocks.InstanceDB ID="0">
+    <AttributeList>
+      <InstanceOfName>CallProjectSimulation</InstanceOfName>
+      <InstanceOfType>FB</InstanceOfType>
+      <Interface><Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v5">
+  <Section Name="Input" />
+  <Section Name="Output" />
+  <Section Name="InOut" />
+  <Section Name="Static">
+    <Member Name="statNextStepBool" Datatype="Bool" />
+    <Member Name="statCurrentStep" Datatype="DInt" />
+    <Member Name="statInit" Datatype="Bool" />
+    <Member Name="statStop" Datatype="Bool" />
+    <Member Name="statReset" Datatype="Bool" />
+    <Member Name="statNextStepBoolPre" Datatype="Bool" />
+    <Member Name="ack" Datatype="Bool" />
+    <Member Name="U2EM1setSingleStepMode" Datatype="Bool" />
+    <Member Name="U2EM1nextStep" Datatype="Bool" />
+    <Member Name="U2EM2setSingleStepMode" Datatype="Bool" />
+    <Member Name="U2EM2nextStep" Datatype="Bool" />
+    <Member Name="U2EM3setSingleStepMode" Datatype="Bool" />
+    <Member Name="U2EM3nextStep" Datatype="Bool" />
+    <Member Name="U2EM4setSingleStepMode" Datatype="Bool" />
+    <Member Name="U2EM4nextStep" Datatype="Bool" />
+    <Member Name="U2EM5setSingleStepMode" Datatype="Bool" />
+    <Member Name="U2EM5nextStep" Datatype="Bool" />
+    <Member Name="U2EM6setSingleStepMode" Datatype="Bool" />
+    <Member Name="U2EM6nextStep" Datatype="Bool" />
+    <Member Name="U2EM1Step" Datatype="DInt" />
+    <Member Name="U2EM2Step" Datatype="DInt" />
+    <Member Name="U2EM3Step" Datatype="DInt" />
+    <Member Name="U2EM4Step" Datatype="DInt" />
+    <Member Name="U2EM5Step" Datatype="DInt" />
+    <Member Name="U2EM6Step" Datatype="DInt" />
+    <Member Name="U2EM1cm1Vfd205" Datatype="&quot;LEXCHANGETRAY_typeRollerVfdInterface&quot;" />
+    <Member Name="U2EM1cm2SingalTM" Datatype="&quot;LEXCHANGETRAY_typeRollerIoSignalInterface&quot;" />
+    <Member Name="U2EM2cm1Vfd206" Datatype="&quot;LEXCHANGETRAY_typeRollerVfdInterface&quot;" />
+    <Member Name="U2EM2cm1Vfd" Datatype="&quot;LEXCHANGETRAY_typeVfdInterface&quot;">
+      <AttributeList>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+    </Member>
+    <Member Name="U2EM2cm2TrayLiftingCylinder" Datatype="&quot;LBC_Simple_typeTwoWayActuatorInterface&quot;">
+      <AttributeList>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+    </Member>
+    <Member Name="U2EM2cm3CellLiftingCylinder" Datatype="&quot;LBC_Simple_typeTwoWayActuatorInterface&quot;">
+      <AttributeList>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+    </Member>
+    <Member Name="U2EM2cm4PositioningPinCylinder" Datatype="&quot;LBC_Simple_typeTwoWayActuatorInterface&quot;">
+      <AttributeList>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+    </Member>
+    <Member Name="U2EM2cm5AxisControl" Datatype="&quot;LBC_typeAxisSimpleControlNode_1&quot;">
+      <AttributeList>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+    </Member>
+    <Member Name="U2EM2cm6SignalTM" Datatype="&quot;LEXCHANGETRAY_typeConstraintRollerIoSignalInterface&quot;">
+      <AttributeList>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+    </Member>
+    <Member Name="U2EM2cm7Pc" Datatype="&quot;LEXCHANGETRAY_typePc_Interface&quot;">
+      <AttributeList>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+    </Member>
+    <Member Name="U2EM2cm8Scanner" Datatype="&quot;LEXCHANGETRAY_typeSR1000Interface&quot;">
+      <AttributeList>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+    </Member>
+    <Member Name="U2EM3cm1SV112_Constraint1_Axis" Datatype="&quot;LBC_typeAxisSimpleControlNode_1&quot;">
+      <AttributeList>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+    </Member>
+    <Member Name="U2EM3cm2SV113_Constraint2_Axis" Datatype="&quot;LBC_typeAxisSimpleControlNode_1&quot;">
+      <AttributeList>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+    </Member>
+    <Member Name="U2EM3cm3SV115_Screw1_Axis" Datatype="&quot;LEXCHANGETRAY_typeAxisSimpleControlNode_2&quot;" />
+    <Member Name="U2EM3cm4SV116_Screw2_Axis" Datatype="&quot;LEXCHANGETRAY_typeAxisSimpleControlNode_2&quot;" />
+    <Member Name="U2EM3cm6SlideCylinder1" Datatype="&quot;LBC_Simple_typeTwoWayActuatorInterface&quot;">
+      <AttributeList>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+    </Member>
+    <Member Name="U2EM3cm7hookClawCylinder1" Datatype="&quot;LBC_Simple_typeTwoWayActuatorInterface&quot;">
+      <AttributeList>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+    </Member>
+    <Member Name="U2EM3cm8SlideCylinder2" Datatype="&quot;LBC_Simple_typeTwoWayActuatorInterface&quot;">
+      <AttributeList>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+    </Member>
+    <Member Name="U2EM3cm9hookClawCylinder2" Datatype="&quot;LBC_Simple_typeTwoWayActuatorInterface&quot;">
+      <AttributeList>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+    </Member>
+    <Member Name="U2EM3cm10SignalTM" Datatype="&quot;LEXCHANGETRAY_typeConstraintWorkstationIoSignalInterface&quot;">
+      <AttributeList>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+    </Member>
+    <Member Name="U2EM3cm11PressureGaugeRs485" Datatype="&quot;typePressureGuageRs485Interface&quot;">
+      <AttributeList>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+    </Member>
+    <Member Name="statIndex" Datatype="Int">
+      <AttributeList>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+    </Member>
+    <Member Name="errors" Datatype="Array[0..9] of Int">
+      <AttributeList>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+    </Member>
+    <Member Name="timer1" Datatype="Array[0..23] of TON_TIME" Version="1.0" />
+  </Section>
+</Sections></Interface>
+      <Name>instCallProjectSimulation</Name>
+      <Namespace />
+      <Number>139</Number>
+      <ProgrammingLanguage>DB</ProgrammingLanguage>
+    </AttributeList>
+    <ObjectList>
+      <MultilingualText ID="1" CompositionName="Comment">
+        <ObjectList>
+          <MultilingualTextItem ID="2" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="3" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="4" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="5" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+      <MultilingualText ID="6" CompositionName="Title">
+        <ObjectList>
+          <MultilingualTextItem ID="7" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="8" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="9" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="A" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+    </ObjectList>
+  </SW.Blocks.InstanceDB>
+</Document>

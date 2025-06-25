@@ -1,0 +1,238 @@
+﻿FUNCTION_BLOCK "LUC_StatusCollector"
+TITLE = LUC_StatusCollector
+{ S7_Optimized_Access := 'TRUE' ; Published := 'TRUE' }
+AUTHOR : 'Siemens Digital Industries'
+FAMILY : LUC
+VERSION : 1.2
+//Reads the commands of multiple equipment modules and summarizes to unit status.
+   VAR_INPUT 
+      safetyOk : Bool;   // Safety release coming from the safety program
+      clearingDelayTimer { S7_HiddenAssignment := 'Show'} : Time := T#2000ms;   // During that time, command abort is suppressed in state clearing
+      resettingDelayTimer { S7_HiddenAssignment := 'Show'} : Time := T#5000ms;   // During that time, command stop is suppressed in state clearing
+      unitFeedback : "LUC_typeStateCommands";
+   END_VAR
+
+   VAR_OUTPUT 
+      processCommands { ExternalWritable := 'False'} : "LUC_typeStateCommands";   // Struct for monitoring the commands to request a state change
+      error { ExternalWritable := 'False'} : Bool;   // Error occurred
+      status { ExternalWritable := 'False'} : Word;   // Status information
+   END_VAR
+
+   VAR_IN_OUT 
+      emFeedback : Array[*] of "LUC_typeEmFeedback";   // Connection to DB ControlNodes of the unit
+      currentState : "LUC_typeStates";   // Current state of the unit
+   END_VAR
+
+   VAR 
+      statLowerBound { ExternalWritable := 'False'} : DInt;   // First value in a sorted array
+      statUpperBound { ExternalWritable := 'False'} : DInt;   // Last value in a sorted array
+      statFirstCall { ExternalWritable := 'False'} : Bool := TRUE;   // Static value to enable the initialitation of the block
+      statPreviousState { ExternalWritable := 'False'} : DInt;   // Static value that saves the unit state of the last cycle
+      instTpClearingTimer {InstructionName := 'TP_TIME'; LibVersion := '1.0'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : TP_TIME;   // Timer use to generate the pulse to supress the abort command
+      instTpResettingTimer {InstructionName := 'TP_TIME'; LibVersion := '1.0'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : TP_TIME;   // Timer use to generate the pulse to supress the stop command
+   END_VAR
+
+   VAR_TEMP 
+      tempIndex : DInt;   // Index variables for loops
+      tempCommands : "LUC_typeStateCommands";
+      tempStateJustChanged : Bool;   // Temporary variable for dectecting a change state in the last cycle
+      tempCmdAbortSuppression : Bool;   // Temporary variable for giving time to the machine to clear faults if a abort command is set during a quantity of time
+      tempCmdStopSuppression : Bool;   // Temporary variable for giving time to the machine to reset faults if a stop command is set during a quantity of time
+   END_VAR
+
+   VAR CONSTANT 
+      ARRAY_DIMENSION : UDInt := 1;   // Dimension of array*
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // Siemens AG / (c)Copyright 2024
+	  //-------------------------------------------------------------------------------
+	  // Title:            LUC_StatusCollector 
+	  // Comment/Function: Reads the commands of multiple equipment modules and summarizes to unit status.
+	  // Library/Family:   LUC - Library of Unit Controls
+	  // Author:           Siemens Digital Industries
+	  // Tested with:      S7-PLCSIM Advanced 6.0
+	  // Engineering:      TIA Portal V19
+	  // Restrictions:     -
+	  // Requirements:     -
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  // Version  | Date       | Expert in charge        | Changes applied
+	  //----------|------------|-------------------------|-----------------------------
+	  // 01.00.00 | 12.12.2023 | SIMATIC Systems Support | First released version
+	  // 01.01.00 | 21.06.2024 | SIMATIC Systems Support | Implemented new input commands (that can set the processCommands are extended with the implementation of new commands. In addition, the Unit Status is taken into account to set the processCommands.  
+	  // 01.02.00 | 05.09.2024 | SIMATIC Systems Support | Optimized code.
+	  //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(/*
+	The block reads the _emFeedback_ of all equipment modules that are linked to the unit and the _unitStatus_ of and defines the _processComands_ for the main mode state manager. 
+	The commands _reset_, _start_, _stop_, _hold_, _unhold_, _suspend_, _unsuspend_, _abort_, clear_ and _complete_ can also be set from outside to define the _processCommands_ independently from the _emStatus_ commands. 
+	
+	The _processCommands_ are enabled depending on the following:
+	
+	#### _reset_:
+	The _processComands.reset_ will be set if:
+	* There is a _cmdReset_ feedback  from any Equipment Module.
+	* The input command _reset_ is set. 
+	
+	#### _start_:
+	The _processComands.start_ will be set if:
+	* There is a _cmdStart_ feedback  from any Equipment Module.
+	* The input command _start_ is set.
+	
+	#### _stop_:
+	The _processComands.stop_ will be set if:
+	* Any Equipment Module reports a _cmdStop_. 
+	* The input command _stop_ is set.
+	
+	The _processComands.stop_ will be reset if the Unit is in _Resseting_ state during _resettingDelayTime_, to give the Unit time to reset faults.
+	
+	#### _hold_:
+	The _processComands.hold_ will be set if:
+	* Any Equipment Module reports a _cmdHold_. 
+	* The input command _hold_ is set.
+	
+	#### _unhold_:
+	The _processComands.unhold_ will be set if:
+	* Any Equipment Module reports a _cmdUnhold_. 
+	* The input command _unhold_ is set.
+	
+	#### _suspend_:
+	The _processComands.suspend_ will be set if:
+	* Any Equipment Module reports a _cmdSuspend_. 
+	* The input command _suspend_ is set.
+	
+	#### _unsuspend_:
+	The _processComands.unsuspend_ will be set if:
+	* Any Equipment Module reports a _cmdUnsuspend_. 
+	* The input command _unsuspend_ is set.
+	
+	#### _abort_:
+	The _processComands.abort_ will be set if:
+	* Any Equipment Module reports a _cmdabort_ 
+	* The input command _abort_ is set.
+	* _SafetyOK_ is not enabled. 
+	
+	The _processComands.abort_ will be reset if the Unit is in _Clearing_ state during _clearingDelayTime_, to give the Unit time to clear faults.
+	
+	#### _clear_:
+	The _processComands.clear_ will be set if:
+	* Any Equipment Module reports a _cmdClear_. 
+	* The input command _clear_ is set.
+	
+	#### _complete_:
+	The _processComands.complete_ will be set if:
+	* Any Equipment Module reports a _cmdComplete_. 
+	* The input command _complete_ is set.
+	
+	#### _stateComplete_: 
+	The _processCommands_ _stateComplete_ will be set only when all Equipment Module reports a _stateComplete_ and the _safetyOk_ bit is enabled.
+	 */)
+	END_REGION DESCRIPTION
+	
+	REGION INITIALIZATION
+	    IF #statFirstCall THEN
+	        // Detect lower and upper bound of the array for further processing
+	        #statLowerBound := LOWER_BOUND(ARR := #emFeedback, DIM := #ARRAY_DIMENSION);
+	        #statUpperBound := UPPER_BOUND(ARR := #emFeedback, DIM := #ARRAY_DIMENSION);
+	        
+	        //State command auxiliar variables initialization
+	        #tempCommands.stateComplete :=
+	        #tempCommands.reset :=
+	        #tempCommands.start :=
+	        #tempCommands.stop :=
+	        #tempCommands.hold :=
+	        #tempCommands.unhold :=
+	        #tempCommands.suspend :=
+	        #tempCommands.unsuspend :=
+	        #tempCommands.abort :=
+	        #tempCommands.clear :=
+	        #tempCommands.complete := FALSE;
+	        
+	        //Indicator first cycle
+	        #statFirstCall := FALSE;
+	    ELSE
+	        // Detect if the state was changed in the last cycle
+	        #tempStateJustChanged := #currentState.current <> #statPreviousState;
+	        
+	        // SC is set to TRUE during init, except when
+	        // 1) justed changed the state. To ensure a positive edge of SC, SC is set to FALSE for one cycle
+	        // 2) safetyOK is FALSE. safetyOK = FALSE prevents moving to the next state, except from moving from ABORTING to ABORTED
+	        #tempCommands.stateComplete := NOT #tempStateJustChanged AND (#safetyOk OR #currentState.aborting);
+	        
+	        // Command are set to the commands from the inputs.
+	        // Additionally, safetyOK = FALSE also set tempCommands.Abort to TRUE
+	        #tempCommands.reset := #unitFeedback.reset;
+	        #tempCommands.start := #unitFeedback.start;
+	        #tempCommands.stop := #unitFeedback.stop;
+	        #tempCommands.hold := #unitFeedback.hold;
+	        #tempCommands.unhold := #unitFeedback.unhold;
+	        #tempCommands.suspend := #unitFeedback.suspend;
+	        #tempCommands.unsuspend := #unitFeedback.unsuspend;
+	        #tempCommands.abort := #unitFeedback.abort OR NOT #safetyOk;
+	        #tempCommands.clear := #unitFeedback.clear;
+	        #tempCommands.complete := #unitFeedback.complete;
+	    END_IF;
+	END_REGION INITIALIZATION
+	
+	REGION EVALUATION
+	    // Loop through the equipment modules and evaulate commands and State Complete (SC)
+	    FOR #tempIndex := #statLowerBound TO #statUpperBound DO
+	        // Only evaluate equipment modules that are linked to the parent (unit)
+	        IF #emFeedback[#tempIndex].isLinked THEN
+	            // Evaluate State Complete (SC). If any EM is not SC, then the tempStateComplete is set to FALSE. (if not already FALSE)
+	            #tempCommands.stateComplete := #tempCommands.stateComplete AND #emFeedback[#tempIndex].commands.stateComplete;
+	            // Evaluate commands. If any EM reports a command, the respective tempCommands.... is set (if not already set)
+	            #tempCommands.reset := #tempCommands.reset OR #emFeedback[#tempIndex].commands.reset;
+	            #tempCommands.start := #tempCommands.start OR #emFeedback[#tempIndex].commands.start;
+	            #tempCommands.stop := #tempCommands.stop OR #emFeedback[#tempIndex].commands.stop;
+	            #tempCommands.hold := #tempCommands.hold OR #emFeedback[#tempIndex].commands.hold;
+	            #tempCommands.unhold := #tempCommands.unhold OR #emFeedback[#tempIndex].commands.unhold;
+	            #tempCommands.suspend := #tempCommands.suspend OR #emFeedback[#tempIndex].commands.suspend;
+	            #tempCommands.unsuspend := #tempCommands.unsuspend OR #emFeedback[#tempIndex].commands.unsuspend;
+	            #tempCommands.abort := #tempCommands.abort OR #emFeedback[#tempIndex].commands.abort;
+	            #tempCommands.clear := #tempCommands.clear OR #emFeedback[#tempIndex].commands.clear;
+	            #tempCommands.complete := #tempCommands.complete OR #emFeedback[#tempIndex].commands.complete;
+	        END_IF;
+	    END_FOR;
+	END_REGION EVALUATION
+	
+	REGION TIMERS
+	    //Prevent the abort command from occuring while attempting to clear in order to give the machine time to clear faults
+	    //Generate pulse for the defined time "#maxTimeInClearing". This pulse is used to suppress the abort command for the defined time
+	    #instTpClearingTimer(IN := #currentState.clearing,
+	                         PT := #clearingDelayTimer);
+	    #tempCmdAbortSuppression := #currentState.clearing AND #instTpClearingTimer.Q;
+	    
+	    //Prevent the stop command from occuring while attempting to reset in order to give the machine time to reset faults
+	    //Generate pulse for the defined time "#maxTimeInResetting". This pulse is used to suppress the stop command for the defined time
+	    #instTpResettingTimer(IN := #currentState.resetting,
+	                          PT := #resettingDelayTimer);
+	    #tempCmdStopSuppression := #currentState.resetting AND #instTpResettingTimer.Q;
+	END_REGION TIMERS
+	
+	REGION OUTPUTS
+	    //Write process commands outputs
+	    #processCommands.stateComplete := #tempCommands.stateComplete;
+	    #processCommands.reset := #tempCommands.reset;
+	    #processCommands.start := #tempCommands.start;
+	    #processCommands.stop := #tempCommands.stop AND NOT #tempCmdStopSuppression;
+	    #processCommands.hold := #tempCommands.hold;
+	    #processCommands.unhold := #tempCommands.unhold;
+	    #processCommands.suspend := #tempCommands.suspend;
+	    #processCommands.unsuspend := #tempCommands.unsuspend;
+	    #processCommands.abort := #tempCommands.abort AND NOT #tempCmdAbortSuppression;
+	    #processCommands.clear := #tempCommands.clear;
+	    #processCommands.complete := #tempCommands.complete;
+	END_REGION OUTPUTS
+	
+	//Save current state for the next cycle
+	#statPreviousState := #currentState.current;
+	
+END_FUNCTION_BLOCK
+

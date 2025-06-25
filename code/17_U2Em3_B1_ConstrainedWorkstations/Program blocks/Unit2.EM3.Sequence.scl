@@ -1,0 +1,833 @@
+﻿NAMESPACE Unit2.EM3
+FUNCTION_BLOCK Sequence
+TITLE = EquipmentC_StateActions
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+VERSION : 0.1
+//State model of equipment module following the OMAC standard.
+   VAR 
+      statSelectedJobNumber { ExternalWritable := 'False'} : DInt;   // Evaluated Job Number
+      instSequenceSCLControl { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LAF_ControlSclSequence;
+      instSequenceSCLStatus { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LAF_StatusSclSequence;
+      statVfdSportsInc { ExternalWritable := 'False'; S7_SetPoint := 'True'} : Int;
+      statVfdSportsIncEnable { ExternalWritable := 'False'} : Bool;
+      statAxisPosHomeDone { ExternalWritable := 'False'; S7_SetPoint := 'True'} : Bool;
+      statCylinderHomeDone { ExternalWritable := 'False'} : Bool;
+      statCm1bit06_Done { ExternalWritable := 'False'} : Bool;
+      statCm2bit06_Done { ExternalWritable := 'False'} : Bool;
+      statCm3bit06_Done { ExternalWritable := 'False'} : Bool;
+      statCm4bit06_Done { ExternalWritable := 'False'} : Bool;
+      statTorque { ExternalWritable := 'False'} : Bool;   // æ‰­åŠ›åˆ‡æ¢  OFF 1.0 ON 2.0
+      instTimers {InstructionName := 'TON_TIME'; LibVersion := '1.0'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : Array[0..2] of TON_TIME;
+      statScrew_CW { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool := FALSE;
+      statScrew_CCW { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool := FALSE;
+      statSlideCylMiddleSignal1 { ExternalWritable := 'False'} : Bool;
+      statSlideCylMiddleSignal2 { ExternalWritable := 'False'} : Bool;
+      statCm1Stop { ExternalWritable := 'False'} : Bool;
+      statCm2Stop { ExternalWritable := 'False'} : Bool;
+      statCm3Stop { ExternalWritable := 'False'} : Bool;
+      statCm4Stop { ExternalWritable := 'False'} : Bool;
+      statAxisPosStepTransfer { ExternalWritable := 'False'} : Bool;
+      statStepFirstCall { ExternalWritable := 'False'} : Bool;
+      statCurrentStepPrevious { ExternalWritable := 'False'} : DInt;
+   END_VAR
+
+   VAR_TEMP 
+      tempPos : Int;
+      tempNextStep : DInt;
+   END_VAR
+
+   VAR CONSTANT 
+      STEP_IDLE : DInt := 1;   // Idle Step
+      STEP_101 : DInt := 101;   // Template Step
+      STEP_102 : DInt := 102;   // Template Step
+      STEP_103 : DInt := 103;
+      STEP_104 : DInt := 104;
+      STEP_105 : DInt := 105;
+      STEP_106 : DInt := 106;
+      STEP_107 : DInt := 107;
+      STEP_108 : DInt := 108;
+      STEP_109 : DInt := 109;
+      STEP_110 : DInt := 110;
+      STEP_111 : DInt := 111;
+      STEP_112 : DInt := 112;
+      STEP_130 : DInt := 130;
+      STEP_120 : DInt := 120;
+      STEP_121 : DInt := 121;
+      STEP_122 : DInt := 122;
+      STEP_194 : DInt := 194;
+      STEP_195 : DInt := 195;
+      STEP_196 : DInt := 196;
+      STEP_197 : DInt := 197;
+      STEP_198 : DInt := 198;
+      STEP_201 : DInt := 201;
+      STEP_301 : DInt := 301;
+      STEP_401 : DInt := 401;
+      STEP_501 : DInt := 501;
+      STEP_601 : DInt := 601;
+      STEP_602 : DInt := 602;
+      STEP_IMMEDIATE_STOP : DInt := 901;   // Step executed when an immediate stop command is triggered for the sequence (i.e. when unit is in state aborting)
+      TO_DO_INSERT_CONDITION_FOR_TRANSITION_HERE : Bool := TRUE;   // Template : Add conditions
+      STANDBY_POS : Int;
+      F_DECELERATION_POS : Int := 1;   // å‰è¿›å‡é€Ÿä½ç½®
+      UNCONSTRAINT_POS : Int := 2;   // è§£æ‹˜æŸä½ç½®
+      R_DECELERATION_POS : Int := 3;   // åŽé€€å‡é€Ÿä½ç½®
+      SLOW_TRAY_POS : Int := 4;   // æ‰˜ç›˜å¿«é€Ÿæ‹‰å¼€ä½ç½®
+      FAST_TRAY_POS : Int := 5;   // æ‰˜ç›˜æ‹‰å¼€ä½ç½®
+      CONSTRAINT_POS : Int := 6;   // åŠ æ‹˜æŸä½ç½®
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // (company)/ (c)Copyright (year)
+	    //-------------------------------------------------------------------------------
+	    // Title:            (Title of this block)
+	    // Comment/Function: (that is implemented in the block)
+	    // Library/Family:   (that the source is dedicated to)
+	    // Author:           (department / person in charge / contact)
+	    // Tested with:      (test system with FW version)
+	    // Engineering:      TIA Portal (SW version)
+	    // Restrictions:     (OB types, etc.)
+	    // Requirements:     (hardware, technological package, etc.)
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | dd.mm.yyyy | (name of expert)        | First released version
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	    (/*
+	        This is a template block provided by the Automation Framework. It can be used to create an own project.
+	        The Block Info Header is prepared to put in your own data.
+	        Description of the block could be added here and the docu created by Code2Docu.
+	        */)
+	END_REGION DESCRIPTION
+	IF HmiInterface.sequence.commands.setSingleStepMode THEN
+	    IF NOT HmiInterface.sequence.commands.nextStep THEN
+	        ControlNodes.sequence.status.nextStep := ControlNodes.sequence.status.currentStep;
+	        ;
+	    END_IF;
+	END_IF;
+	REGION Sequence control
+	    // General control of the sequence
+	    #instSequenceSCLControl(idleStep := #STEP_IDLE,
+	                            stoppedStep := #STEP_IMMEDIATE_STOP,
+	                            resetJobs => ControlNodes.jobs.commands.reset,
+	                            hmiInterface := HmiInterface.sequence,
+	                            sequence := ControlNodes.sequence);
+	END_REGION Sequence control
+	
+	REGION Steps
+	    // Only execute sequence if active
+	    IF ControlNodes.sequence.status.seqActive THEN
+	        
+	        // Determine the current step
+	        CASE ControlNodes.sequence.status.currentStep OF
+	                
+	            #STEP_IDLE:
+	                // If a new job is activated, move to the first step of that job
+	                
+	                IF ControlNodes.sequence.status.executionEnabled THEN
+	                    CASE ControlNodes.jobs.commands.setJobNumber OF
+	                        _.U2EM3_JOB_EXECUTE:
+	                            ControlNodes.sequence.status.nextStep := #STEP_101;
+	                        _.U2EM3_JOB_STOPPING:
+	                            ControlNodes.sequence.status.nextStep := #STEP_201;
+	                        _.U2EM3_JOB_HOLODING:
+	                            ControlNodes.sequence.status.nextStep := #STEP_301;
+	                        _.U2EM3_JOB_UNHOLODING:
+	                            ControlNodes.sequence.status.nextStep := #STEP_401;
+	                        _.U2EM3_JOB_RESTING:
+	                            ControlNodes.sequence.status.nextStep := #STEP_501;
+	                        _.U2EM3_JOB_STARTING:
+	                            ControlNodes.sequence.status.nextStep := #STEP_601;
+	                            
+	                    END_CASE;
+	                    
+	                END_IF;
+	                REGION ########JOB_STARTING_Step600
+	                    
+	                END_REGION
+	            #STEP_601:
+	                REGION STARTING_Step601
+	                    #statCylinderHomeDone :=
+	                    #statSlideCylMiddleSignal1 :=
+	                    #statSlideCylMiddleSignal2 :=
+	                    #statScrew_CW :=
+	                    #statScrew_CCW :=
+	                    #statCm1Stop :=
+	                    #statCm2Stop :=
+	                    #statCm3Stop :=
+	                    #statCm4Stop :=
+	                    #statStepFirstCall :=
+	                    #statAxisPosStepTransfer :=
+	                    #statAxisPosHomeDone := false;
+	                    ControlNodes.cm10SignalTM.reset := true;
+	                    ControlNodes.sequence.status.nextStep := #STEP_602;
+	                    
+	                END_REGION ;
+	            #STEP_602:
+	                REGION Step602
+	                    EXCHANGETRAY_CmParameterUpdate();
+	                    EXCHANGETRAY_AxisPosGoHome(goHome := NOT #statAxisPosHomeDone,
+	                                               homeDone => #statAxisPosHomeDone);
+	                    EXCHANGETRAY_CylindersGoHome(goHome := NOT #statCylinderHomeDone,
+	                                                 homeDone => #statCylinderHomeDone);
+	                    
+	                    IF #statCylinderHomeDone AND #statAxisPosHomeDone THEN
+	                        #statCylinderHomeDone :=
+	                        #statAxisPosHomeDone := false;
+	                        ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                    END_IF;
+	                    
+	                END_REGION
+	                REGION ########JOB_RESTING_Step500
+	                    // Statement section REGION
+	                    
+	                END_REGION
+	                
+	            #STEP_501:
+	                REGION RESTING_Step501
+	                    #statCylinderHomeDone :=
+	                    #statSlideCylMiddleSignal1 :=
+	                    #statSlideCylMiddleSignal2 :=
+	                    #statScrew_CW :=
+	                    #statScrew_CCW :=
+	                    #statCm1Stop :=
+	                    #statCm2Stop :=
+	                    #statCm3Stop :=
+	                    #statCm4Stop :=
+	                    #statStepFirstCall :=
+	                    #statAxisPosStepTransfer :=
+	                    #statAxisPosHomeDone := false;
+	                    
+	                    ControlNodes.cm10SignalTM.reset := true;
+	                    
+	                    ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                    
+	                END_REGION ;
+	                REGION ########JOB_UNHOLODING_Step400
+	                    
+	                END_REGION
+	            #STEP_401:
+	                REGION UNHOLODING_Step401
+	                    
+	                    ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                END_REGION ;
+	                REGION ########JOB_HOLODING_Step300
+	                    
+	                END_REGION
+	            #STEP_301:
+	                REGION HOLODING_Step301
+	                    
+	                    ;
+	                END_REGION ;
+	                REGION ########JOB_STOPPING_Step200
+	                    
+	                END_REGION
+	            #STEP_201:
+	                REGION stopping_Step201
+	                    
+	                    ControlNodes.cm1SV112_Constraint1_Axis.commands.stop :=
+	                    ControlNodes.cm2SV113_Constraint2_Axis.commands.stop :=
+	                    ControlNodes.cm3SV115_Screw1_Axis.commands.stop :=
+	                    ControlNodes.cm4SV116_Screw2_Axis.commands.stop := TRUE;
+	                    ControlNodes.cm3SV115_Screw1_Axis.commands.enableTorque := FALSE;
+	                    ControlNodes.cm4SV116_Screw2_Axis.commands.enableTorque := FALSE;
+	                    ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                    ;
+	                    
+	                    ;
+	                END_REGION ;
+	                REGION ########JOB_EXECUTE_Step100
+	                    
+	                END_REGION
+	                
+	            #STEP_101:
+	                REGION initPara_STEP_101
+	                    
+	                    EXCHANGETRAY_CmParameterUpdate();
+	                    EXCHANGETRAY_AxisPosGoHome(goHome := NOT #statAxisPosHomeDone,
+	                                               homeDone => #statAxisPosHomeDone);
+	                    EXCHANGETRAY_CylindersGoHome(goHome := NOT #statCylinderHomeDone,
+	                                                 homeDone => #statCylinderHomeDone);
+	                    
+	                END_REGION ;
+	                IF #statCylinderHomeDone AND #statAxisPosHomeDone THEN
+	                    #statCylinderHomeDone :=
+	                    #statAxisPosHomeDone := false;
+	                    ControlNodes.sequence.status.nextStep := #STEP_102;
+	                END_IF;
+	                
+	            #STEP_102:
+	                REGION STEP_102 Wait em2 unconstraint signal
+	                    // 等待EM2解拘束信号_进入减速位置 - Wait for EM2 unconstraint signal to enter deceleration position
+	                    //transfer
+	                    #statAxisPosStepTransfer := false;
+	                    IF #statStepFirstCall THEN
+	                        EXCHANGETRAY_AxisRunToStopAction(
+	                                                         nextStep := #STEP_103,
+	                                                         transferStep => #tempNextStep,
+	                                                         transfer => #statAxisPosStepTransfer,
+	                                                         stop1 := #statCm1Stop,
+	                                                         stop2 := #statCm2Stop,
+	                                                         trig1 := _.LGF_CompareLReal(valueA := ControlNodes.cm1SV112_Constraint1_Axis.monitoring.position, valueB := Config.em3Parameters.cm1Axis112.production.distanceList[#F_DECELERATION_POS].position),
+	                                                         trig2 := _.LGF_CompareLReal(valueA := ControlNodes.cm2SV113_Constraint2_Axis.monitoring.position, valueB := Config.em3Parameters.cm2Axis113.production.distanceList[#F_DECELERATION_POS].position));
+	                    END_IF;
+	                    
+	                    IF _.Unit2.EmNodes.emRelations.EM3.recieve.constraintRoller.req.transferEnable
+	                        AND
+	                        _.Unit2.EmNodes.emRelations.EM3.recieve.constraintRoller.req.unConstraint
+	                    THEN
+	                        EXCHANGETRAY_AxisPosUpdate(index := #F_DECELERATION_POS,
+	                                                   axisCommandConfiguration := ControlNodes.cm1SV112_Constraint1_Axis.commandConfiguration,
+	                                                   distantceList := Config.em3Parameters.cm1Axis112.production.distanceList);
+	                        EXCHANGETRAY_AxisPosUpdate(index := #F_DECELERATION_POS,
+	                                                   axisCommandConfiguration := ControlNodes.cm2SV113_Constraint2_Axis.commandConfiguration,
+	                                                   distantceList := Config.em3Parameters.cm2Axis113.production.distanceList);
+	                        
+	                        ControlNodes.cm1SV112_Constraint1_Axis.commands.posAbsolute := true;
+	                        ControlNodes.cm2SV113_Constraint2_Axis.commands.posAbsolute := true;
+	                        #statStepFirstCall := true;
+	                    END_IF;
+	                    
+	                    IF #statAxisPosStepTransfer THEN
+	                        ControlNodes.sequence.status.nextStep := #tempNextStep;
+	                        #statStepFirstCall := false;
+	                    END_IF;
+	                END_REGION
+	                ;
+	                
+	            #STEP_103:
+	                ;
+	                
+	                REGION STEP_103 Enter constraint position
+	                    // 进入拘束位置_STEP_103,加拘束 6 解拘束 2 - Enter constraint position, constraint 6 unconstraint 2
+	                    #statAxisPosStepTransfer := false;
+	                    IF #statStepFirstCall THEN
+	                        EXCHANGETRAY_AxisRunToStopAction(
+	                                                         nextStep := #STEP_104,
+	                                                         transferStep => #tempNextStep,
+	                                                         transfer => #statAxisPosStepTransfer,
+	                                                         stop1 := #statCm1Stop,
+	                                                         stop2 := #statCm2Stop,
+	                                                         trig1 := _.LGF_CompareLReal(valueA := ControlNodes.cm1SV112_Constraint1_Axis.monitoring.position, valueB := ControlNodes.cm1SV112_Constraint1_Axis.commandConfiguration.posAbsolute.position),
+	                                                         trig2 := _.LGF_CompareLReal(valueA := ControlNodes.cm2SV113_Constraint2_Axis.monitoring.position, valueB := ControlNodes.cm2SV113_Constraint2_Axis.commandConfiguration.posAbsolute.position));
+	                    END_IF;
+	                    
+	                    IF _.Unit2.EmNodes.emRelations.EM3.recieve.constraintRoller.req.unConstraint
+	                        AND
+	                        _.Global.Data.material.Unit2.contraint.monitor.status.contraintStatus = 0
+	                    THEN
+	                        #tempPos := #UNCONSTRAINT_POS;
+	                        #statStepFirstCall := true;
+	                    END_IF;
+	                    IF _.Unit2.EmNodes.emRelations.EM3.recieve.constraintRoller.req.Constraint
+	                        AND
+	                        _.Global.Data.material.Unit2.contraint.monitor.status.contraintStatus = 2
+	                    THEN
+	                        #tempPos := #CONSTRAINT_POS;
+	                        #statStepFirstCall := true;
+	                    END_IF;
+	                    
+	                    EXCHANGETRAY_AxisPosUpdate(index := #tempPos,
+	                                               axisCommandConfiguration := ControlNodes.cm1SV112_Constraint1_Axis.commandConfiguration,
+	                                               distantceList := Config.em3Parameters.cm1Axis112.production.distanceList);
+	                    EXCHANGETRAY_AxisPosUpdate(index := #tempPos,
+	                                               axisCommandConfiguration := ControlNodes.cm2SV113_Constraint2_Axis.commandConfiguration,
+	                                               distantceList := Config.em3Parameters.cm2Axis113.production.distanceList);
+	                    
+	                    ControlNodes.cm1SV112_Constraint1_Axis.commands.posAbsolute := true;
+	                    ControlNodes.cm2SV113_Constraint2_Axis.commands.posAbsolute := true;
+	                    
+	                    IF #statAxisPosStepTransfer THEN
+	                        ControlNodes.cm4SV116_Screw2_Axis.commands.enableTorque :=
+	                        ControlNodes.cm3SV115_Screw1_Axis.commands.enableTorque := true;
+	                        ControlNodes.sequence.status.nextStep := #tempNextStep;
+	                        #statStepFirstCall := false;
+	                    END_IF;
+	                END_REGION
+	                ;
+	                
+	            #STEP_104:
+	                ;
+	                
+	                REGION STEP_104 Low speed rotation slide cylinder
+	                    
+	                    
+	                    // 低速旋转及滑台气缸推出 - Low speed rotation and slide cylinder extension
+	                    //螺杆电机速度1 - Screw motor speed 1
+	                    EXCHANGETRAY_AxisTorUpdate(torqueSwitch := 0,
+	                                               speedSwitch := 0,
+	                                               axisCommandConfiguration := ControlNodes.cm3SV115_Screw1_Axis.commandConfiguration,
+	                                               velList := Config.em3Parameters.cm3Axis115.production.distanceList);
+	                    EXCHANGETRAY_AxisTorUpdate(torqueSwitch := 0,
+	                                               speedSwitch := 0,
+	                                               axisCommandConfiguration := ControlNodes.cm4SV116_Screw2_Axis.commandConfiguration,
+	                                               velList := Config.em3Parameters.cm4Axis116.production.distanceList);
+	                    //螺杆电机动 - Screw motor movement
+	                    #statScrew_CW :=
+	                    ControlNodes.cm3SV115_Screw1_Axis.commands.jogForward :=
+	                    ControlNodes.cm3SV115_Screw1_Axis.commands.enableTorque :=
+	                    ControlNodes.cm4SV116_Screw2_Axis.commands.jogForward :=
+	                    ControlNodes.cm4SV116_Screw2_Axis.commands.enableTorque := TRUE;
+	                    
+	                    //气缸推出 - Cylinder extension
+	                    IF ControlNodes.cm3SV115_Screw1_Axis.monitoring.jogInVelocity
+	                        OR
+	                        ControlNodes.cm3SV115_Screw1_Axis.monitoring.inVelocity
+	                    THEN
+	                        ControlNodes.cm6SlideCylinder1.commands.commandWorkPos := TRUE;
+	                    END_IF;
+	                    IF ControlNodes.cm4SV116_Screw2_Axis.monitoring.jogInVelocity
+	                        OR
+	                        ControlNodes.cm4SV116_Screw2_Axis.monitoring.inVelocity
+	                    THEN
+	                        ControlNodes.cm8SlideCylinder2.commands.commandWorkPos := TRUE;
+	                    END_IF;
+	                    IF ControlNodes.cm10SignalTM.monitoring.slideCylinderMedianPositionDetection1
+	                        AND
+	                        ControlNodes.cm6SlideCylinder1.commands.commandWorkPos
+	                    THEN
+	                        #statSlideCylMiddleSignal1 := TRUE;
+	                    END_IF;
+	                    IF ControlNodes.cm10SignalTM.monitoring.slideCylinderMedianPositionDetection2
+	                        AND
+	                        ControlNodes.cm8SlideCylinder2.commands.commandWorkPos
+	                    THEN
+	                        #statSlideCylMiddleSignal2 := TRUE;
+	                    END_IF;
+	                    IF #statSlideCylMiddleSignal2 AND #statSlideCylMiddleSignal1
+	                    THEN
+	                        ControlNodes.sequence.status.nextStep := #STEP_105;
+	                    END_IF;
+	                    
+	                    
+	                END_REGION
+	            #STEP_105:
+	                REGION STEP_105 Screw motor stop
+	                    // 螺杆电机停 - Screw motor stop
+	                    #statAxisPosStepTransfer := false;
+	                    IF #statStepFirstCall THEN
+	                        EXCHANGETRAY_AxisRunToStopAction(trig1 := ControlNodes.cm4SV116_Screw2_Axis.monitoring.statusWord.bit06_Done,
+	                                                         trig2 := ControlNodes.cm3SV115_Screw1_Axis.monitoring.statusWord.bit06_Done,
+	                                                         nextStep := #STEP_106,
+	                                                         transferStep => #tempNextStep,
+	                                                         transfer => #statAxisPosStepTransfer,
+	                                                         stop1 := #statCm3Stop,
+	                                                         stop2 := #statCm4Stop);
+	                    END_IF;
+	                    
+	                    IF #instTimers[0].Q
+	                        AND
+	                        ControlNodes.cm6SlideCylinder1.monitoring.inWorkPos
+	                        AND
+	                        (ControlNodes.cm3SV115_Screw1_Axis.monitoring.InLimitation OR ControlNodes.cm3SV115_Screw1_Axis.monitoring.statusWord.bit25_AxisSimulation)
+	                    THEN
+	                        ControlNodes.cm3SV115_Screw1_Axis.commands.stop := TRUE;
+	                        ControlNodes.cm3SV115_Screw1_Axis.commands.enableTorque := FALSE;
+	                    END_IF;
+	                    IF #instTimers[1].Q
+	                        AND
+	                        ControlNodes.cm8SlideCylinder2.monitoring.inWorkPos
+	                        AND
+	                        (ControlNodes.cm4SV116_Screw2_Axis.monitoring.InLimitation OR ControlNodes.cm4SV116_Screw2_Axis.monitoring.statusWord.bit25_AxisSimulation)
+	                    THEN
+	                        ControlNodes.cm4SV116_Screw2_Axis.commands.stop := TRUE;
+	                        ControlNodes.cm4SV116_Screw2_Axis.commands.enableTorque := FALSE;
+	                    END_IF;
+	                    IF #instTimers[0].Q AND #instTimers[1].Q THEN
+	                        #statStepFirstCall := true;
+	                    END_IF;
+	                    
+	                    //transfer
+	                    IF #statAxisPosStepTransfer THEN
+	                        ControlNodes.sequence.status.nextStep := #tempNextStep;
+	                        #statSlideCylMiddleSignal1 := FALSE;
+	                        #statSlideCylMiddleSignal1 := FALSE;
+	                        #statStepFirstCall := false;
+	                    END_IF;
+	                END_REGION
+	                
+	            #STEP_106:
+	                REGION STEP_106 Unconstraint
+	                    // 解拘束 - Unconstraint
+	                    _.Global.Data.material.Unit2.contraint.monitor.status.contraintStatus := 1;
+	                    //螺杆电机速度2 - Screw motor speed 2
+	                    EXCHANGETRAY_AxisTorUpdate(torqueSwitch := 1,
+	                                               speedSwitch := 1,
+	                                               axisCommandConfiguration := ControlNodes.cm3SV115_Screw1_Axis.commandConfiguration,
+	                                               velList := Config.em3Parameters.cm3Axis115.production.distanceList);
+	                    EXCHANGETRAY_AxisTorUpdate(torqueSwitch := 1,
+	                                               speedSwitch := 1,
+	                                               axisCommandConfiguration := ControlNodes.cm4SV116_Screw2_Axis.commandConfiguration,
+	                                               velList := Config.em3Parameters.cm4Axis116.production.distanceList);
+	                    //螺杆电机动 - Screw motor movement
+	                    #statScrew_CCW :=
+	                    ControlNodes.cm3SV115_Screw1_Axis.commands.jogBackward :=
+	                    ControlNodes.cm3SV115_Screw1_Axis.commands.enableTorque :=
+	                    ControlNodes.cm4SV116_Screw2_Axis.commands.jogBackward :=
+	                    ControlNodes.cm4SV116_Screw2_Axis.commands.enableTorque := TRUE;
+	                    
+	                    IF NOT ControlNodes.cm4SV116_Screw2_Axis.monitoring.statusWord.bit06_Done
+	                        AND
+	                        NOT ControlNodes.cm4SV116_Screw2_Axis.monitoring.statusWord.bit06_Done
+	                    THEN
+	                        ControlNodes.sequence.status.nextStep := #STEP_107;
+	                    END_IF;
+	                END_REGION
+	                
+	            #STEP_107:
+	                REGION STEP_107 Unconstraint screw motor stop
+	                    // 解拘束_螺杆电机停止 - Unconstraint screw motor stop
+	                    #statAxisPosStepTransfer := false;
+	                    IF #statStepFirstCall THEN
+	                        EXCHANGETRAY_AxisRunToStopAction(
+	                                                         trig1 := ControlNodes.cm4SV116_Screw2_Axis.monitoring.statusWord.bit06_Done,
+	                                                         trig2 := ControlNodes.cm3SV115_Screw1_Axis.monitoring.statusWord.bit06_Done,
+	                                                         nextStep := #STEP_108,
+	                                                         transferStep => #tempNextStep,
+	                                                         transfer => #statAxisPosStepTransfer,
+	                                                         stop1 := #statCm3Stop,
+	                                                         stop2 := #statCm4Stop);
+	                    END_IF;
+	                    
+	                    IF ControlNodes.cm10SignalTM.monitoring.slideCylinderMedianPositionDetection1 THEN
+	                        #statSlideCylMiddleSignal1 := true;
+	                    END_IF;
+	                    IF ControlNodes.cm10SignalTM.monitoring.slideCylinderMedianPositionDetection2 THEN
+	                        #statSlideCylMiddleSignal2 := true;
+	                    END_IF;
+	                    
+	                    IF #statSlideCylMiddleSignal1 THEN
+	                        ControlNodes.cm3SV115_Screw1_Axis.commands.stop := true;
+	                        ControlNodes.cm3SV115_Screw1_Axis.commands.enableTorque := FALSE;
+	                    END_IF;
+	                    
+	                    IF #statSlideCylMiddleSignal2 THEN
+	                        ControlNodes.cm4SV116_Screw2_Axis.commands.stop := true;
+	                        ControlNodes.cm4SV116_Screw2_Axis.commands.enableTorque := FALSE;
+	                    END_IF;
+	                    
+	                    IF #statSlideCylMiddleSignal1 AND #statSlideCylMiddleSignal2 THEN
+	                        #statStepFirstCall := true;
+	                    END_IF;
+	                    
+	                    //transfer
+	                    IF #statAxisPosStepTransfer THEN
+	                        ControlNodes.sequence.status.nextStep := #tempNextStep;
+	                        ControlNodes.cm4SV116_Screw2_Axis.commands.enableTorque :=
+	                        ControlNodes.cm3SV115_Screw1_Axis.commands.enableTorque := FALSE;
+	                        _.Global.Data.material.Unit2.contraint.monitor.status.contraintStatus := 0;
+	                        _.Unit2.EmNodes.emRelations.EM2.deliver.constraintWorkstation.req.transferEnable :=
+	                        _.Unit2.EmNodes.emRelations.EM2.deliver.constraintWorkstation.req.unConstraint := FALSE;
+	                        #statStepFirstCall := false;
+	                    END_IF;
+	                END_REGION
+	            #STEP_108:
+	                REGION STEP_108 Hook claw close slow pull
+	                    // 勾爪闭合 慢速拉带到拘束减速位 / 断使能滑台退出 - Hook claw close, slow pull to constraint deceleration position / disable slide exit
+	                    #statAxisPosStepTransfer := false;
+	                    IF #statStepFirstCall THEN
+	                        EXCHANGETRAY_AxisRunToStopAction(
+	                                                         nextStep := #STEP_109,
+	                                                         transferStep => #tempNextStep,
+	                                                         transfer => #statAxisPosStepTransfer,
+	                                                         stop1 := #statCm1Stop,
+	                                                         stop2 := #statCm2Stop,
+	                                                         trig1 := _.LGF_CompareLReal(valueA := ControlNodes.cm1SV112_Constraint1_Axis.monitoring.position, valueB := ControlNodes.cm1SV112_Constraint1_Axis.commandConfiguration.posAbsolute.position),
+	                                                         trig2 := _.LGF_CompareLReal(valueA := ControlNodes.cm2SV113_Constraint2_Axis.monitoring.position, valueB := ControlNodes.cm2SV113_Constraint2_Axis.commandConfiguration.posAbsolute.position));
+	                    END_IF;
+	                    
+	                    IF ControlNodes.cm1SV112_Constraint1_Axis.monitoring.position = Config.em3Parameters.cm1Axis112.production.distanceList[#UNCONSTRAINT_POS].position
+	                        AND
+	                        ControlNodes.cm2SV113_Constraint2_Axis.monitoring.position = Config.em3Parameters.cm2Axis113.production.distanceList[#UNCONSTRAINT_POS].position
+	                    THEN
+	                        ControlNodes.cm7hookClawCylinder1.commands.commandWorkPos := TRUE;
+	                        ControlNodes.cm9hookClawCylinder2.commands.commandWorkPos := TRUE;
+	                    END_IF;
+	                    
+	                    IF ControlNodes.cm7hookClawCylinder1.monitoring.inWorkPos
+	                        AND
+	                        ControlNodes.cm9hookClawCylinder2.monitoring.inWorkPos
+	                        AND
+	                        #statSlideCylMiddleSignal1
+	                        AND
+	                        #statSlideCylMiddleSignal2
+	                    THEN
+	                        EXCHANGETRAY_AxisPosUpdate(index := #R_DECELERATION_POS,
+	                                                   axisCommandConfiguration := ControlNodes.cm1SV112_Constraint1_Axis.commandConfiguration,
+	                                                   distantceList := Config.em3Parameters.cm1Axis112.production.distanceList);
+	                        EXCHANGETRAY_AxisPosUpdate(index := #R_DECELERATION_POS,
+	                                                   axisCommandConfiguration := ControlNodes.cm2SV113_Constraint2_Axis.commandConfiguration,
+	                                                   distantceList := Config.em3Parameters.cm2Axis113.production.distanceList);
+	                        ControlNodes.cm1SV112_Constraint1_Axis.commands.posAbsolute := true;
+	                        ControlNodes.cm2SV113_Constraint2_Axis.commands.posAbsolute := true;
+	                        #statStepFirstCall := true;
+	                    END_IF;
+	                    
+	                    //transfer
+	                    IF #statAxisPosStepTransfer THEN
+	                        ControlNodes.sequence.status.nextStep := #tempNextStep;
+	                        #statStepFirstCall := false;
+	                    END_IF;
+	                END_REGION
+	                
+	            #STEP_109:
+	                REGION STEP_109 Fast tray position
+	                    // 快速到托盘拉开位置 - Fast movement to tray opening position
+	                    #statSlideCylMiddleSignal1 :=
+	                    #statSlideCylMiddleSignal2 := FALSE;
+	                    EXCHANGETRAY_AxisPosUpdate(index := #FAST_TRAY_POS,
+	                                               axisCommandConfiguration := ControlNodes.cm1SV112_Constraint1_Axis.commandConfiguration,
+	                                               distantceList := Config.em3Parameters.cm1Axis112.production.distanceList);
+	                    EXCHANGETRAY_AxisPosUpdate(index := #FAST_TRAY_POS,
+	                                               axisCommandConfiguration := ControlNodes.cm2SV113_Constraint2_Axis.commandConfiguration,
+	                                               distantceList := Config.em3Parameters.cm2Axis113.production.distanceList);
+	                    ControlNodes.cm1SV112_Constraint1_Axis.commands.posAbsolute := true;
+	                    ControlNodes.cm2SV113_Constraint2_Axis.commands.posAbsolute := true;
+	                    
+	                    //transfer
+	                    #statAxisPosStepTransfer := false;
+	                    EXCHANGETRAY_AxisRunToStopAction(
+	                                                     nextStep := #STEP_110,
+	                                                     transferStep => #tempNextStep,
+	                                                     transfer => #statAxisPosStepTransfer,
+	                                                     stop1 := #statCm1Stop,
+	                                                     stop2 := #statCm2Stop,
+	                                                     trig1 := _.LGF_CompareLReal(valueA := ControlNodes.cm1SV112_Constraint1_Axis.monitoring.position, valueB := ControlNodes.cm1SV112_Constraint1_Axis.commandConfiguration.posAbsolute.position),
+	                                                     trig2 := _.LGF_CompareLReal(valueA := ControlNodes.cm2SV113_Constraint2_Axis.monitoring.position, valueB := ControlNodes.cm2SV113_Constraint2_Axis.commandConfiguration.posAbsolute.position));
+	                    IF #statAxisPosStepTransfer THEN
+	                        ControlNodes.sequence.status.nextStep := #tempNextStep;
+	                    END_IF;
+	                END_REGION
+	            #STEP_110:
+	                REGION STEP_110 Slow tray position
+	                    // 慢速到托盘拉开位置 - Slow movement to tray opening position
+	                    EXCHANGETRAY_AxisPosUpdate(index := #SLOW_TRAY_POS,
+	                                               axisCommandConfiguration := ControlNodes.cm1SV112_Constraint1_Axis.commandConfiguration,
+	                                               distantceList := Config.em3Parameters.cm1Axis112.production.distanceList);
+	                    EXCHANGETRAY_AxisPosUpdate(index := #SLOW_TRAY_POS,
+	                                               axisCommandConfiguration := ControlNodes.cm2SV113_Constraint2_Axis.commandConfiguration,
+	                                               distantceList := Config.em3Parameters.cm2Axis113.production.distanceList);
+	                    
+	                    ControlNodes.cm1SV112_Constraint1_Axis.commands.posAbsolute := true;
+	                    ControlNodes.cm2SV113_Constraint2_Axis.commands.posAbsolute := true;
+	                    
+	                    //transfer
+	                    #statAxisPosStepTransfer := false;
+	                    EXCHANGETRAY_AxisRunToStopAction(
+	                                                     nextStep := #STEP_111,
+	                                                     transferStep => #tempNextStep,
+	                                                     transfer => #statAxisPosStepTransfer,
+	                                                     stop1 := #statCm1Stop,
+	                                                     stop2 := #statCm2Stop,
+	                                                     trig1 := _.LGF_CompareLReal(valueA := ControlNodes.cm1SV112_Constraint1_Axis.monitoring.position, valueB := ControlNodes.cm1SV112_Constraint1_Axis.commandConfiguration.posAbsolute.position),
+	                                                     trig2 := _.LGF_CompareLReal(valueA := ControlNodes.cm2SV113_Constraint2_Axis.monitoring.position, valueB := ControlNodes.cm2SV113_Constraint2_Axis.commandConfiguration.posAbsolute.position));
+	                    
+	                    IF #statAxisPosStepTransfer THEN
+	                        ControlNodes.sequence.status.nextStep := #tempNextStep;
+	                    END_IF;
+	                END_REGION
+	            #STEP_111:
+	                REGION STEP_111 Release hook complete unconstraint
+	                    // 松勾爪 通知解拘束完成 大电机回待机位 - Release hook, notify unconstraint completion, main motor return to standby position
+	                    
+	                    // 松勾爪 - Release hook
+	                    IF NOT ControlNodes.cm7hookClawCylinder1.monitoring.inHomePos THEN
+	                        ControlNodes.cm7hookClawCylinder1.commands.commandHomePos := TRUE;
+	                    END_IF;
+	                    IF NOT ControlNodes.cm9hookClawCylinder2.monitoring.inHomePos THEN
+	                        ControlNodes.cm9hookClawCylinder2.commands.commandHomePos := TRUE;
+	                    END_IF;
+	                    IF NOT ControlNodes.cm8SlideCylinder2.monitoring.inHomePos THEN
+	                        ControlNodes.cm8SlideCylinder2.commands.commandHomePos := TRUE;
+	                    END_IF;
+	                    IF NOT ControlNodes.cm6SlideCylinder1.monitoring.inHomePos THEN
+	                        ControlNodes.cm6SlideCylinder1.commands.commandHomePos := TRUE;
+	                    END_IF;
+	                    
+	                    // 大电机回待机位 - Main motor return to standby position
+	                    EXCHANGETRAY_AxisPosUpdate(index := #STANDBY_POS,
+	                                               axisCommandConfiguration := ControlNodes.cm1SV112_Constraint1_Axis.commandConfiguration,
+	                                               distantceList := Config.em3Parameters.cm1Axis112.production.distanceList);
+	                    EXCHANGETRAY_AxisPosUpdate(index := #STANDBY_POS,
+	                                               axisCommandConfiguration := ControlNodes.cm2SV113_Constraint2_Axis.commandConfiguration,
+	                                               distantceList := Config.em3Parameters.cm2Axis113.production.distanceList);
+	                    ControlNodes.cm1SV112_Constraint1_Axis.commands.posAbsolute := true;
+	                    ControlNodes.cm2SV113_Constraint2_Axis.commands.posAbsolute := true;
+	                    
+	                    //transfer
+	                    #statAxisPosStepTransfer := false;
+	                    EXCHANGETRAY_AxisRunToStopAction(
+	                                                     nextStep := #STEP_130,
+	                                                     transferStep => #tempNextStep,
+	                                                     transfer => #statAxisPosStepTransfer,
+	                                                     stop1 := #statCm1Stop,
+	                                                     stop2 := #statCm2Stop,
+	                                                     trig1 := _.LGF_CompareLReal(valueA := ControlNodes.cm1SV112_Constraint1_Axis.monitoring.position, valueB := ControlNodes.cm1SV112_Constraint1_Axis.commandConfiguration.posAbsolute.position),
+	                                                     trig2 := _.LGF_CompareLReal(valueA := ControlNodes.cm2SV113_Constraint2_Axis.monitoring.position, valueB := ControlNodes.cm2SV113_Constraint2_Axis.commandConfiguration.posAbsolute.position));
+	                    
+	                    IF #statAxisPosStepTransfer THEN
+	                        // 通知解拘束完成 - Notify unconstraint completion
+	                        _.Global.Data.material.Unit2.contraint.monitor.status.contraintStatus := 2;
+	                        ControlNodes.sequence.status.nextStep := #tempNextStep;
+	                    END_IF;
+	                END_REGION
+	                
+	            #STEP_120:
+	                REGION STEP_120 Add constraint
+	                    // 加拘束 - Add constraint
+	                    _.Global.Data.material.Unit2.contraint.monitor.status.contraintStatus := 3;
+	                    
+	                    //螺杆电机速度2 - Screw motor speed 2
+	                    EXCHANGETRAY_AxisTorUpdate(torqueSwitch := 0,
+	                                               speedSwitch := 1,
+	                                               axisCommandConfiguration := ControlNodes.cm3SV115_Screw1_Axis.commandConfiguration,
+	                                               velList := Config.em3Parameters.cm3Axis115.production.distanceList);
+	                    EXCHANGETRAY_AxisTorUpdate(torqueSwitch := 0,
+	                                               speedSwitch := 1,
+	                                               axisCommandConfiguration := ControlNodes.cm4SV116_Screw2_Axis.commandConfiguration,
+	                                               velList := Config.em3Parameters.cm4Axis116.production.distanceList);
+	                    
+	                    //螺杆电机动 - Screw motor movement
+	                    #statScrew_CW :=
+	                    ControlNodes.cm3SV115_Screw1_Axis.commands.jogBackward :=
+	                    ControlNodes.cm3SV115_Screw1_Axis.commands.enableTorque :=
+	                    ControlNodes.cm4SV116_Screw2_Axis.commands.jogBackward :=
+	                    ControlNodes.cm4SV116_Screw2_Axis.commands.enableTorque := TRUE;
+	                    
+	                    ControlNodes.sequence.status.nextStep := #STEP_121;
+	                END_REGION
+	                
+	            #STEP_121:
+	                REGION STEP_121 Constraint screw motor stop
+	                    // 加拘束螺杆电机停止 - Constraint screw motor stop
+	                    IF #instTimers[2].Q
+	                        AND
+	                        ControlNodes.cm6SlideCylinder1.monitoring.inWorkPos
+	                        AND
+	                        ControlNodes.cm3SV115_Screw1_Axis.monitoring.InLimitation
+	                    THEN
+	                        ControlNodes.cm3SV115_Screw1_Axis.commands.stop := true;
+	                        ControlNodes.cm3SV115_Screw1_Axis.commands.enableTorque := FALSE;
+	                    END_IF;
+	                    
+	                    IF #instTimers[2].Q
+	                        AND
+	                        ControlNodes.cm6SlideCylinder1.monitoring.inWorkPos
+	                        AND
+	                        ControlNodes.cm4SV116_Screw2_Axis.monitoring.InLimitation
+	                    THEN
+	                        ControlNodes.cm4SV116_Screw2_Axis.commands.stop := true;
+	                        ControlNodes.cm4SV116_Screw2_Axis.commands.enableTorque := FALSE;
+	                    END_IF;
+	                    
+	                    #statAxisPosStepTransfer := false;
+	                    EXCHANGETRAY_AxisRunToStopAction(
+	                                                     trig1 := ControlNodes.cm4SV116_Screw2_Axis.monitoring.statusWord.bit06_Done,
+	                                                     trig2 := ControlNodes.cm3SV115_Screw1_Axis.monitoring.statusWord.bit06_Done,
+	                                                     nextStep := 122,
+	                                                     transferStep => ControlNodes.sequence.status.nextStep,
+	                                                     transfer => #statAxisPosStepTransfer,
+	                                                     stop1 := #statCm3Stop,
+	                                                     stop2 := #statCm4Stop);
+	                    
+	                    IF #statAxisPosStepTransfer THEN
+	                        ControlNodes.sequence.status.nextStep := #tempNextStep;
+	                        ControlNodes.cm4SV116_Screw2_Axis.commands.enableTorque :=
+	                        ControlNodes.cm3SV115_Screw1_Axis.commands.enableTorque := FALSE;
+	                        _.Global.Data.material.Unit2.contraint.monitor.status.contraintStatus := 0;
+	                    END_IF;
+	                END_REGION
+	            #STEP_122:
+	                REGION Hook release return home step 122
+	                    // 勾爪松开 回待机位 / 断使能滑台退出 - Hook release return home / disable slide exit
+	                    IF NOT ControlNodes.cm6SlideCylinder1.monitoring.inHomePos THEN
+	                        ControlNodes.cm6SlideCylinder1.commands.commandHomePos := TRUE;
+	                    END_IF;
+	                    
+	                    IF NOT ControlNodes.cm8SlideCylinder2.monitoring.inHomePos THEN
+	                        ControlNodes.cm8SlideCylinder2.commands.commandHomePos := TRUE;
+	                    END_IF;
+	                    
+	                    ControlNodes.sequence.status.nextStep := #STEP_130;
+	                END_REGION
+	                
+	            #STEP_130:
+	                REGION Step_130 Complete
+	                    // 完成 - Complete
+	                    IF ControlNodes.cm7hookClawCylinder1.monitoring.inHomePos
+	                        AND
+	                        ControlNodes.cm9hookClawCylinder2.monitoring.inHomePos
+	                        AND
+	                        ControlNodes.cm6SlideCylinder1.monitoring.inHomePos
+	                        AND
+	                        ControlNodes.cm8SlideCylinder2.monitoring.inHomePos
+	                    THEN
+	                        _.Unit2.EmNodes.emRelations.EM3.deliver.constraintRoller.req.transferEnable := TRUE;
+	                        ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                    END_IF;
+	                END_REGION
+	                
+	            #STEP_IMMEDIATE_STOP:
+	                REGION STEP_901 Immediate stop
+	                    // 紧急停止 - Immediate stop
+	                    ControlNodes.cm1SV112_Constraint1_Axis.commands.stop :=
+	                    ControlNodes.cm2SV113_Constraint2_Axis.commands.stop :=
+	                    ControlNodes.cm3SV115_Screw1_Axis.commands.stop :=
+	                    ControlNodes.cm4SV116_Screw2_Axis.commands.stop := TRUE;
+	                    ControlNodes.cm3SV115_Screw1_Axis.commands.enableTorque := FALSE;
+	                    ControlNodes.cm4SV116_Screw2_Axis.commands.enableTorque := FALSE;
+	                    ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                END_REGION
+	                ;
+	                ;
+	        END_CASE;
+	    END_IF;
+	END_REGION Steps
+	
+	REGION Status updates      
+	    REGION Sequence Status
+	        // Update the status
+	        #instSequenceSCLStatus(parentReferenceDesignator := Config.em.referenceDesignator.combined,
+	                               idleStep := #STEP_IDLE,
+	                               stoppedStep := #STEP_IMMEDIATE_STOP,
+	                               setJobNumber := ControlNodes.jobs.commands.setJobNumber,
+	                               activeJobNumber => ControlNodes.jobs.status.activeJobNumber,
+	                               previousCycleJobNumber => ControlNodes.jobs.status.previousCycleJobNumber,
+	                               hmiInterface := HmiInterface.sequence,
+	                               sequence := ControlNodes.sequence);
+	    END_REGION Sequence Status
+	    
+	    REGION Update Job History
+	        // Update the History of jobs if a new job was started
+	        IF (ControlNodes.jobs.status.activeJobNumber <> ControlNodes.jobs.status.previousCycleJobNumber) THEN
+	            _.LAF_UpdateJobHistory(jobs := ControlNodes.jobs);
+	        END_IF;
+	    END_REGION
+	    
+	    REGION Output steps as String
+	        // Write outputs as strings 
+	        ControlNodes.sequence.status.currentStepSTRING := StepToString(ControlNodes.sequence.status.currentStep);
+	        ControlNodes.sequence.status.previousStepSTRING := StepToString(ControlNodes.sequence.status.previousStep);
+	        ControlNodes.sequence.status.nextStepSTRING := StepToString(ControlNodes.sequence.status.nextStep);
+	    END_REGION Output steps as String   
+	    
+	    #instTimers[0](IN := #statSlideCylMiddleSignal1,
+	                   PT := T#3s);
+	    #instTimers[1](IN := #statSlideCylMiddleSignal2,
+	                   PT := T#3s);
+	    #instTimers[2](IN := ControlNodes.sequence.status.currentStep = 121,
+	                   PT := T#6s);
+	    #statCm1bit06_Done := ControlNodes.cm1SV112_Constraint1_Axis.monitoring.statusWord.bit06_Done;
+	    #statCm2bit06_Done := ControlNodes.cm2SV113_Constraint2_Axis.monitoring.statusWord.bit06_Done;
+	    #statCm3bit06_Done := ControlNodes.cm3SV115_Screw1_Axis.monitoring.statusWord.bit06_Done;
+	    #statCm4bit06_Done := ControlNodes.cm4SV116_Screw2_Axis.monitoring.statusWord.bit06_Done;
+	END_REGION Status updates
+END_FUNCTION_BLOCK
+END_NAMESPACE
+

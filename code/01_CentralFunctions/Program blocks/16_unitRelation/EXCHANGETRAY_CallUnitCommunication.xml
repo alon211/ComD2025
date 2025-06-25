@@ -1,0 +1,355 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Document>
+  <Engineering version="V19" />
+  <SW.Blocks.FC ID="0">
+    <AttributeList>
+      <Interface><Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v5">
+  <Section Name="Input" />
+  <Section Name="Output" />
+  <Section Name="InOut" />
+  <Section Name="Temp" />
+  <Section Name="Constant" />
+  <Section Name="Return">
+    <Member Name="Ret_Val" Datatype="Void" />
+  </Section>
+</Sections></Interface>
+      <Name>EXCHANGETRAY_CallUnitCommunication</Name>
+      <Namespace />
+      <Number>75</Number>
+      <ProgrammingLanguage>LAD</ProgrammingLanguage>
+      <SetENOAutomatically>false</SetENOAutomatically>
+    </AttributeList>
+    <ObjectList>
+      <MultilingualText ID="1" CompositionName="Comment">
+        <ObjectList>
+          <MultilingualTextItem ID="2" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text>REGION BLOCK INFO HEADER
+    //===============================================================================
+    // (company)/ (c)Copyright (year)
+    //-------------------------------------------------------------------------------
+    // Title:          unit communicate
+    // Comment/Function:transfer unit data
+    // Library/Family:   (that the source is dedicated to)
+    // Author:           (sup / zhang shilong / contact)
+    // Tested with:      (test system with FW version)
+    // Engineering:      --
+    // Restrictions:     --
+    // Requirements:     --
+    //-------------------------------------------------------------------------------
+    // Change log table:
+    // Version  | Date       | Expert in charge        | Changes applied
+    //----------|------------|-------------------------|-----------------------------
+    // 01.00.00 | dd.mm.yyyy | (name of expert)        | First released version
+    //===============================================================================
+END_REGION BLOCK INFO HEADER</Text>
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="3" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="4" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="5" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+      <SW.Blocks.CompileUnit ID="6" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource />
+          <ProgrammingLanguage>LAD</ProgrammingLanguage>
+        </AttributeList>
+        <ObjectList>
+          <MultilingualText ID="7" CompositionName="Comment">
+            <ObjectList>
+              <MultilingualTextItem ID="8" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="9" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="A" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="B" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+          <MultilingualText ID="C" CompositionName="Title">
+            <ObjectList>
+              <MultilingualTextItem ID="D" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="E" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="F" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="10" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+        </ObjectList>
+      </SW.Blocks.CompileUnit>
+      <SW.Blocks.CompileUnit ID="11" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource><StructuredText xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/StructuredText/v4">
+  <Access Scope="GlobalVariable" UId="21">
+    <Symbol UId="22">
+      <Component Name="Unit3.PublishedDB" UId="23" />
+      <Token Text="." UId="24" />
+      <Component Name="ngConveyorToU2Handlingxyz" UId="25" />
+      <Token Text="." UId="26" />
+      <Component Name="recieve" UId="27" />
+      <Token Text="." UId="28" />
+      <Component Name="handlingXyz" UId="29" />
+      <Token Text="." UId="30" />
+      <Component Name="req" UId="31" />
+    </Symbol>
+  </Access>
+  <Blank UId="32" />
+  <Token Text=":=" UId="33" />
+  <Blank UId="34" />
+  <Access Scope="GlobalVariable" UId="35">
+    <Symbol UId="36">
+      <Component Name="Unit2.PublishedDB" UId="37" />
+      <Token Text="." UId="38" />
+      <Component Name="handlingXyzToNgConveyor" UId="39" />
+      <Token Text="." UId="40" />
+      <Component Name="deliver" UId="41" />
+      <Token Text="." UId="42" />
+      <Component Name="NgConvyorRoller" UId="43" />
+      <Token Text="." UId="44" />
+      <Component Name="req" UId="45" />
+    </Symbol>
+  </Access>
+  <Token Text=";" UId="46" />
+  <NewLine UId="47" />
+  <Access Scope="GlobalVariable" UId="48">
+    <Symbol UId="49">
+      <Component Name="Unit3.PublishedDB" UId="50" />
+      <Token Text="." UId="51" />
+      <Component Name="ngConveyorToU2Handlingxyz" UId="52" />
+      <Token Text="." UId="53" />
+      <Component Name="recieve" UId="54" />
+      <Token Text="." UId="55" />
+      <Component Name="handlingXyz" UId="56" />
+      <Token Text="." UId="57" />
+      <Component Name="feedback" UId="58" />
+    </Symbol>
+  </Access>
+  <Blank UId="59" />
+  <Token Text=":=" UId="60" />
+  <Blank UId="61" />
+  <Access Scope="GlobalVariable" UId="62">
+    <Symbol UId="63">
+      <Component Name="Unit2.PublishedDB" UId="64" />
+      <Token Text="." UId="65" />
+      <Component Name="handlingXyzToNgConveyor" UId="66" />
+      <Token Text="." UId="67" />
+      <Component Name="deliver" UId="68" />
+      <Token Text="." UId="69" />
+      <Component Name="NgConvyorRoller" UId="70" />
+      <Token Text="." UId="71" />
+      <Component Name="feedback" UId="72" />
+    </Symbol>
+  </Access>
+  <Token Text=";" UId="73" />
+  <NewLine UId="74" />
+  <Access Scope="GlobalVariable" UId="75">
+    <Symbol UId="76">
+      <Component Name="Unit2.PublishedDB" UId="77" />
+      <Token Text="." UId="78" />
+      <Component Name="handlingXyzToNgConveyor" UId="79" />
+      <Token Text="." UId="80" />
+      <Component Name="recieve" UId="81" />
+      <Token Text="." UId="82" />
+      <Component Name="NgConvyorRoller" UId="83" />
+      <Token Text="." UId="84" />
+      <Component Name="req" UId="85" />
+    </Symbol>
+  </Access>
+  <Blank UId="86" />
+  <Token Text=":=" UId="87" />
+  <Blank UId="88" />
+  <Access Scope="GlobalVariable" UId="89">
+    <Symbol UId="90">
+      <Component Name="Unit3.PublishedDB" UId="91" />
+      <Token Text="." UId="92" />
+      <Component Name="ngConveyorToU2Handlingxyz" UId="93" />
+      <Token Text="." UId="94" />
+      <Component Name="deliver" UId="95" />
+      <Token Text="." UId="96" />
+      <Component Name="handlingXyz" UId="97" />
+      <Token Text="." UId="98" />
+      <Component Name="req" UId="99" />
+    </Symbol>
+  </Access>
+  <Token Text=";" UId="100" />
+  <NewLine UId="101" />
+  <Access Scope="GlobalVariable" UId="102">
+    <Symbol UId="103">
+      <Component Name="Unit2.PublishedDB" UId="104" />
+      <Token Text="." UId="105" />
+      <Component Name="handlingXyzToNgConveyor" UId="106" />
+      <Token Text="." UId="107" />
+      <Component Name="recieve" UId="108" />
+      <Token Text="." UId="109" />
+      <Component Name="NgConvyorRoller" UId="110" />
+      <Token Text="." UId="111" />
+      <Component Name="feedback" UId="112" />
+    </Symbol>
+  </Access>
+  <Blank UId="113" />
+  <Token Text=":=" UId="114" />
+  <Blank UId="115" />
+  <Access Scope="GlobalVariable" UId="116">
+    <Symbol UId="117">
+      <Component Name="Unit3.PublishedDB" UId="118" />
+      <Token Text="." UId="119" />
+      <Component Name="ngConveyorToU2Handlingxyz" UId="120" />
+      <Token Text="." UId="121" />
+      <Component Name="deliver" UId="122" />
+      <Token Text="." UId="123" />
+      <Component Name="handlingXyz" UId="124" />
+      <Token Text="." UId="125" />
+      <Component Name="feedback" UId="126" />
+    </Symbol>
+  </Access>
+  <Token Text=";" UId="127" />
+  <NewLine Num="2" UId="128" />
+  <LineComment UId="129">
+    <Text UId="130">_.Unit3.PublishedDB.ngConveyorToU1Handlingxyz.recieve.handlingXyz.req := _.Unit1.PublishedDB.handlingXyzToNgConveyor.deliver.NgConvyorRoller.req;</Text>
+  </LineComment>
+</StructuredText></NetworkSource>
+          <ProgrammingLanguage>SCL</ProgrammingLanguage>
+        </AttributeList>
+        <ObjectList>
+          <MultilingualText ID="12" CompositionName="Comment">
+            <ObjectList>
+              <MultilingualTextItem ID="13" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="14" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="15" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="16" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+          <MultilingualText ID="17" CompositionName="Title">
+            <ObjectList>
+              <MultilingualTextItem ID="18" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text>U3与U2交互</Text>
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="19" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="1A" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="1B" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+        </ObjectList>
+      </SW.Blocks.CompileUnit>
+      <MultilingualText ID="1C" CompositionName="Title">
+        <ObjectList>
+          <MultilingualTextItem ID="1D" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="1E" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="1F" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="20" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+    </ObjectList>
+  </SW.Blocks.FC>
+</Document>

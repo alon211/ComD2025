@@ -1,0 +1,235 @@
+﻿FUNCTION_BLOCK "LAF_ManageBitAlarms"
+{ S7_Optimized_Access := 'TRUE' ; Published := 'TRUE' }
+VERSION : 0.1
+   VAR_OUTPUT 
+      parentAlarmDB : "LAF_typeAlarms";
+      alarmDB : "LAF_typeAlarms";
+      hmiInterfaceDB : "LAF_typeAlarms";
+   END_VAR
+
+   VAR_IN_OUT 
+      commandsToUnit : "LUC_typeStateCommands";   // Feedback to the unit
+      errorNoReaction : Array[*] of Bool;   // Error without further impact
+      errorAbort : Array[*] of Bool;   // Error which aborts the whole Unit
+      errorStop : Array[*] of Bool;   // Error which stops just the whole Unit
+      warningNoReaction : Array[*] of Bool;   // Warning without further impact
+      warningHold : Array[*] of Bool;   // Warning which holds the whole Unit
+      warningSuspend : Array[*] of Bool;   // Warning which suspends the whole Unit
+      information : Array[*] of Bool;   // Informations of the EM
+      criteriaAnalysis : Array[*] of Bool;   // CriteriaAnalysis of the EM
+   END_VAR
+
+   VAR 
+      statFirstCall : Bool := true;
+      statLowerBound : Bool;
+      statUpperBound : Bool;
+      bounds : Struct
+         errorNoReaction : Struct
+            lower : DInt;
+            upper : DInt;
+         END_STRUCT;
+         errorAbort : Struct
+            lower : DInt;
+            upper : DInt;
+         END_STRUCT;
+         errorStop : Struct
+            lower : DInt;
+            upper : DInt;
+         END_STRUCT;
+         warningNoReaction : Struct
+            lower : DInt;
+            upper : DInt;
+         END_STRUCT;
+         warningHold : Struct
+            lower : DInt;
+            upper : DInt;
+         END_STRUCT;
+         warningSuspend : Struct
+            lower : DInt;
+            upper : DInt;
+         END_STRUCT;
+         information : Struct
+            lower : DInt;
+            upper : DInt;
+         END_STRUCT;
+         criteriaAnalysis : Struct
+            lower : DInt;
+            upper : DInt;
+         END_STRUCT;
+      END_STRUCT;
+   END_VAR
+
+   VAR_TEMP 
+      i : DInt;   // loop variable
+   END_VAR
+
+   VAR CONSTANT 
+      ARRAY_DIMENSION : UDInt := 1;   // Dimension of array*
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // Siemens AG / (c)Copyright 2024
+	    //-------------------------------------------------------------------------------
+	    // Title:            LAF_ManageBitAlarms
+	    // Comment/Function: This function manages the Bitalarms of one EM
+	    // Library/Family:   LAF - Library of Automation Framework
+	    // Author:           Siemens Digital Industries
+	    // Tested with:      S7-PLCSIM Advanced V6.0 
+	    // Engineering:      TIA Portal V19
+	    // Restrictions:     -
+	    // Requirements:     -
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 21.08.2024 | SIMATIC Systems Support | First released version
+	    // 01.02.00 | 30.09.2024 | SIMATIC Systems Support | Block information properties updated
+	    // 01.02.02 | 10.10.2024 | SIMATIC Systems Support | statFirstCall default Value changed
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(/*
+	    The block reads the Alarms DB and evaluates if an alarm has been triggered and sets the commands to the unit.
+	    Additionally, the monitoring bits for the HMI, the parent Alarms DB and the own status bits of the Alarms DB are written.
+	*/)
+	END_REGION DESCRIPTION
+	
+	REGION INITIALIZATION
+	    
+	    IF #statFirstCall THEN
+	        
+	        REGION errorNoReaction
+	            // Detect lower and upper bound of the array for further processing
+	            #bounds.errorNoReaction.lower := LOWER_BOUND(ARR := #errorNoReaction, DIM := #ARRAY_DIMENSION);
+	            #bounds.errorNoReaction.upper := UPPER_BOUND(ARR := #errorNoReaction, DIM := #ARRAY_DIMENSION);
+	        END_REGION
+	        
+	        REGION errorAbort
+	            // Detect lower and upper bound of the array for further processing
+	            #bounds.errorAbort.lower := LOWER_BOUND(ARR := #errorAbort, DIM := #ARRAY_DIMENSION);
+	            #bounds.errorAbort.upper := UPPER_BOUND(ARR := #errorAbort, DIM := #ARRAY_DIMENSION);
+	        END_REGION
+	        
+	        REGION errorStop
+	            // Detect lower and upper bound of the array for further processing
+	            #bounds.errorStop.lower := LOWER_BOUND(ARR := #errorStop, DIM := #ARRAY_DIMENSION);
+	            #bounds.errorStop.upper := UPPER_BOUND(ARR := #errorStop, DIM := #ARRAY_DIMENSION);
+	        END_REGION
+	        
+	        REGION warningNoReaction
+	            // Detect lower and upper bound of the array for further processing
+	            #bounds.warningNoReaction.lower := LOWER_BOUND(ARR := #warningNoReaction, DIM := #ARRAY_DIMENSION);
+	            #bounds.warningNoReaction.upper := UPPER_BOUND(ARR := #warningNoReaction, DIM := #ARRAY_DIMENSION);
+	        END_REGION
+	        
+	        REGION warningHold
+	            // Detect lower and upper bound of the array for further processing
+	            #bounds.warningHold.lower := LOWER_BOUND(ARR := #warningHold, DIM := #ARRAY_DIMENSION);
+	            #bounds.warningHold.upper := UPPER_BOUND(ARR := #warningHold, DIM := #ARRAY_DIMENSION);
+	        END_REGION
+	        
+	        REGION warningSuspend
+	            // Detect lower and upper bound of the array for further processing
+	            #bounds.warningSuspend.lower := LOWER_BOUND(ARR := #warningSuspend, DIM := #ARRAY_DIMENSION);
+	            #bounds.warningSuspend.upper := UPPER_BOUND(ARR := #warningSuspend, DIM := #ARRAY_DIMENSION);
+	        END_REGION
+	        
+	        REGION information
+	            // Detect lower and upper bound of the array for further processing
+	            #bounds.information.lower := LOWER_BOUND(ARR := #information, DIM := #ARRAY_DIMENSION);
+	            #bounds.information.upper := UPPER_BOUND(ARR := #information, DIM := #ARRAY_DIMENSION);
+	        END_REGION
+	        
+	        REGION criteriaAnalysis
+	            // Detect lower and upper bound of the array for further processing
+	            #bounds.criteriaAnalysis.lower := LOWER_BOUND(ARR := #criteriaAnalysis, DIM := #ARRAY_DIMENSION);
+	            #bounds.criteriaAnalysis.upper := UPPER_BOUND(ARR := #criteriaAnalysis, DIM := #ARRAY_DIMENSION);
+	        END_REGION
+	        
+	        #statFirstCall := FALSE;
+	    ELSE
+	        // Initialize the Command and Alarm Bits
+	        #commandsToUnit.reset := #commandsToUnit.start := #commandsToUnit.stop := #commandsToUnit.hold := #commandsToUnit.unhold := #commandsToUnit.suspend := #commandsToUnit.unsuspend := #commandsToUnit.abort := #commandsToUnit.clear := #commandsToUnit.complete := FALSE;
+	        #parentAlarmDB.error := #parentAlarmDB.warning := #parentAlarmDB.info := #alarmDB.error := #alarmDB.warning := #alarmDB.info := #hmiInterfaceDB.error := #hmiInterfaceDB.warning := #hmiInterfaceDB.info := FALSE;
+	    END_IF;
+	    
+	END_REGION INITIALIZATION
+	
+	REGION EVALUATION
+	    
+	    // Loop through the alarm DB and evaulate the commands to the Unit
+	    REGION errorNoReaction
+	        FOR #i := #bounds.errorNoReaction.lower TO #bounds.errorNoReaction.upper DO
+	            IF (#errorNoReaction[#i]) THEN
+	                #parentAlarmDB.error := #alarmDB.error := #hmiInterfaceDB.error := TRUE;
+	            END_IF;
+	        END_FOR;
+	    END_REGION
+	    
+	    REGION errorAbort
+	        FOR #i := #bounds.errorAbort.lower TO #bounds.errorAbort.upper DO
+	            IF (#errorAbort[#i]) THEN
+	                #parentAlarmDB.error := #alarmDB.error := #hmiInterfaceDB.error := TRUE;
+	                #commandsToUnit.abort := TRUE;
+	            END_IF;
+	        END_FOR;
+	    END_REGION
+	    
+	    REGION errorStop
+	        FOR #i := #bounds.errorStop.lower TO #bounds.errorStop.upper DO
+	            IF (#errorStop[#i]) THEN
+	                #parentAlarmDB.error := #alarmDB.error := #hmiInterfaceDB.error := TRUE;
+	                #commandsToUnit.stop := TRUE;
+	            END_IF;
+	        END_FOR;
+	    END_REGION
+	    
+	    REGION warningNoReaction
+	        FOR #i := #bounds.warningNoReaction.lower TO #bounds.warningNoReaction.upper DO
+	            IF (#warningNoReaction[#i]) THEN
+	                #parentAlarmDB.warning := #alarmDB.warning := #hmiInterfaceDB.warning := TRUE;
+	            END_IF;
+	        END_FOR;
+	    END_REGION
+	    
+	    REGION warningHold
+	        FOR #i := #bounds.warningHold.lower TO #bounds.warningHold.upper DO
+	            IF (#warningHold[#i]) THEN
+	                #parentAlarmDB.warning := #alarmDB.warning := #hmiInterfaceDB.warning := TRUE;
+	                #commandsToUnit.hold := TRUE;
+	            END_IF;
+	        END_FOR;
+	    END_REGION
+	    
+	    REGION warningSuspend
+	        FOR #i := #bounds.warningSuspend.lower TO #bounds.warningSuspend.upper DO
+	            IF (#warningSuspend[#i]) THEN
+	                #parentAlarmDB.warning := #alarmDB.warning := #hmiInterfaceDB.warning := TRUE;
+	                #commandsToUnit.suspend := TRUE;
+	            END_IF;
+	        END_FOR;
+	    END_REGION
+	    
+	    REGION information
+	        FOR #i := #bounds.information.lower TO #bounds.information.upper DO
+	            IF (#information[#i]) THEN
+	                #parentAlarmDB.info := #alarmDB.info := #hmiInterfaceDB.info := TRUE;
+	            END_IF;
+	        END_FOR;
+	    END_REGION
+	    
+	    REGION criteriaAnalysis
+	        FOR #i := #bounds.criteriaAnalysis.lower TO #bounds.criteriaAnalysis.upper DO
+	            IF (#criteriaAnalysis[#i]) THEN
+	                #parentAlarmDB.info := #alarmDB.info := #hmiInterfaceDB.info := TRUE;
+	            END_IF;
+	        END_FOR;
+	    END_REGION
+	    
+	END_REGION EVALUATION
+END_FUNCTION_BLOCK
+

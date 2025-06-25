@@ -1,0 +1,29 @@
+﻿NAMESPACE Unit2.Em6
+FUNCTION_BLOCK Simulation
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+VERSION : 0.1
+   VAR 
+      scenario { ExternalWritable := 'False'} : Int;
+      singleStep { ExternalWritable := 'False'} : Bool;
+      nextStep { ExternalWritable := 'False'} : Bool;
+      start { ExternalWritable := 'False'} : Bool;
+      stop { ExternalWritable := 'False'} : Bool;
+      stepCounter { ExternalWritable := 'False'} : Int;
+      nextStepCounter { ExternalWritable := 'False'} : Int;
+      timer1 {InstructionName := 'TON_TIME'; LibVersion := '1.0'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : TON_TIME;
+      instR_TRIG {InstructionName := 'R_TRIG'; LibVersion := '1.0'; ExternalWritable := 'False'} : R_TRIG;
+      timer1_PT { ExternalWritable := 'False'; S7_SetPoint := 'True'} : Time;
+      lstPosAbsoluteBusy { ExternalWritable := 'False'} : Bool;
+      I { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;
+      timer1_in { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      lstStart { ExternalWritable := 'False'} : Bool;
+   END_VAR
+
+
+BEGIN
+	Config.em6Parameters.cm1Vfd207.general.simActive :=
+	HmiInterface.cm2SingalTM.configuration.simActive := _.Global.Data.general.activateSimulation;
+	
+END_FUNCTION_BLOCK
+END_NAMESPACE
+

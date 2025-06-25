@@ -1,0 +1,726 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Document>
+  <Engineering version="V19" />
+  <SW.Blocks.FC ID="0">
+    <AttributeList>
+      <HeaderAuthor>Siemens Digital Industries</HeaderAuthor>
+      <Interface><Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v5">
+  <Section Name="Input" />
+  <Section Name="Output" />
+  <Section Name="InOut" />
+  <Section Name="Temp" />
+  <Section Name="Constant" />
+  <Section Name="Return">
+    <Member Name="Ret_Val" Datatype="Void">
+      <Comment>
+        <MultiLanguageText Lang="en-US">Ret_Val</MultiLanguageText>
+        <MultiLanguageText Lang="de-DE">Ret_Val</MultiLanguageText>
+      </Comment>
+    </Member>
+  </Section>
+</Sections></Interface>
+      <IsIECCheckEnabled>true</IsIECCheckEnabled>
+      <Name>CallDiagnostic</Name>
+      <Namespace />
+      <Number>16</Number>
+      <ProgrammingLanguage>LAD</ProgrammingLanguage>
+      <SetENOAutomatically>true</SetENOAutomatically>
+    </AttributeList>
+    <ObjectList>
+      <MultilingualText ID="1" CompositionName="Comment">
+        <ObjectList>
+          <MultilingualTextItem ID="2" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text>Call of diagnostic blocks</Text>
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="3" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="4" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="5" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text>Aufruf: Diagnose </Text>
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+      <SW.Blocks.CompileUnit ID="6" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource><FlgNet xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/FlgNet/v5">
+  <Parts>
+    <Access Scope="TypedConstant" UId="21">
+      <Constant>
+        <ConstantValue>WSTRING#'PN_DIAGNOSTIC'</ConstantValue>
+      </Constant>
+    </Access>
+    <Access Scope="GlobalConstant" UId="22">
+      <Constant Name="TEXT_LIST_ID_PN_DEV_DIAG(1)" />
+    </Access>
+    <Access Scope="GlobalConstant" UId="23">
+      <Constant Name="Local~PROFINET_IO-System" />
+    </Access>
+    <Access Scope="GlobalVariable" UId="24">
+      <Symbol>
+        <Component Name="Global.Data" />
+        <Component Name="general" />
+        <Component Name="firstCycle" />
+      </Symbol>
+    </Access>
+    <Access Scope="GlobalConstant" UId="25">
+      <Constant Name="MAX_NO_OF_DEVICES" />
+    </Access>
+    <Access Scope="GlobalConstant" UId="26">
+      <Constant Name="MAX_NO_OF_MODULES" />
+    </Access>
+    <Access Scope="GlobalVariable" UId="27">
+      <Symbol>
+        <Component Name="Global.Data" />
+        <Component Name="general" />
+        <Component Name="acknowledge" />
+      </Symbol>
+    </Access>
+    <Access Scope="GlobalVariable" UId="28">
+      <Symbol>
+        <Component Name="PNDevDiagInterface" />
+      </Symbol>
+    </Access>
+    <Call UId="29">
+      <CallInfo Name="LAF_ProfinetDevDiag" BlockType="FB">
+        <Instance Scope="GlobalVariable" UId="30">
+          <Component Name="InstLAF_ProfinetDeviceDiag" />
+        </Instance>
+        <Parameter Name="plantIdentifier" Section="Input" Type="WString[#MAX_CHAR]" />
+        <Parameter Name="textListId" Section="Input" Type="Int" />
+        <Parameter Name="localProfinetSystem" Section="Input" Type="HW_IOSYSTEM" />
+        <Parameter Name="firstCycle" Section="Input" Type="Bool" />
+        <Parameter Name="maxDevicesDiag" Section="Input" Type="DInt" />
+        <Parameter Name="maxModulesDiag" Section="Input" Type="DInt" />
+        <Parameter Name="ackAlarms" Section="Input" Type="Bool" />
+        <Parameter Name="hideAlarmAll" Section="Input" Type="Bool" />
+        <Parameter Name="hideAlarmMask" Section="Input" Type="Word" />
+        <Parameter Name="generalAlarm" Section="Output" Type="Bool" />
+        <Parameter Name="deviceFaulty" Section="Output" Type="Bool" />
+        <Parameter Name="deviceProblem" Section="Output" Type="Bool" />
+        <Parameter Name="deviceDeactivated" Section="Output" Type="Bool" />
+        <Parameter Name="deviceNotPresent" Section="Output" Type="Bool" />
+        <Parameter Name="interfaceDevDiag" Section="InOut" Type="&quot;LAF_typeDevDiagInterface&quot;" />
+      </CallInfo>
+    </Call>
+  </Parts>
+  <Wires>
+    <Wire UId="38">
+      <Powerrail />
+      <NameCon UId="29" Name="en" />
+    </Wire>
+    <Wire UId="39">
+      <IdentCon UId="21" />
+      <NameCon UId="29" Name="plantIdentifier" />
+    </Wire>
+    <Wire UId="40">
+      <IdentCon UId="22" />
+      <NameCon UId="29" Name="textListId" />
+    </Wire>
+    <Wire UId="41">
+      <IdentCon UId="23" />
+      <NameCon UId="29" Name="localProfinetSystem" />
+    </Wire>
+    <Wire UId="42">
+      <IdentCon UId="24" />
+      <NameCon UId="29" Name="firstCycle" />
+    </Wire>
+    <Wire UId="43">
+      <IdentCon UId="25" />
+      <NameCon UId="29" Name="maxDevicesDiag" />
+    </Wire>
+    <Wire UId="44">
+      <IdentCon UId="26" />
+      <NameCon UId="29" Name="maxModulesDiag" />
+    </Wire>
+    <Wire UId="45">
+      <IdentCon UId="27" />
+      <NameCon UId="29" Name="ackAlarms" />
+    </Wire>
+    <Wire UId="46">
+      <OpenCon UId="31" />
+      <NameCon UId="29" Name="hideAlarmAll" />
+    </Wire>
+    <Wire UId="47">
+      <OpenCon UId="32" />
+      <NameCon UId="29" Name="hideAlarmMask" />
+    </Wire>
+    <Wire UId="48">
+      <IdentCon UId="28" />
+      <NameCon UId="29" Name="interfaceDevDiag" />
+    </Wire>
+    <Wire UId="49">
+      <NameCon UId="29" Name="generalAlarm" />
+      <OpenCon UId="33" />
+    </Wire>
+    <Wire UId="50">
+      <NameCon UId="29" Name="deviceFaulty" />
+      <OpenCon UId="34" />
+    </Wire>
+    <Wire UId="51">
+      <NameCon UId="29" Name="deviceProblem" />
+      <OpenCon UId="35" />
+    </Wire>
+    <Wire UId="52">
+      <NameCon UId="29" Name="deviceDeactivated" />
+      <OpenCon UId="36" />
+    </Wire>
+    <Wire UId="53">
+      <NameCon UId="29" Name="deviceNotPresent" />
+      <OpenCon UId="37" />
+    </Wire>
+  </Wires>
+</FlgNet></NetworkSource>
+          <ProgrammingLanguage>LAD</ProgrammingLanguage>
+        </AttributeList>
+        <ObjectList>
+          <MultilingualText ID="7" CompositionName="Comment">
+            <ObjectList>
+              <MultilingualTextItem ID="8" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text>For diagnostics of all profinet devices of this PLC
+</Text>
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="9" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="A" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="B" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+          <MultilingualText ID="C" CompositionName="Title">
+            <ObjectList>
+              <MultilingualTextItem ID="D" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text>Call Profinet Devices Diagnostics</Text>
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="E" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="F" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="10" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+        </ObjectList>
+      </SW.Blocks.CompileUnit>
+      <SW.Blocks.CompileUnit ID="11" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource><FlgNet xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/FlgNet/v5">
+  <Parts>
+    <Call UId="21">
+      <CallInfo Name="CallInterfaceSignals" BlockType="FB">
+        <Instance Scope="GlobalVariable" UId="22">
+          <Component Name="InstCallInterfaceSignals" />
+        </Instance>
+      </CallInfo>
+    </Call>
+  </Parts>
+  <Wires>
+    <Wire UId="23">
+      <Powerrail />
+      <NameCon UId="21" Name="en" />
+    </Wire>
+  </Wires>
+</FlgNet></NetworkSource>
+          <ProgrammingLanguage>LAD</ProgrammingLanguage>
+        </AttributeList>
+        <ObjectList>
+          <MultilingualText ID="12" CompositionName="Comment">
+            <ObjectList>
+              <MultilingualTextItem ID="13" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text>Call the interface bool blocks to show boolean signals on the HMI</Text>
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="14" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="15" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="16" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+          <MultilingualText ID="17" CompositionName="Title">
+            <ObjectList>
+              <MultilingualTextItem ID="18" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text>Call Bool Interface Signals Diagnostics </Text>
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="19" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="1A" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="1B" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+        </ObjectList>
+      </SW.Blocks.CompileUnit>
+      <SW.Blocks.CompileUnit ID="1C" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource><FlgNet xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/FlgNet/v5">
+  <Parts>
+    <Access Scope="LiteralConstant" UId="21">
+      <Constant>
+        <ConstantType>Bool</ConstantType>
+        <ConstantValue>TRUE</ConstantValue>
+      </Constant>
+    </Access>
+    <Access Scope="GlobalVariable" UId="22">
+      <Symbol>
+        <Component Name="DriveDiagConfig" />
+        <Component Name="driveObjects" />
+      </Symbol>
+    </Access>
+    <Access Scope="GlobalVariable" UId="23">
+      <Symbol>
+        <Component Name="DriveDiagInterfaceHmi" />
+        <Component Name="diagStatus" />
+      </Symbol>
+    </Access>
+    <Access Scope="LiteralConstant" UId="24">
+      <Constant>
+        <ConstantType>Bool</ConstantType>
+        <ConstantValue>TRUE</ConstantValue>
+      </Constant>
+    </Access>
+    <Access Scope="GlobalVariable" UId="25">
+      <Symbol>
+        <Component Name="DriveDiagConfig" />
+        <Component Name="driveObjects" />
+      </Symbol>
+    </Access>
+    <Access Scope="GlobalVariable" UId="26">
+      <Symbol>
+        <Component Name="DriveDiagInterfaceHmi" />
+        <Component Name="diagStatus" />
+      </Symbol>
+    </Access>
+    <Access Scope="LiteralConstant" UId="27">
+      <Constant>
+        <ConstantType>Bool</ConstantType>
+        <ConstantValue>TRUE</ConstantValue>
+      </Constant>
+    </Access>
+    <Access Scope="GlobalVariable" UId="28">
+      <Symbol>
+        <Component Name="DriveDiagConfig" />
+        <Component Name="driveObjects" />
+      </Symbol>
+    </Access>
+    <Access Scope="GlobalVariable" UId="29">
+      <Symbol>
+        <Component Name="DriveDiagInterfaceHmi" />
+        <Component Name="diagStatus" />
+      </Symbol>
+    </Access>
+    <Access Scope="LiteralConstant" UId="30">
+      <Constant>
+        <ConstantType>Bool</ConstantType>
+        <ConstantValue>TRUE</ConstantValue>
+      </Constant>
+    </Access>
+    <Access Scope="GlobalVariable" UId="31">
+      <Symbol>
+        <Component Name="DriveDiagConfig" />
+        <Component Name="driveObjects" />
+      </Symbol>
+    </Access>
+    <Access Scope="GlobalVariable" UId="32">
+      <Symbol>
+        <Component Name="DriveDiagInterfaceHmi" />
+        <Component Name="diagStatus" />
+      </Symbol>
+    </Access>
+    <Call UId="33">
+      <CallInfo Name="LAF_GetAxisStatus" BlockType="FB">
+        <Instance Scope="GlobalVariable" UId="34">
+          <Component Name="InstLAF_GetAxisStatus" />
+        </Instance>
+        <Parameter Name="enable" Section="Input" Type="Bool" />
+        <Parameter Name="valid" Section="Output" Type="Bool" />
+        <Parameter Name="busy" Section="Output" Type="Bool" />
+        <Parameter Name="error" Section="Output" Type="Bool" />
+        <Parameter Name="status" Section="Output" Type="Word" />
+        <Parameter Name="diagnostics" Section="Output" Type="&quot;LAF_typeDiagnostics&quot;" />
+        <Parameter Name="configuration" Section="InOut" Type="Array[*] of &quot;LAF_typeDriveDiagConfig&quot;" />
+        <Parameter Name="moduleInterface" Section="InOut" Type="&quot;LAF_typeDriveDiagInterfaceHmi&quot;" />
+      </CallInfo>
+    </Call>
+    <Call UId="35">
+      <CallInfo Name="LAF_GetSinaStatus" BlockType="FB">
+        <Instance Scope="GlobalVariable" UId="36">
+          <Component Name="InstLAF_GetSinaStatus" />
+        </Instance>
+        <Parameter Name="enable" Section="Input" Type="Bool" />
+        <Parameter Name="valid" Section="Output" Type="Bool" />
+        <Parameter Name="busy" Section="Output" Type="Bool" />
+        <Parameter Name="error" Section="Output" Type="Bool" />
+        <Parameter Name="status" Section="Output" Type="Word" />
+        <Parameter Name="diagnostics" Section="Output" Type="&quot;LAF_typeDiagnostics&quot;" />
+        <Parameter Name="statusWriteRecord" Section="Output" Type="DWord" />
+        <Parameter Name="statusReadRecord" Section="Output" Type="DWord" />
+        <Parameter Name="configuration" Section="InOut" Type="Array[*] of &quot;LAF_typeDriveDiagConfig&quot;" />
+        <Parameter Name="moduleInterface" Section="InOut" Type="&quot;LAF_typeDriveDiagInterfaceHmi&quot;" />
+      </CallInfo>
+    </Call>
+    <Call UId="37">
+      <CallInfo Name="LAF_GetSinaAlarms" BlockType="FB">
+        <Instance Scope="GlobalVariable" UId="38">
+          <Component Name="InstLAF_GetSinaAlarms" />
+        </Instance>
+        <Parameter Name="enable" Section="Input" Type="Bool" />
+        <Parameter Name="valid" Section="Output" Type="Bool" />
+        <Parameter Name="busy" Section="Output" Type="Bool" />
+        <Parameter Name="error" Section="Output" Type="Bool" />
+        <Parameter Name="status" Section="Output" Type="Word" />
+        <Parameter Name="diagnostics" Section="Output" Type="&quot;LAF_typeDiagnostics&quot;" />
+        <Parameter Name="statusWriteRecord" Section="Output" Type="DWord" />
+        <Parameter Name="statusReadRecord" Section="Output" Type="DWord" />
+        <Parameter Name="configuration" Section="InOut" Type="Array[*] of &quot;LAF_typeDriveDiagConfig&quot;" />
+        <Parameter Name="moduleInterface" Section="InOut" Type="&quot;LAF_typeDriveDiagInterfaceHmi&quot;" />
+      </CallInfo>
+    </Call>
+    <Call UId="39">
+      <CallInfo Name="LAF_GetSinaEpos" BlockType="FB">
+        <Instance Scope="GlobalVariable" UId="40">
+          <Component Name="InstLAF_GetSinaEpos" />
+        </Instance>
+        <Parameter Name="enable" Section="Input" Type="Bool" />
+        <Parameter Name="valid" Section="Output" Type="Bool" />
+        <Parameter Name="busy" Section="Output" Type="Bool" />
+        <Parameter Name="error" Section="Output" Type="Bool" />
+        <Parameter Name="status" Section="Output" Type="Word" />
+        <Parameter Name="diagnostics" Section="Output" Type="&quot;LAF_typeDiagnostics&quot;" />
+        <Parameter Name="statusWriteRecord" Section="Output" Type="DWord" />
+        <Parameter Name="statusReadRecord" Section="Output" Type="DWord" />
+        <Parameter Name="configuration" Section="InOut" Type="Array[*] of &quot;LAF_typeDriveDiagConfig&quot;" />
+        <Parameter Name="moduleInterface" Section="InOut" Type="&quot;LAF_typeDriveDiagInterfaceHmi&quot;" />
+      </CallInfo>
+    </Call>
+  </Parts>
+  <Wires>
+    <Wire UId="67">
+      <Powerrail />
+      <NameCon UId="33" Name="en" />
+      <NameCon UId="35" Name="en" />
+      <NameCon UId="37" Name="en" />
+      <NameCon UId="39" Name="en" />
+    </Wire>
+    <Wire UId="68">
+      <IdentCon UId="21" />
+      <NameCon UId="33" Name="enable" />
+    </Wire>
+    <Wire UId="69">
+      <IdentCon UId="22" />
+      <NameCon UId="33" Name="configuration" />
+    </Wire>
+    <Wire UId="70">
+      <IdentCon UId="23" />
+      <NameCon UId="33" Name="moduleInterface" />
+    </Wire>
+    <Wire UId="71">
+      <NameCon UId="33" Name="valid" />
+      <OpenCon UId="41" />
+    </Wire>
+    <Wire UId="72">
+      <NameCon UId="33" Name="busy" />
+      <OpenCon UId="42" />
+    </Wire>
+    <Wire UId="73">
+      <NameCon UId="33" Name="error" />
+      <OpenCon UId="43" />
+    </Wire>
+    <Wire UId="74">
+      <NameCon UId="33" Name="status" />
+      <OpenCon UId="44" />
+    </Wire>
+    <Wire UId="75">
+      <NameCon UId="33" Name="diagnostics" />
+      <OpenCon UId="45" />
+    </Wire>
+    <Wire UId="76">
+      <IdentCon UId="24" />
+      <NameCon UId="35" Name="enable" />
+    </Wire>
+    <Wire UId="77">
+      <IdentCon UId="25" />
+      <NameCon UId="35" Name="configuration" />
+    </Wire>
+    <Wire UId="78">
+      <IdentCon UId="26" />
+      <NameCon UId="35" Name="moduleInterface" />
+    </Wire>
+    <Wire UId="79">
+      <NameCon UId="35" Name="valid" />
+      <OpenCon UId="46" />
+    </Wire>
+    <Wire UId="80">
+      <NameCon UId="35" Name="busy" />
+      <OpenCon UId="47" />
+    </Wire>
+    <Wire UId="81">
+      <NameCon UId="35" Name="error" />
+      <OpenCon UId="48" />
+    </Wire>
+    <Wire UId="82">
+      <NameCon UId="35" Name="status" />
+      <OpenCon UId="49" />
+    </Wire>
+    <Wire UId="83">
+      <NameCon UId="35" Name="diagnostics" />
+      <OpenCon UId="50" />
+    </Wire>
+    <Wire UId="84">
+      <NameCon UId="35" Name="statusWriteRecord" />
+      <OpenCon UId="51" />
+    </Wire>
+    <Wire UId="85">
+      <NameCon UId="35" Name="statusReadRecord" />
+      <OpenCon UId="52" />
+    </Wire>
+    <Wire UId="86">
+      <IdentCon UId="27" />
+      <NameCon UId="37" Name="enable" />
+    </Wire>
+    <Wire UId="87">
+      <IdentCon UId="28" />
+      <NameCon UId="37" Name="configuration" />
+    </Wire>
+    <Wire UId="88">
+      <IdentCon UId="29" />
+      <NameCon UId="37" Name="moduleInterface" />
+    </Wire>
+    <Wire UId="89">
+      <NameCon UId="37" Name="valid" />
+      <OpenCon UId="53" />
+    </Wire>
+    <Wire UId="90">
+      <NameCon UId="37" Name="busy" />
+      <OpenCon UId="54" />
+    </Wire>
+    <Wire UId="91">
+      <NameCon UId="37" Name="error" />
+      <OpenCon UId="55" />
+    </Wire>
+    <Wire UId="92">
+      <NameCon UId="37" Name="status" />
+      <OpenCon UId="56" />
+    </Wire>
+    <Wire UId="93">
+      <NameCon UId="37" Name="diagnostics" />
+      <OpenCon UId="57" />
+    </Wire>
+    <Wire UId="94">
+      <NameCon UId="37" Name="statusWriteRecord" />
+      <OpenCon UId="58" />
+    </Wire>
+    <Wire UId="95">
+      <NameCon UId="37" Name="statusReadRecord" />
+      <OpenCon UId="59" />
+    </Wire>
+    <Wire UId="96">
+      <IdentCon UId="30" />
+      <NameCon UId="39" Name="enable" />
+    </Wire>
+    <Wire UId="97">
+      <IdentCon UId="31" />
+      <NameCon UId="39" Name="configuration" />
+    </Wire>
+    <Wire UId="98">
+      <IdentCon UId="32" />
+      <NameCon UId="39" Name="moduleInterface" />
+    </Wire>
+    <Wire UId="99">
+      <NameCon UId="39" Name="valid" />
+      <OpenCon UId="60" />
+    </Wire>
+    <Wire UId="100">
+      <NameCon UId="39" Name="busy" />
+      <OpenCon UId="61" />
+    </Wire>
+    <Wire UId="101">
+      <NameCon UId="39" Name="error" />
+      <OpenCon UId="62" />
+    </Wire>
+    <Wire UId="102">
+      <NameCon UId="39" Name="status" />
+      <OpenCon UId="63" />
+    </Wire>
+    <Wire UId="103">
+      <NameCon UId="39" Name="diagnostics" />
+      <OpenCon UId="64" />
+    </Wire>
+    <Wire UId="104">
+      <NameCon UId="39" Name="statusWriteRecord" />
+      <OpenCon UId="65" />
+    </Wire>
+    <Wire UId="105">
+      <NameCon UId="39" Name="statusReadRecord" />
+      <OpenCon UId="66" />
+    </Wire>
+  </Wires>
+</FlgNet></NetworkSource>
+          <ProgrammingLanguage>LAD</ProgrammingLanguage>
+        </AttributeList>
+        <ObjectList>
+          <MultilingualText ID="1D" CompositionName="Comment">
+            <ObjectList>
+              <MultilingualTextItem ID="1E" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="1F" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="20" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="21" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+          <MultilingualText ID="22" CompositionName="Title">
+            <ObjectList>
+              <MultilingualTextItem ID="23" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text>Call Drives Diagnostics</Text>
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="24" CompositionName="Items">
+                <AttributeList>
+                  <Culture>fr-FR</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="25" CompositionName="Items">
+                <AttributeList>
+                  <Culture>zh-CN</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+              <MultilingualTextItem ID="26" CompositionName="Items">
+                <AttributeList>
+                  <Culture>de-DE</Culture>
+                  <Text />
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+        </ObjectList>
+      </SW.Blocks.CompileUnit>
+      <MultilingualText ID="27" CompositionName="Title">
+        <ObjectList>
+          <MultilingualTextItem ID="28" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text>Diagnostics</Text>
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="29" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="2A" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="2B" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text>Diagnose</Text>
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+    </ObjectList>
+  </SW.Blocks.FC>
+</Document>

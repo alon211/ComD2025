@@ -1,0 +1,973 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Document>
+  <Engineering version="V19" />
+  <SW.Types.PlcStruct ID="0">
+    <AttributeList>
+      <Access>Published</Access>
+      <Interface><Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v5">
+  <Section Name="None">
+    <Member Name="U2Em2Cm5" Datatype="&quot;type_teachPara_axis&quot;">
+      <Sections>
+        <Section Name="None">
+          <Member Name="position" Datatype="Array[0..99] of LReal">
+            <Subelement Path="0">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24电芯 首位位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="1">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24电芯末尾位位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="2">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24 总长度  [1]-[0]</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="3">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯 首位位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="4">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯末尾位位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="5">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36 总长度  [1]-[0]</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="20">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24电芯 第一次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="21">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24电芯 第二次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="22">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24电芯 第三次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="30">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯 第1次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="31">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯 第2次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="32">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯 第3次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="33">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯 第4次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="34">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯 第5次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+          </Member>
+        </Section>
+      </Sections>
+    </Member>
+    <Member Name="U2Em4Cm1" Datatype="&quot;type_teachPara_axis&quot;">
+      <AttributeList>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+      <Comment>
+        <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+      </Comment>
+      <Sections>
+        <Section Name="None">
+          <Member Name="position" Datatype="Array[0..99] of LReal">
+            <Subelement Path="0">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24第一列电芯 首位位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="1">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24第一列电芯末尾位位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="2">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24 第1列总长度  [1]-[0]</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="3">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36第一列电芯 首位位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="4">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36第一列电芯末尾位位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="5">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36 第1列总长度  [1]-[0]</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="6">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24第2列电芯 首位位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="7">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24第2列电芯末尾位位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="8">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24 第2列总长度  [1]-[0]</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="9">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36第2列电芯 首位位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="10">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36第2列电芯末尾位位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="11">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36 第2列总长度  [1]-[0]</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="12">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="13">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="14">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="15">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="16">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="17">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="18">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="19">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="20">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24电芯 第一列电芯第一次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="21">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24电芯 第一列电芯 第二次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="22">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24电芯 第一列电芯第三次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="23">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="24">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="25">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="26">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="27">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="28">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="29">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="30">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯 第一列电芯第1次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="31">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯 第一列电芯第2次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="32">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯 第一列电芯第3次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="33">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯 第一列电芯第4次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="34">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯 第一列电芯第5次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="35">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="36">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="37">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="38">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="39">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="40">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24电芯 第2列电芯第一次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="41">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24电芯 第2列电芯 第二次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="42">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24电芯 第2列电芯第三次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="43">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="44">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="45">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="46">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="47">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="48">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="49">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="50">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯 第2列电芯第1次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="51">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯 第2列电芯第2次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="52">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯 第2列电芯第3次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="53">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯 第2列电芯第4次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="54">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯 第2列电芯第5次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+          </Member>
+        </Section>
+      </Sections>
+    </Member>
+    <Member Name="U2Em4Cm2" Datatype="&quot;type_teachPara_axis&quot;">
+      <AttributeList>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+      <Comment>
+        <MultiLanguageText Lang="en-US">Yaxis</MultiLanguageText>
+      </Comment>
+      <Sections>
+        <Section Name="None">
+          <Member Name="position" Datatype="Array[0..99] of LReal">
+            <Subelement Path="0">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24第一列电芯 首位位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="1">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Yaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="2">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Yaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="3">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36第一列电芯 首位位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="4">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Yaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="5">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Yaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="6">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24第2列电芯 首位位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="7">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Yaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="8">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Yaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="9">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36第2列电芯 首位位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+          </Member>
+        </Section>
+      </Sections>
+    </Member>
+    <Member Name="U2Em4Cm3" Datatype="&quot;type_teachPara_axis&quot;">
+      <AttributeList>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+      <Comment>
+        <MultiLanguageText Lang="en-US">Zaxis</MultiLanguageText>
+      </Comment>
+      <Sections>
+        <Section Name="None">
+          <Member Name="position" Datatype="Array[0..99] of LReal">
+            <Subelement Path="0">
+              <Comment>
+                <MultiLanguageText Lang="en-US">下降位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+          </Member>
+        </Section>
+      </Sections>
+    </Member>
+    <Member Name="U1Em2Cm5" Datatype="&quot;type_teachPara_axis&quot;">
+      <Sections>
+        <Section Name="None">
+          <Member Name="position" Datatype="Array[0..99] of LReal">
+            <Subelement Path="0">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24电芯 首位位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="1">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24电芯末尾位位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="2">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24 总长度  [1]-[0]</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="3">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯 首位位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="4">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯末尾位位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="5">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36 总长度  [1]-[0]</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="20">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24电芯 第一次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="21">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24电芯 第二次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="22">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24电芯 第三次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="30">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯 第1次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="31">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯 第2次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="32">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯 第3次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="33">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯 第4次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="34">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯 第5次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+          </Member>
+        </Section>
+      </Sections>
+    </Member>
+    <Member Name="U1Em4Cm1" Datatype="&quot;type_teachPara_axis&quot;">
+      <AttributeList>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+      <Comment>
+        <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+      </Comment>
+      <Sections>
+        <Section Name="None">
+          <Member Name="position" Datatype="Array[0..99] of LReal">
+            <Subelement Path="0">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24第一列电芯 首位位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="1">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24第一列电芯末尾位位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="2">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24 第1列总长度  [1]-[0]</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="3">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36第一列电芯 首位位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="4">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36第一列电芯末尾位位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="5">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36 第1列总长度  [1]-[0]</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="6">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24第2列电芯 首位位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="7">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24第2列电芯末尾位位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="8">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24 第2列总长度  [1]-[0]</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="9">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36第2列电芯 首位位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="10">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36第2列电芯末尾位位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="11">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36 第2列总长度  [1]-[0]</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="12">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="13">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="14">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="15">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="16">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="17">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="18">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="19">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="20">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24电芯 第一列电芯第一次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="21">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24电芯 第一列电芯 第二次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="22">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24电芯 第一列电芯第三次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="23">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="24">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="25">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="26">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="27">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="28">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="29">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="30">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯 第一列电芯第1次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="31">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯 第一列电芯第2次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="32">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯 第一列电芯第3次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="33">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯 第一列电芯第4次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="34">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯 第一列电芯第5次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="35">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="36">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="37">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="38">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="39">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="40">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24电芯 第2列电芯第一次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="41">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24电芯 第2列电芯 第二次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="42">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24电芯 第2列电芯第三次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="43">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="44">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="45">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="46">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="47">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="48">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="49">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Xaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="50">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯 第2列电芯第1次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="51">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯 第2列电芯第2次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="52">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯 第2列电芯第3次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="53">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯 第2列电芯第4次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="54">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36电芯 第2列电芯第5次顶位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+          </Member>
+        </Section>
+      </Sections>
+    </Member>
+    <Member Name="U1Em4Cm2" Datatype="&quot;type_teachPara_axis&quot;">
+      <AttributeList>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+      <Comment>
+        <MultiLanguageText Lang="en-US">Yaxis</MultiLanguageText>
+      </Comment>
+      <Sections>
+        <Section Name="None">
+          <Member Name="position" Datatype="Array[0..99] of LReal">
+            <Subelement Path="0">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24第一列电芯 首位位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="1">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Yaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="2">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Yaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="3">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36第一列电芯 首位位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="4">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Yaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="5">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Yaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="6">
+              <Comment>
+                <MultiLanguageText Lang="en-US">24第2列电芯 首位位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="7">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Yaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="8">
+              <Comment>
+                <MultiLanguageText Lang="en-US">Yaxis</MultiLanguageText>
+              </Comment>
+            </Subelement>
+            <Subelement Path="9">
+              <Comment>
+                <MultiLanguageText Lang="en-US">36第2列电芯 首位位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+          </Member>
+        </Section>
+      </Sections>
+    </Member>
+    <Member Name="U1Em4Cm3" Datatype="&quot;type_teachPara_axis&quot;">
+      <AttributeList>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+      <Comment>
+        <MultiLanguageText Lang="en-US">Zaxis</MultiLanguageText>
+      </Comment>
+      <Sections>
+        <Section Name="None">
+          <Member Name="position" Datatype="Array[0..99] of LReal">
+            <Subelement Path="0">
+              <Comment>
+                <MultiLanguageText Lang="en-US">下降位置</MultiLanguageText>
+              </Comment>
+            </Subelement>
+          </Member>
+        </Section>
+      </Sections>
+    </Member>
+  </Section>
+</Sections></Interface>
+      <Name>type_teachPara_constraint</Name>
+      <Namespace />
+    </AttributeList>
+    <ObjectList>
+      <MultilingualText ID="1" CompositionName="Comment">
+        <ObjectList>
+          <MultilingualTextItem ID="2" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="3" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="4" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="5" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+      <MultilingualText ID="6" CompositionName="Title">
+        <ObjectList>
+          <MultilingualTextItem ID="7" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="8" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="9" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="A" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+    </ObjectList>
+  </SW.Types.PlcStruct>
+</Document>

@@ -1,0 +1,27 @@
+﻿NAMESPACE Unit3
+FUNCTION WarningAlarmsMerge : Void
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+VERSION : 0.1
+   VAR_INPUT 
+      emAlarms : Array[*] of _.LAF_typeAlarms;
+   END_VAR
+
+   VAR_IN_OUT 
+      alarm : Bool;
+   END_VAR
+
+   VAR_TEMP 
+      indexTmp : DInt;
+   END_VAR
+
+
+BEGIN
+	#indexTmp := UPPER_BOUND(ARR := #emAlarms, DIM := 1);
+	#alarm := FALSE;
+	FOR #indexTmp := 0 TO _.Unit3_NO_OF_EMs DO
+	    
+	    #alarm := #alarm OR Alarms.emAlarms[#indexTmp].info;
+	END_FOR;
+END_FUNCTION
+END_NAMESPACE
+

@@ -1,0 +1,131 @@
+﻿NAMESPACE Unit2.Em5
+FUNCTION_BLOCK EXCHANGETRAY_RecordRecoverStep
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+VERSION : 0.1
+   VAR_INPUT 
+      saveRecord { ExternalWritable := 'False'} : Bool;
+      init { ExternalWritable := 'False'} : Bool;
+      step { ExternalWritable := 'False'} : DInt;
+      cm1AxisControl { ExternalWritable := 'False'} : _.LBC_typeAxisSimpleControlNode_1;   // Module related control node
+      cm2AxisControl { ExternalWritable := 'False'} : _.LBC_typeAxisSimpleControlNode_1;   // Module related control node
+      cm3AxisControl { ExternalWritable := 'False'} : _.LBC_typeAxisSimpleControlNode_1;   // Module related control node
+      cm4Cylinder { ExternalWritable := 'False'} : _.LBC_Simple_typeTwoWayActuatorControlNode;   // Module related control node wrapper
+      cm5Cylinder { ExternalWritable := 'False'} : _.LBC_Simple_typeTwoWayActuatorControlNode;   // Module related control node wrapper
+      cm6Cylinder { ExternalWritable := 'False'} : _.LBC_Simple_typeTwoWayActuatorControlNode;   // Module related control node wrapper
+      cm7Cylinder { ExternalWritable := 'False'} : _.LBC_Simple_typeTwoWayActuatorControlNode;   // Module related control node wrapper
+   END_VAR
+
+   VAR_OUTPUT 
+      saveDone { ExternalWritable := 'False'} : Bool;
+      outStep { ExternalWritable := 'False'} : DInt;
+      outCm1AxisControl { ExternalWritable := 'False'} : _.LBC_typeAxisSimpleControlNode_1;
+      outCm2AxisControl { ExternalWritable := 'False'} : _.LBC_typeAxisSimpleControlNode_1;
+      outCm3AxisControl { ExternalWritable := 'False'} : _.LBC_typeAxisSimpleControlNode_1;
+      outCm4Cylinder { ExternalWritable := 'False'} : _.LBC_Simple_typeTwoWayActuatorControlNode;
+      outCm5Cylinder { ExternalWritable := 'False'} : _.LBC_Simple_typeTwoWayActuatorControlNode;
+      outCm6Cylinder { ExternalWritable := 'False'} : _.LBC_Simple_typeTwoWayActuatorControlNode;
+      outCm7Cylinder { ExternalWritable := 'False'} : _.LBC_Simple_typeTwoWayActuatorControlNode;
+      st { ExternalWritable := 'False'} : _.LBC_Simple_typeTwoWayActuatorControlNode;
+   END_VAR
+
+   VAR 
+      statCm1AxisControl { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LBC_typeAxisSimpleControlNode_1;   // Module related control node
+      statCm2AxisControl { ExternalWritable := 'False'} : _.LBC_typeAxisSimpleControlNode_1;   // Module related control node
+      statCm3AxisControl { ExternalWritable := 'False'} : _.LBC_typeAxisSimpleControlNode_1;   // Module related control node
+      statCm4Cylinder { ExternalWritable := 'False'} : _.LBC_Simple_typeTwoWayActuatorControlNode;   // Module related control node wrapper
+      statCm5Cylinder { ExternalWritable := 'False'} : _.LBC_Simple_typeTwoWayActuatorControlNode;   // Module related control node wrapper
+      statCm6Cylinder { ExternalWritable := 'False'} : _.LBC_Simple_typeTwoWayActuatorControlNode;   // Module related control node wrapper
+      statCm7Cylinder { ExternalWritable := 'False'} : _.LBC_Simple_typeTwoWayActuatorControlNode;   // Module related control node wrapper
+      statStep { ExternalWritable := 'False'; S7_SetPoint := 'True'} : DInt;
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // LGF / (c)Copyright 2024
+	    //-------------------------------------------------------------------------------
+	    // Title:            State Record and Recovery
+	    // Comment/Function: Record and restore control states for recovery
+	    // Library/Family:   Unit2 State Management
+	    // Author:           Automation Department / State Management Team
+	    // Tested with:      SIMATIC S7-1500 FW V2.9
+	    // Engineering:      TIA Portal V17
+	    // Restrictions:     Must be called in OB1
+	    // Requirements:     None
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 2024-01-17 | State Management Team   | First released version
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(*
+	This block implements state recording and recovery functionality:
+	- Initializes state recording when #init is TRUE
+	- Records current states of multiple components when #saveRecord is TRUE
+	- Outputs the recorded states for recovery purposes
+	
+	The block handles the following components:
+	- Three axis controllers (cm1AxisControl, cm2AxisControl, cm3AxisControl)
+	- Four cylinders (cm4Cylinder, cm5Cylinder, cm6Cylinder, cm7Cylinder)
+	- Current step number
+	
+	功能说明：
+	本块实现状态记录和恢复功能：
+	- 当#init为TRUE时，初始化状态记录
+	- 当#saveRecord为TRUE时，记录多个组件的当前状态
+	- 输出记录的状态用于恢复目的
+	
+	本块处理以下组件：
+	- 三个轴控制器 (cm1AxisControl, cm2AxisControl, cm3AxisControl)
+	- 四个气缸 (cm4Cylinder, cm5Cylinder, cm6Cylinder, cm7Cylinder)
+	- 当前步骤号
+	*)
+	END_REGION DESCRIPTION
+	
+	REGION INITIALISATION  
+	    // Initialize state recording when #init is TRUE
+	    // 当#init为TRUE时，初始化状态记录
+	    IF #init THEN
+	        #saveDone := false;
+	    END_IF;
+	END_REGION INITIALISATION  
+	
+	REGION PROGRAM LOGIC
+	    // Record current states when #saveRecord is TRUE
+	    // 当#saveRecord为TRUE时，记录当前状态
+	    IF #saveRecord THEN
+	        #statCm1AxisControl := #cm1AxisControl;
+	        #statCm2AxisControl := #cm2AxisControl;
+	        #statCm3AxisControl := #cm3AxisControl;
+	        #statCm4Cylinder := #cm4Cylinder;
+	        #statCm5Cylinder := #cm5Cylinder;
+	        #statCm6Cylinder := #cm6Cylinder;
+	        #statCm7Cylinder := #cm7Cylinder;
+	        #statStep := #step;
+	        #saveDone := true;
+	    END_IF;
+	    
+	    // Output recorded states for recovery
+	    // 输出记录的状态用于恢复
+	    #outCm1AxisControl := #statCm1AxisControl;
+	    #outCm2AxisControl := #statCm2AxisControl;
+	    #outCm3AxisControl := #statCm3AxisControl;
+	    #outCm4Cylinder := #statCm4Cylinder;
+	    #outCm5Cylinder := #statCm5Cylinder;
+	    #outCm6Cylinder := #statCm6Cylinder;
+	    #outCm7Cylinder := #statCm7Cylinder;
+	    #outStep := #step;
+	END_REGION PROGRAM LOGIC
+	
+	REGION OUTPUTS
+	    // ENO mechanism for error handling
+	    // ENO机制用于错误处理
+	    ENO := TRUE;
+	END_REGION OUTPUTS
+END_FUNCTION_BLOCK
+END_NAMESPACE
+

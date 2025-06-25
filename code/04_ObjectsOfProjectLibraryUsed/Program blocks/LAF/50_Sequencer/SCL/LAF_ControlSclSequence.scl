@@ -1,0 +1,206 @@
+﻿FUNCTION_BLOCK "LAF_ControlSclSequence"
+TITLE = LAF_SCLControl
+{ S7_Optimized_Access := 'TRUE' ; Published := 'TRUE' }
+AUTHOR : 'Siemens Digital Industries'
+FAMILY : LAF
+VERSION : 1.2
+//The FB LAF_SCLControl is a template for controlling sequences of an Equipment Module programmed in SCL.
+   VAR_INPUT 
+      idleStep : DInt;   // Idle Step of the Sequence
+      stoppedStep : DInt;   // Immediate Stop Step of the Sequence
+   END_VAR
+
+   VAR_OUTPUT 
+      resetJobs { ExternalWritable := 'False'} : Bool;   // Job cancelled during execution
+   END_VAR
+
+   VAR_IN_OUT 
+      hmiInterface : "LAF_typeSequenceInterface";
+      sequence : "LAF_typeSequence";
+   END_VAR
+
+   VAR 
+      statFirstCycleInit { ExternalWritable := 'False'} : Bool := true;   // Init Sequence for first cycle
+      statInitCmdOld { ExternalWritable := 'False'} : Bool;   // Memory of init command
+      statInitCmdHmiOld { ExternalWritable := 'False'} : Bool;   // Memory of init command from HMI
+      statImmediateStopCmdOld { ExternalWritable := 'False'} : Bool;   // Memory of immediate stop command
+      statImmediateStopCmdHmiOld { ExternalWritable := 'False'} : Bool;   // Memory of immediate stop command from HMI
+      statNextStepCmdOld { ExternalWritable := 'False'} : Bool;   // Memory of next step command
+      statNextStepCmdHmiOld { ExternalWritable := 'False'} : Bool;   // Memory of next step command from HMI
+   END_VAR
+
+   VAR_TEMP 
+      tempInitCmd : Bool;   // Rising edge on init command
+      tempInitCmdHmi : Bool;   // Rising edge on init command from HMI
+      tempInit : Bool;   // Temp Init Sequence
+      tempImmediateStopCmd : Bool;   // Rising edge on immediate stop command
+      tempImmediateStopCmdHmi : Bool;   // Rising edge on immediate stop command from HMI
+      tempNextStepCmd : Bool;   // Rising edge on next step command
+      tempNextStepCmdHmi : Bool;   // Rising edge on next step command from HMI
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // Siemens AG / (c)Copyright 2024
+	    //-------------------------------------------------------------------------------
+	    // Title:            LAF_SCLControl
+	    // Comment/Function: The FB LAF_SCLControl is a template for controlling
+	    //                   sequences of an Equipment Module programmed in SCL. 
+	    // Library/Family:   Part of the Automation Framework
+	    // Author:           Siemens Digital Industries
+	    // Tested with:      S7-PLCSIM Advanced 6.0
+	    // Engineering:      TIA Portal V19
+	    // Restrictions:     -
+	    // Requirements:     -
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|------------------------------
+	    // 01.01.00 | 21.06.2024 | SIMATIC Systems Support | First released version
+	    // 01.02.00 | 30.09.2024 | SIMATIC Systems Support | Block information properties updated
+	    //                                                   Restructuring of the code
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(/*
+	The block controls the SCL sequence by writing the sequence control commands and modes to the SCL sequence. 
+	Job and Sequence Handling is made centerally in this block.
+	*/)
+	END_REGION DESCRIPTION
+	
+	REGION Set Mode    
+	    // Change the mode if requested
+	    IF #sequence.commands.setAutomaticMode OR (#sequence.status.manualControlEnabled AND #sequence.status.manualModeChangeEnabled AND #hmiInterface.commands.setAutomaticMode) THEN
+	        #sequence.status.automaticMode := TRUE;
+	        #sequence.status.singleStepMode := FALSE;
+	    END_IF;
+	    
+	    IF #sequence.commands.setSingleStepMode OR (#sequence.status.manualControlEnabled AND #sequence.status.manualModeChangeEnabled  AND #hmiInterface.commands.setSingleStepMode) THEN
+	        #sequence.status.automaticMode := FALSE;
+	        #sequence.status.singleStepMode := TRUE;
+	    END_IF;
+	END_REGION Set Mode
+	
+	REGION Init requested
+	    // An init command is required, if either the sequencer has been turned off by the off command or if the current step is STOPPED.
+	    #sequence.status.initRequired := #sequence.status.inStepStopped OR (NOT #sequence.status.seqActive AND ((NOT #sequence.enableManualCtrl AND NOT #sequence.commands.off) OR (#sequence.enableManualCtrl AND NOT #hmiInterface.commands.off)));
+	END_REGION Init requested
+	
+	REGION Set sequence active (ON / OFF / Initialize)
+	    // Command.off disables the sequence and sets seqActive to false. Command.init activates the sequence and set seqActive to true.
+	    IF (#sequence.commands.initialize OR (#sequence.enableManualCtrl AND #hmiInterface.commands.initialize) OR #statFirstCycleInit) THEN
+	        #sequence.status.seqActive := TRUE;
+	        #statFirstCycleInit := FALSE;
+	    END_IF;
+	    
+	    IF #sequence.commands.off OR (#sequence.enableManualCtrl AND #hmiInterface.commands.off) THEN
+	        #sequence.status.seqActive := FALSE;
+	    END_IF;
+	END_REGION ON / OFF / Initialize - Set sequence active
+	
+	REGION Move to step IDLE
+	    // Detect rising edges on Init command
+	    #tempInitCmd := #sequence.commands.initialize AND NOT #statInitCmdOld;
+	    #tempInitCmdHmi := #hmiInterface.commands.initialize AND NOT #statInitCmdHmiOld;
+	    
+	    // Set the sequencer back to the Idle Step 
+	    IF #sequence.status.seqActive THEN
+	        IF #tempInitCmd OR (#sequence.enableManualCtrl AND #tempInitCmdHmi) THEN
+	            #sequence.status.nextStep := #idleStep;
+	        END_IF;
+	        #tempInit := #tempInitCmd OR (#sequence.enableManualCtrl AND #tempInitCmdHmi);
+	    END_IF;
+	    
+	    // Remember init commands for next cycle
+	    #statInitCmdOld := #sequence.commands.initialize;
+	    #statInitCmdHmiOld := #hmiInterface.commands.initialize;
+	END_REGION Move to step IDLE
+	
+	REGION Move to to step IMMEDIATE STOP
+	    // Detect rising edge on Immediate Stop command
+	    #tempImmediateStopCmd := #sequence.commands.immediateStop AND NOT #statImmediateStopCmdOld;
+	    #tempImmediateStopCmdHmi := #hmiInterface.commands.immediateStop AND NOT #statImmediateStopCmdHmiOld;
+	    
+	    // Set the sequencer back to step Immediate Stop
+	    IF #sequence.status.seqActive THEN
+	        IF #tempImmediateStopCmd OR (#sequence.enableManualCtrl AND #tempImmediateStopCmdHmi) THEN
+	            #sequence.status.nextStep := #stoppedStep;
+	        END_IF;
+	        #tempInit := #tempInit OR #tempImmediateStopCmd OR (#sequence.enableManualCtrl AND #tempImmediateStopCmdHmi);
+	    END_IF;
+	    
+	    // Remember init commands for next cycle
+	    #statImmediateStopCmdOld := #sequence.commands.immediateStop;
+	    #statImmediateStopCmdHmiOld := #hmiInterface.commands.immediateStop;
+	END_REGION Move to to step IMMEDIATE STOP
+	
+	REGION Release step change
+	    // Detect rising edges next step command
+	    #tempNextStepCmd := #sequence.commands.nextStep AND NOT #statNextStepCmdOld;
+	    #tempNextStepCmdHmi := #hmiInterface.commands.nextStep AND NOT #statNextStepCmdHmiOld;
+	    
+	    // Allow the Sequence to Move to the next Step
+	    #sequence.status.stepChangeReleased := FALSE;
+	    
+	    IF NOT #sequence.commands.interlockStepChange THEN
+	        
+	        IF #sequence.status.automaticMode THEN
+	            IF NOT #sequence.enableManualCtrl AND NOT #sequence.commands.hold THEN
+	                #sequence.status.stepChangeReleased := TRUE;
+	            ELSIF #sequence.enableManualCtrl AND NOT #hmiInterface.commands.hold THEN
+	                #sequence.status.stepChangeReleased := TRUE;
+	            END_IF;
+	        END_IF;
+	        
+	        IF #sequence.status.singleStepMode THEN
+	            IF NOT #sequence.enableManualCtrl AND #tempNextStepCmd THEN
+	                #sequence.status.stepChangeReleased := TRUE;
+	            ELSIF #sequence.enableManualCtrl THEN
+	                IF #tempNextStepCmdHmi THEN
+	                    #sequence.status.stepChangeReleased := TRUE;
+	                ELSIF #sequence.status.inStepIdle AND #hmiInterface.commands.start THEN
+	                    #sequence.status.stepChangeReleased := TRUE;
+	                END_IF;
+	            END_IF;
+	        END_IF;
+	    END_IF;
+	    
+	    IF #tempInit THEN
+	        #sequence.status.stepChangeReleased := TRUE;
+	    END_IF;
+	    
+	    // Remember init commands for next cycle
+	    #statNextStepCmdOld := #sequence.commands.nextStep;
+	    #statNextStepCmdHmiOld := #hmiInterface.commands.nextStep;
+	END_REGION Release step change
+	
+	REGION Change step
+	    // Initialize justSteppedBit
+	    #sequence.status.justSteppedPulse := FALSE;
+	    
+	    // If a new step number is available change the step 
+	    IF (#sequence.status.nextStep <> #sequence.status.currentStep) AND #sequence.status.stepChangeReleased THEN
+	        #sequence.status.previousStep := #sequence.status.currentStep;
+	        #sequence.status.currentStep := #sequence.status.nextStep;
+	        #sequence.status.justSteppedPulse := TRUE;
+	    END_IF;
+	END_REGION Change step
+	
+	REGION Job was aborted
+	    // Reset all the active jobs when it was aborted
+	    #resetJobs := #tempInit;
+	    
+	END_REGION Job Reset Active
+	
+	REGION Execution of the sequence enabled
+	    // Execution of the Sequence is enabled. Start the Sequence if in Idle Step. 
+	    #sequence.status.executionEnabled := #sequence.status.inStepIdle AND (NOT #sequence.status.manualControlEnabled OR (#sequence.status.manualControlEnabled AND (#sequence.commands.start OR #hmiInterface.commands.start)));
+	    
+	END_REGION Execution of the sequence enabled
+	
+	
+END_FUNCTION_BLOCK
+

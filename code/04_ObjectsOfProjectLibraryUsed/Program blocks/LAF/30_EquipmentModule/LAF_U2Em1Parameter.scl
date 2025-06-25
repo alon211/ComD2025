@@ -1,0 +1,54 @@
+﻿FUNCTION "LAF_U2Em1Parameter" : Void
+{ S7_Optimized_Access := 'TRUE' ; Published := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      enable : Bool;
+   END_VAR
+
+   VAR_IN_OUT 
+      configuration : "LAF_typeRollerEm1Parameters";
+      moduleInterface : "LAF_typeRollerEm1ParametersInterface";
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // Siemens / (c)Copyright 2020-2024
+	    //-------------------------------------------------------------------------------
+	    // Title:            LAF_EmParameter
+	    // Comment/Function: The function is used to update various parameters in the EM.
+	    // Library/Family:   LAF 
+	    // Author:           Siemens Digital Industries
+	    // Tested with:      S7-PLCSIM Advanced 6.0
+	    // Engineering:      TIA Portal V19
+	    // Restrictions:     ENO mechanism is not used - forced to true.
+	    // Requirements:     PLC (S7-1200 / S7-1500)
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 03.00.00 | 16.09.2024 | SIMATIC Systems Support | New block for replacing old Control Node Wrapper
+	    //===============================================================================
+	END_REGION
+	
+	REGION DESCRIPTION
+	(/*
+	The function is used to update various parameters in the Jobs.
+	*/)
+	END_REGION DESCRIPTION
+	
+	REGION CONFIGURATION HANDLING
+	    // Refresh module interface configuration with process configuration
+	    IF #moduleInterface.commands.refreshConfiguration AND NOT #moduleInterface.commands.editConfiguration THEN
+	        #moduleInterface.configuration := #configuration;
+	    END_IF;
+	    #moduleInterface.commands.refreshConfiguration := FALSE;
+	    // Save module interface configuration to process configuration
+	    IF #moduleInterface.commands.saveConfiguration AND #moduleInterface.commands.editConfiguration THEN
+	        #configuration := #moduleInterface.configuration;
+	        #moduleInterface.commands.saveConfiguration := FALSE;
+	    END_IF;
+	END_REGION CONFIGURATION HANDLING
+END_FUNCTION
+

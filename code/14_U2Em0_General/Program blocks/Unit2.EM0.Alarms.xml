@@ -1,0 +1,155 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Document>
+  <Engineering version="V19" />
+  <SW.Blocks.GlobalDB ID="0">
+    <AttributeList>
+      <Interface><Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v5">
+  <Section Name="Static">
+    <Member Name="emAlarms" Datatype="Array[0.._.Unit2_NO_OF_EMs] of &quot;LAF_typeAlarms&quot;">
+      <AttributeList>
+        <BooleanAttribute Name="ExternalWritable" SystemDefined="true">false</BooleanAttribute>
+      </AttributeList>
+    </Member>
+    <Member Name="errorNoReaction" Datatype="Array[0..9] of Bool">
+      <AttributeList>
+        <BooleanAttribute Name="ExternalWritable" SystemDefined="true">false</BooleanAttribute>
+      </AttributeList>
+      <Comment>
+        <MultiLanguageText Lang="en-US">Error without further impact</MultiLanguageText>
+        <MultiLanguageText Lang="de-DE">Error ohne weitere Auswirkungen</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="errorAbort" Datatype="Array[0..9] of Bool">
+      <AttributeList>
+        <BooleanAttribute Name="ExternalWritable" SystemDefined="true">false</BooleanAttribute>
+      </AttributeList>
+      <Comment>
+        <MultiLanguageText Lang="en-US">Error which aborts the whole Unit</MultiLanguageText>
+        <MultiLanguageText Lang="de-DE">Error der ein abort in der Unit auslöst</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="errorStop" Datatype="Array[0..9] of Bool">
+      <AttributeList>
+        <BooleanAttribute Name="ExternalWritable" SystemDefined="true">false</BooleanAttribute>
+      </AttributeList>
+      <Comment>
+        <MultiLanguageText Lang="en-US">Error which stops the whole Unit</MultiLanguageText>
+        <MultiLanguageText Lang="de-DE">Error der ein stop in der Unit auslöst</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="warningNoReaction" Datatype="Array[0..9] of Bool">
+      <AttributeList>
+        <BooleanAttribute Name="ExternalWritable" SystemDefined="true">false</BooleanAttribute>
+      </AttributeList>
+      <Comment>
+        <MultiLanguageText Lang="en-US">Warning which could lead to a error</MultiLanguageText>
+        <MultiLanguageText Lang="de-DE">Warnung die zu einem Error führen kann</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="warningHold" Datatype="Array[0..9] of Bool">
+      <AttributeList>
+        <BooleanAttribute Name="ExternalWritable" SystemDefined="true">false</BooleanAttribute>
+      </AttributeList>
+      <Comment>
+        <MultiLanguageText Lang="en-US">Warning which holds the whole Unit</MultiLanguageText>
+        <MultiLanguageText Lang="de-DE">Warnung die ein hold in der Unit auslöst</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="warningSuspend" Datatype="Array[0..9] of Bool">
+      <AttributeList>
+        <BooleanAttribute Name="ExternalWritable" SystemDefined="true">false</BooleanAttribute>
+      </AttributeList>
+      <Comment>
+        <MultiLanguageText Lang="en-US">Warning which suspends the whole Unit</MultiLanguageText>
+        <MultiLanguageText Lang="de-DE">Warnung die ein suspend in der Unit auslöst</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="information" Datatype="Array[0..9] of Bool">
+      <AttributeList>
+        <BooleanAttribute Name="ExternalWritable" SystemDefined="true">false</BooleanAttribute>
+      </AttributeList>
+      <Comment>
+        <MultiLanguageText Lang="en-US">Informations of the EM</MultiLanguageText>
+        <MultiLanguageText Lang="de-DE">Information des EM</MultiLanguageText>
+      </Comment>
+      <Subelement Path="0">
+        <StartValue>false</StartValue>
+      </Subelement>
+    </Member>
+    <Member Name="criteriaAnalysis" Datatype="Array[0..9] of Bool">
+      <AttributeList>
+        <BooleanAttribute Name="ExternalWritable" SystemDefined="true">false</BooleanAttribute>
+      </AttributeList>
+      <Comment>
+        <MultiLanguageText Lang="en-US">CriteriaAnalysis of the EM</MultiLanguageText>
+        <MultiLanguageText Lang="de-DE">Kriterienanalyse des EM</MultiLanguageText>
+      </Comment>
+    </Member>
+  </Section>
+</Sections></Interface>
+      <MemoryReserve>100</MemoryReserve>
+      <Name>Alarms</Name>
+      <Namespace>Unit2.EM0</Namespace>
+      <Number>95</Number>
+      <ProgrammingLanguage>DB</ProgrammingLanguage>
+    </AttributeList>
+    <ObjectList>
+      <MultilingualText ID="1" CompositionName="Comment">
+        <ObjectList>
+          <MultilingualTextItem ID="2" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="3" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="4" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="5" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+      <MultilingualText ID="6" CompositionName="Title">
+        <ObjectList>
+          <MultilingualTextItem ID="7" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="8" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="9" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="A" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+    </ObjectList>
+  </SW.Blocks.GlobalDB>
+</Document>

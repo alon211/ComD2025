@@ -1,0 +1,238 @@
+﻿FUNCTION_BLOCK "LEXCHANGETRAY_AxisResetMerge"
+TITLE = Exchange Tray Library
+{ S7_Optimized_Access := 'TRUE' ; Published := 'TRUE' }
+AUTHOR : 'SUP/Zhang Shi Long'
+FAMILY : SUP
+VERSION : 0.1
+//Exchange Tray function
+   VAR_INPUT 
+      ack { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal
+      reset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Reset signal input 0
+      reset_1 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Reset signal input 1
+      reset_2 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Reset signal input 2
+      reset_3 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Reset signal input 3
+      reset_4 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Reset signal input 4
+      reset_5 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Reset signal input 5
+      reset_6 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Reset signal input 6
+      reset_7 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Reset signal input 7
+      reset_8 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Reset signal input 8
+      reset_9 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Reset signal input 9
+      reset_10 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Reset signal input 10
+      reset_11 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Reset signal input 11
+      reset_12 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Reset signal input 12
+      reset_13 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Reset signal input 13
+      reset_14 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Reset signal input 14
+   END_VAR
+
+   VAR_IN_OUT 
+      axis : "LBC_typeAxisSimpleControlNode_1";   // Internal axis control variable
+   END_VAR
+
+   VAR 
+      statPosAbsoluteBusy { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Absolute positioning in progress status
+      statPosAbsoluteDone { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Absolute positioning completed status
+      statHomeBusy { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Homing operation in progress status
+      statHomeDone { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Homing operation completed status
+      statFberror { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Feedback error status
+      statAxiserror { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Axis error status
+      statStandstill { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Axis standstill status
+      statResetDone { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Reset operation completed status
+      statResetBusy { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Reset operation in progress status
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // Siemens / (c)Copyright 2020-2024
+	    //-------------------------------------------------------------------------------
+	    // Title:            Axis Control Reset Logic Module
+	    // 标题:             轴控复位逻辑模块
+	    // Comment/Function: This module manages axis control reset logic, including:
+	    //                    - Reset triggers for positioning, homing, jogging, and stopping commands
+	    //                    - Signal status tracking for feedback and error conditions
+	    // 注释/功能:        此模块管理轴控复位逻辑，包括：
+	    //                    - 定位、回零、点动和停止命令的复位触发
+	    //                    - 反馈和错误条件的信号状态跟踪
+	    // Library/Family:   EXCHANGETRAY - Library of Basic
+	    // 库/家族:         换盘机 - 基本控制模块库
+	    // Author:           Siemens Digital Industries
+	    // 作者:            西门子数字工业
+	    // Tested with:      S7-PLCSIM Advanced 6.0
+	    // 测试环境:        S7-PLCSIM Advanced 6.0
+	    // Engineering:      TIA Portal V19
+	    // 工程环境:        TIA Portal V19
+	    // Restrictions:     ENO mechanism is not used - forced to TRUE.
+	    // 限制条件:        不使用 ENO 机制 - 强制设置为 TRUE。
+	    // Requirements:     PLC (S7-1200 / S7-1500)
+	    // 要求:            PLC (S7-1200 / S7-1500)
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 17.04.2025 | SIMATIC Systems Support | Updated block info and comments following AIupdate.scl style.
+	    // 版本     | 日期       | 负责人                  | 更改内容
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 2025年4月17日 | SIMATIC系统支持        | 参照 LBC 风格更新块信息和注释。
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	    (/*
+	    This module manages axis control reset logic based on feedback signals and external triggers. 
+	    It resets active commands when:
+	    - An acknowledgment (`#ack`) or system reset (`#reset`) is received
+	    - Command-specific conditions are met (e.g., positioning complete, error states)
+	    - Axis motion status changes (e.g., standstill detected)
+	
+	    此模块根据反馈信号和外部触发管理轴控复位逻辑。当以下情况发生时重置激活命令：
+	    - 收到确认信号 (`#ack`) 或系统复位 (`#reset`)
+	    - 命令特定条件满足（如定位完成、错误状态）
+	    - 轴运动状态变化（如检测到静止）
+	    */)
+	END_REGION DESCRIPTION
+	
+	REGION INITIALISATION  
+	    // Reset axis control commands based on external triggers and feedback conditions
+	    // 根据外部触发和反馈条件重置轴控命令
+	    #axis.commands.resetAxis := #ack OR #reset;
+	END_REGION INITIALISATION  
+	
+	REGION PROGRAM LOGIC
+	    REGION AXIS COMMAND RESET LOGIC
+	        REGION Absolute Position Command Reset
+	            // Reset absolute position command when:
+	            // - Acknowledgment or system reset is active
+	            // - Positioning command is idle AND feedback conditions change
+	            // - Axis error states are detected
+	            IF (
+	                #ack
+	                OR
+	                #reset
+	                OR
+	                (#axis.monitoring.statusWord.bit08_PositioningCommand AND NOT #statPosAbsoluteBusy)
+	                OR
+	                (#axis.monitoring.error AND NOT #statFberror)
+	                OR
+	                (#axis.monitoring.statusWord.bit01_Error AND NOT #statAxiserror)
+	                OR
+	                (#axis.monitoring.posAbsoluteDone AND NOT #statPosAbsoluteDone)
+	                ) AND #axis.commands.posAbsolute THEN
+	                #axis.commands.posAbsolute := FALSE;
+	            END_IF;
+	        END_REGION Absolute Position Command Reset
+	        
+	        REGION Homing Command Reset
+	            // Reset homing command when:
+	            // - Acknowledgment or system reset is active
+	            // - Homing command is idle AND feedback conditions change
+	            // - Axis error states are detected
+	            IF (
+	                #ack
+	                OR
+	                #reset
+	                OR
+	                (#axis.monitoring.statusWord.bit11_HomingCommand AND NOT #statHomeBusy)
+	                OR
+	                (#axis.monitoring.error AND NOT #statFberror)
+	                OR
+	                (#axis.monitoring.statusWord.bit01_Error AND NOT #statAxiserror)
+	                OR
+	                (#axis.monitoring.homeDone AND NOT #statHomeDone)
+	                ) AND #axis.commands.home THEN
+	                #axis.commands.home := FALSE;
+	            END_IF;
+	        END_REGION Homing Command Reset
+	        
+	        REGION Jog Backward Command Reset
+	            // Reset jog backward command when:
+	            // - Acknowledgment or system reset is active
+	            // - Axis error states are detected
+	            IF (
+	                #ack
+	                OR
+	                #reset
+	                OR
+	                (#axis.monitoring.error AND NOT #statFberror)
+	                OR
+	                (#axis.monitoring.statusWord.bit01_Error AND NOT #statAxiserror)
+	                ) AND #axis.commands.jogBackward THEN
+	                #axis.commands.jogBackward := FALSE;
+	            END_IF;
+	        END_REGION Jog Backward Command Reset
+	        
+	        REGION Jog Forward Command Reset
+	            // Reset jog forward command when:
+	            // - Acknowledgment or system reset is active
+	            // - Axis error states are detected
+	            IF (
+	                #ack
+	                OR
+	                #reset
+	                OR
+	                (#axis.monitoring.error AND NOT #statFberror)
+	                OR
+	                (#axis.monitoring.statusWord.bit01_Error AND NOT #statAxiserror)
+	                ) AND #axis.commands.jogForward THEN
+	                #axis.commands.jogForward := FALSE;
+	            END_IF;
+	        END_REGION Jog Forward Command Reset
+	        
+	        REGION Stop Command Reset
+	            // Reset stop command when:
+	            // - Acknowledgment or system reset is active
+	            // - Axis stop is confirmed
+	            IF (
+	                #ack
+	                OR
+	                #reset
+	                OR
+	                #axis.monitoring.stopDone
+	                ) AND #axis.commands.stop THEN
+	                // Clear motion-related commands and stop command
+	                #axis.commands.jogForward := FALSE;
+	                #axis.commands.moveVelocity := FALSE;
+	                #axis.commands.stop := FALSE;
+	                #axis.commands.jogBackward := FALSE;
+	            END_IF;
+	        END_REGION Stop Command Reset
+	        
+	        REGION Halt Command Reset
+	            // Reset halt command when:
+	            // - Acknowledgment or system reset is active
+	            IF (#ack OR #reset) AND #axis.commands.halt THEN
+	                #axis.commands.halt := FALSE;
+	            END_IF;
+	        END_REGION Halt Command Reset
+	        
+	        REGION Reset Command Reset
+	            // Reset axis reset command when:
+	            // - Acknowledgment or system reset is active
+	            IF (#ack OR #reset) THEN
+	                #axis.commands.resetAxis := FALSE;
+	            END_IF;
+	        END_REGION Reset Command Reset
+	    END_REGION AXIS COMMAND RESET LOGIC
+	    
+	    REGION SIGNAL STATUS TRACKING
+	        // Track signal status for feedback and error conditions
+	        // 跟踪反馈和错误条件的信号状态
+	        #statPosAbsoluteBusy := #axis.monitoring.statusWord.bit08_PositioningCommand;
+	        #statFberror := #axis.monitoring.error;
+	        #statAxiserror := #axis.monitoring.statusWord.bit01_Error;
+	        #statPosAbsoluteDone := #axis.monitoring.posAbsoluteDone;
+	        #statHomeBusy := #axis.monitoring.statusWord.bit11_HomingCommand;
+	        #statHomeDone := #axis.monitoring.homeDone;
+	        #statStandstill := #axis.monitoring.statusWord.bit07_Standstill;
+	        #statResetDone := #axis.monitoring.resetDone;
+	        #statResetBusy := #axis.monitoring.resetBusy;
+	    END_REGION SIGNAL STATUS TRACKING
+	END_REGION PROGRAM LOGIC
+	
+	REGION OUTPUTS
+	    // ENO mechanism disabled, ENO - forced to TRUE
+	    // ENO 机制禁用，强制设置为 TRUE
+	    ENO := TRUE;
+	END_REGION OUTPUTS
+END_FUNCTION_BLOCK
+

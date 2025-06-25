@@ -1,0 +1,83 @@
+﻿FUNCTION "LUC_InterlinkToParent" : Void
+TITLE = LUC_InlinkToParent
+{ S7_Optimized_Access := 'TRUE' ; Published := 'TRUE' }
+AUTHOR : 'Siemens Digital Industries'
+FAMILY : LUC
+VERSION : 1.2
+//This function links or unlinks an EM from the Unit
+   VAR_INPUT 
+      link { S7_PredefinedAssignment := 'false'} : Bool;   // Command to link module to parent
+      unlink { S7_PredefinedAssignment := 'false'} : Bool;   // Command to unlink module from parent
+   END_VAR
+
+   VAR_OUTPUT 
+      isLinked : Bool;   // Feedback from the EM to the Unit
+   END_VAR
+
+   VAR_IN_OUT 
+      currentState : "LUC_typeStates";   // Current state of the unit
+      hmiInterface : "LUC_typeInterlinkMode";   // Connection to DB HmiInterface of the EM
+   END_VAR
+
+   VAR_TEMP 
+      tempIsLinked : Bool;   // Result of new status evaluation
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // Siemens AG / (c)Copyright 2024
+	  //-------------------------------------------------------------------------------
+	  // Title:            LUC_InterlinkToParent
+	  // Comment/Function: This function links or unlinks an EM from the Unit
+	  // Library/Family:   LUC - Library of Unit Control
+	  // Author:           Siemens Digital Industries
+	  // Tested with:      S7-PLCSIM Advanced V6.0 
+	  // Engineering:      TIA Portal V19
+	  // Restrictions:     -
+	  // Requirements:     -
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  // Version  | Date       | Expert in charge        | Changes applied
+	  //----------|------------|-------------------------|-----------------------------
+	  // 01.00.00 | 15.12.2023 | SIMATIC Systems Support | First released version
+	  // 01.01.00 | 21.06.2024 | SIMATIC Systems Support | Implemented the equipment module sharing of the linked status with the ControlNodes DB and HmiInterface DB of he Equipment Module.
+	  // 01.02.00 | 05.09.2024 | SIMATIC Systems Support | Modificated the block interface, removed ControlNodes interface. The equipment module can be linked or unlinked to/from the unit through the block interface inputs.
+	  //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(/*
+	 This block enables an Equipment Module to be the linked or unlinked from a Unit. The process of linking or unlinking it is only possible when
+	the parent (the Unit that contains the respective Equipment Module) is in the active state of _Aborted_, _Clearing_ or _Stopped_.
+	* Link an Equipment Module to a Unit:
+	The Equipment Module must be not linked to the Unit and the _link_ command must be enabled from the HMI Interface or from the input of the block. 
+	* Unlink an Equipment Module from a Unit:
+	The Equipment Module must be linked to the Unit and the _unlink_ command must be enabled from the HMI Interface or from the input of the block.
+	*/)
+	END_REGION DESCRIPTION
+	
+	REGION EVALUATION
+	    #tempIsLinked := #hmiInterface.isLinked;
+	    // Only allow link/unlink when in state aborted, clearing or stopped
+	    IF #currentState.aborted OR #currentState.clearing OR #currentState.stopped THEN
+	        // When linked, and command to unlink comes from the input of the block or HMI, then unlink the module
+	        IF #tempIsLinked AND (#unlink OR #hmiInterface.unlink) THEN
+	            #tempIsLinked := FALSE;
+	            // When unlinked, and command to link comes from the input of the block or HMI, then link the module
+	            // But only if unlink command is not true in parallel. This avoids a toggling set the higher priority on unlink
+	        ELSIF NOT #tempIsLinked AND (#link OR #hmiInterface.link) AND NOT (#unlink OR #hmiInterface.unlink) THEN
+	            #tempIsLinked := TRUE;
+	        END_IF;
+	    END_IF;
+	END_REGION EVALUATION
+	
+	REGION STATUS OUTPUT
+	    // Copy status of isLinked to the HmiInterface DB and on the feedback to the unit
+	    #hmiInterface.isLinked :=
+	    #isLinked := #tempIsLinked;
+	END_REGION STATUS OUTPUT
+	
+END_FUNCTION
+

@@ -1,0 +1,467 @@
+﻿NAMESPACE Unit3.EM1
+FUNCTION_BLOCK CallEquipment
+TITLE = CallEquipment
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+AUTHOR : Siemens_FA_SUP
+VERSION : 0.1
+//Template for the call Environment of the Equipment Module. Here the Information from the Unit is processed and used to control the main sequence for the Equipment module.
+   VAR_IN_OUT 
+      unitStatus : _.LAF_typeUnitStatus;   // Current unit status o be used in this EM
+      unitAlarmDB : _.LAF_typeAlarms;   // Summarized EM Alarms for the Unit
+      emFeedback : _.LUC_typeEmFeedback;   // Feedback of the EM to the Unit
+   END_VAR
+
+   VAR 
+      statUnitStatus { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LAF_typeUnitStatus;   // Unit Status used in this EM
+      instSequence { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.Unit3.EM1.Sequence;
+      instManageBitAlarms { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LAF_ManageBitAlarms;
+      instHoldingJob { ExternalWritable := 'False'} : _.LAF_SelectJob;
+      instUnholdingJob { ExternalWritable := 'False'} : _.LAF_SelectJob;
+      instStartingJob { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LAF_SelectJob;
+      instPosMovingJob { ExternalWritable := 'False'} : _.LAF_SelectJob;
+      instStoppingJob { ExternalWritable := 'False'} : _.LAF_SelectJob;
+      instHomeJob { ExternalWritable := 'False'} : _.LAF_SelectJob;
+      instResetingJob { ExternalWritable := 'False'} : _.LAF_SelectJob;
+      instSpecialFuncAbsPos { ExternalWritable := 'False'} : _.LAF_SelectJob;
+      instCm2AxisPos { ExternalWritable := 'False'} : _.LBC_AxisSimpleControl;
+      instCmReset { ExternalWritable := 'False'} : EXCHANGETRAY_CmResetOperator;
+      instCm1SingleTm { ExternalWritable := 'False'} : _.LEXCHANGETRAY_U3Em1SingleTM;
+      instCm3NgStrap { ExternalWritable := 'False'} : _.LEXCHANGETRAY_NgStrapDetect;
+      instCm4FrButton { ExternalWritable := 'False'} : _.LEXCHANGETRAY_FrButtonTm;
+      statHomingJobStartCondition { ExternalWritable := 'False'; S7_SetPoint := 'True'} : Bool;
+      statPosMovingJobStartCondition { ExternalWritable := 'False'} : Bool;
+      statLstUnitMode { ExternalWritable := 'False'; S7_SetPoint := 'True'} : DInt;
+      statLstUnitStatus { ExternalWritable := 'False'} : DInt;
+      statLstCurrentStep { ExternalWritable := 'False'} : DInt;
+      statJobComplete { ExternalWritable := 'False'} : Bool;
+   END_VAR
+
+   VAR_TEMP 
+      tempScInProduction : Bool;
+      tempScInManual : Bool;
+      tempScInMantaince : Bool;
+      tempInterruptJobInStopping : Bool;
+      tempXyzRunning : Bool;
+      tempXyzRunningSC : Bool;
+      tempNgConveyorIdle : Bool;
+   END_VAR
+
+   VAR CONSTANT 
+      NO_JOB : DInt;   // No job
+      EM1_IDLE_STATE : DInt := 202;
+      EM1_AUTO_STATE : DInt := 206;
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // (company)/ (c)Copyright (year)
+	    //-------------------------------------------------------------------------------
+	    // Title:            (Title of this block)
+	    // Comment/Function: (that is implemented in the block)
+	    // Library/Family:   (that the source is dedicated to)
+	    // Author:           (department / person in charge / contact)
+	    // Tested with:      (test system with FW version)
+	    // Engineering:      TIA Portal (SW version)
+	    // Restrictions:     (OB types, etc.)
+	    // Requirements:     (hardware, technological package, etc.)
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | dd.mm.yyyy | (name of expert)        | First released version
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	    (/*
+	    This is a template block provided by the Automation Framework. It can be used to create an own project.
+	    The Block Info Header is prepared to put in your own data.
+	    Description of the block could be added here and the docu created by Code2Docu.
+	    */)
+	END_REGION DESCRIPTION
+	
+	REGION Equipment Control 
+	    // Main equipment control region
+	    // 设备主控制区域
+	    REGION input
+	        // Input processing region
+	        // 输入处理区域
+	        #statJobComplete := ControlNodes.sequence.status.currentStep = 1 AND ControlNodes.sequence.status.currentStep <> #statLstCurrentStep;
+	        
+	    END_REGION
+	    
+	    REGION interlink_em_to_unit
+	        // EM to Unit interlink processing
+	        // EM与单元互连处理
+	        // This block links and unlinks the EM from the unit. The command to link/unlink can be set directly by the inputs of the block (e.g. to link/unlink based on any program logic)
+	        // or through the InOut "hmiInterface". The block changes the output "isLinked" to true/false, depending on the command and if a change is allowed. A changed is allowed if the unit
+	        // is in state aborted, clearing or stopped. The output "isLinked" is send back to the unit. If the EM is not linked, the unit ignores this EM.
+	        
+	        _.LUC_InterlinkToParent(link := false,
+	                                unlink := false,
+	                                isLinked => #emFeedback.isLinked,
+	                                currentState := #unitStatus.state,
+	                                hmiInterface := HmiInterface.em.interlinkMode);
+	    END_REGION
+	    
+	    REGION control_em
+	        // When linked, unitStatus is fully applied to unitStatusUsed.
+	        // 当链接时，unitStatus完全应用于unitStatusUsed
+	        // When NOT linked, only acknowledge AND safetyReleased from the unitStatus are applied. 
+	        // 当未链接时，仅应用来自unitStatus的acknowledge和safetyReleased
+	        // A direct EM control BY HmiInterface OR localInterface is possible.
+	        // 可以通过HmiInterface或localInterface直接控制EM
+	        _.LAF_ControlEm(isLinked := #emFeedback.isLinked,
+	                        unitStatusUsed => #statUnitStatus,
+	                        unitStatus := #unitStatus,
+	                        hmiInterface := HmiInterface.em,
+	                        localInterface := ControlNodes.em);
+	    END_REGION
+	    
+	END_REGION
+	
+	REGION Equipment Logic
+	    // Main equipment logic section
+	    // 设备主逻辑区域
+	    
+	    REGION Map Unit Status to Sequence Status
+	        // Function to connect the Unit Status to the Sequencer Interface
+	        IF _.Unit3.EM1.HmiInterface.em.interlinkMode.isLinked THEN
+	            #tempInterruptJobInStopping := #unitStatus.state.stopping AND (#unitStatus.state.current <> #statLstUnitStatus);
+	        ELSE
+	            #tempInterruptJobInStopping := _.Unit3.EM1.HmiInterface.em.commands.directStateControl.%X6 AND _.Unit3.EM1.Alarms.emAlarms[_.Unit3_EM1].error;
+	        END_IF;
+	        
+	        _.LAF_MapUnitStatusToSequence(
+	                                      interruptJobInStopping := #tempInterruptJobInStopping,
+	                                      interruptJobInHolding := #unitStatus.state.holding,
+	                                      interruptJobInSuspending := false,
+	                                      interruptJobInCompleting := false,
+	                                      unitStatus := #statUnitStatus,
+	                                      sequence := ControlNodes.sequence,
+	                                      jobs := ControlNodes.jobs);
+	    END_REGION Map Unit Status to Sequence Status
+	    
+	    REGION Select Job
+	        // Decide which Step Sequence to start depending on the OMAC State and EM conditions
+	        // First Move Block is TO Initialize the jobSelect Number
+	        ControlNodes.jobs.commands.setJobNumber := #NO_JOB;
+	        
+	        REGION modify
+	            IF #statUnitStatus.mode.production THEN
+	                #statHomingJobStartCondition := #statUnitStatus.state.execute AND _.Unit3.EM1.ControlNodes.sequence.status.currentStep = 1;
+	                #statPosMovingJobStartCondition := #statUnitStatus.state.execute AND #instHomeJob.jobStatus.completed AND _.Unit3.EM1.ControlNodes.sequence.status.currentStep = 1;
+	            END_IF;
+	            
+	            #instSpecialFuncAbsPos(parentReferenceDesignator := Config.em.referenceDesignator.combined,
+	                                   jobNumber := _.U3EM1_JOB_SPECIALFUNC_ABSPOS,
+	                                   singleCycleJob := TRUE,
+	                                   interlock := TRUE,
+	                                   startCondition := #statUnitStatus.mode.manual AND #statUnitStatus.state.execute AND _.Unit3.EmNodes.unitStatus.specialFunctions.specialFunction05,
+	                                   hmiInterface := HmiInterface.jobs,
+	                                   jobs := ControlNodes.jobs);
+	            
+	            #instStartingJob(parentReferenceDesignator := Config.em.referenceDesignator.combined,
+	                             jobNumber := _.U3EM1_JOB_STARTING,  //modify
+	                             singleCycleJob := TRUE,
+	                             interlock := TRUE,
+	                             startCondition := #statUnitStatus.state.starting,//modify
+	                             hmiInterface := HmiInterface.jobs,
+	                             jobs := ControlNodes.jobs);
+	            #instHomeJob(parentReferenceDesignator := Config.em.referenceDesignator.combined,
+	                         jobNumber := _.U3EM1_JOB_HOMING,
+	                         singleCycleJob := TRUE,
+	                         interlock := TRUE,
+	                         startCondition := #statHomingJobStartCondition,
+	                         hmiInterface := HmiInterface.jobs,
+	                         jobs := ControlNodes.jobs);
+	            #instPosMovingJob(parentReferenceDesignator := Config.em.referenceDesignator.combined,
+	                              jobNumber := _.U3EM1_JOB_POS_MOVING,
+	                              singleCycleJob := TRUE,
+	                              interlock := TRUE,
+	                              startCondition := #statUnitStatus.state.execute AND #instHomeJob.jobStatus.completed AND _.Unit3.EM1.ControlNodes.sequence.status.currentStep = 1,
+	                              hmiInterface := HmiInterface.jobs,
+	                              jobs := ControlNodes.jobs);
+	            #instUnholdingJob(parentReferenceDesignator := Config.em.referenceDesignator.combined,
+	                              jobNumber := _.U3EM1_JOB_UNHLODING,  //modify
+	                              singleCycleJob := TRUE,
+	                              interlock := TRUE,
+	                              startCondition := #statUnitStatus.state.unholding,//modify
+	                              hmiInterface := HmiInterface.jobs,
+	                              jobs := ControlNodes.jobs);
+	            #instResetingJob(parentReferenceDesignator := Config.em.referenceDesignator.combined,
+	                             jobNumber := _.U3EM1_JOB_RESETING,
+	                             singleCycleJob := TRUE,
+	                             interlock := TRUE,
+	                             startCondition := #statUnitStatus.state.resetting,
+	                             hmiInterface := HmiInterface.jobs,
+	                             jobs := ControlNodes.jobs);
+	            
+	            #instStoppingJob(jobNumber := _.U3EM1_JOB_STOPPING,
+	                             singleCycleJob := TRUE,
+	                             interlock := TRUE,
+	                             startCondition := #statUnitStatus.state.stopping,
+	                             hmiInterface := HmiInterface.jobs,
+	                             jobs := ControlNodes.jobs);
+	            
+	        END_REGION
+	        
+	    END_REGION Select Job
+	    
+	    REGION Set EM to initialized
+	        // Init State of the EM
+	        
+	        REGION modify
+	            // Statement section REGION
+	            IF #instResetingJob.jobStatus.completed
+	            THEN
+	                ControlNodes.em.status.initialized := TRUE;
+	            END_IF;
+	        END_REGION
+	        
+	        IF #statUnitStatus.state.aborting
+	            OR #statUnitStatus.state.stopping
+	            OR #statUnitStatus.state.suspending
+	            OR #statUnitStatus.state.holding
+	        THEN
+	            ControlNodes.em.status.initialized := FALSE;
+	        END_IF;
+	        
+	    END_REGION Set EM to initialized
+	    REGION Intput Signal
+	        REGION cm1SignalTm
+	            #instCm1SingleTm(u1CellsSignal1 := _.materialDetectionU3Em1_1,
+	                             u1CellsSignal2 := _.materialDetectionU3Em1_2,
+	                             u1CellsSignal3 := _.materialDetectionU3Em1_3,
+	                             u1CellsSignal4 := _.materialDetectionU3Em1_4,
+	                             u2CellsSignal1 := _.materialDetectionU3Em1_5,
+	                             u2CellsSignal2 := _.materialDetectionU3Em1_6,
+	                             u2CellsSignal3 := _.materialDetectionU3Em1_7,
+	                             u2CellsSignal4 := _.materialDetectionU3Em1_8,
+	                             ngSafeDoorSignal := NOT _.Safety.DataFromSafety.fDoorNgPullStrapOpened,
+	                             ngStrapSignal := _.ngStrapPositionDetectionU3Em1,
+	                             ngMateriaFullSignal := _.materialDetectionU3Em1_9,
+	                             beltForwardButton := _.ngBeltForwardButton,
+	                             beltBackForwardButton := _.ngBeltBackButton,
+	                             configuration := HmiInterface.cm1SignalTm.configuration,
+	                             moduleInterface := HmiInterface.cm1SignalTm,
+	                             controlNode := ControlNodes.cm1SignalTm);
+	            
+	        END_REGION
+	        REGION cm3NgStrap
+	            #instCm3NgStrap(signal := ControlNodes.cm1SignalTm.monitoring.ngStrapSignal,
+	                            configuration := HmiInterface.cm3NgStrapPositionDetection.configuration,
+	                            moduleInterface := HmiInterface.cm3NgStrapPositionDetection,
+	                            controlNode := ControlNodes.cm3NgStrapPositionDetection);
+	            
+	        END_REGION
+	        
+	        REGION cm4FRButtons
+	            #tempXyzRunning := _.Unit3.PublishedDB.ngConveyorToU2Handlingxyz.recieve.handlingXyz.feedback.running OR _.Unit3.PublishedDB.ngConveyorToU1Handlingxyz.recieve.handlingXyz.feedback.running;
+	            ControlNodes.cm4FrButton.commands.autoConveyorSC := ControlNodes.sequence.status.currentStep = #EM1_IDLE_STATE;
+	            ControlNodes.cm4FrButton.commands.xyzHandlingSC := _.Unit3.PublishedDB.ngConveyorToU2Handlingxyz.recieve.handlingXyz.feedback.transferEnable AND _.Unit3.PublishedDB.ngConveyorToU1Handlingxyz.recieve.handlingXyz.feedback.transferEnable;
+	            ControlNodes.cm4FrButton.commands.enable := #unitStatus.state.execute AND #unitStatus.mode.production;
+	            HmiInterface.cm4FrButton.commands.forwardButton := HmiInterface.cm1SignalTm.monitoring.beltForwardButton;
+	            HmiInterface.cm4FrButton.commands.backForwardButton := HmiInterface.cm1SignalTm.monitoring.beltBackForwardButton;
+	            
+	            #instCm4FrButton(conveyorEnable := ControlNodes.sequence.status.currentStep = #EM1_AUTO_STATE,
+	                             xyzHandlingEnable := #tempXyzRunning,
+	                             configuration := HmiInterface.cm4FrButton.configuration,
+	                             moduleInterface := HmiInterface.cm4FrButton,
+	                             controlNode := ControlNodes.cm4FrButton);
+	            
+	        END_REGION
+	        
+	    END_REGION
+	    
+	    REGION Call Sequence Main
+	        // Add sequence here, that runs during state starting
+	        #instSequence();
+	    END_REGION
+	    
+	END_REGION
+	
+	REGION Control Modules (CMs)
+	    // Control modules for CMs
+	    // CM控制模块
+	    REGION call emParameters
+	        _.LAF_U3Em1Parameter(enable := TRUE,
+	                             configuration := Config.em1Parameters,
+	                             moduleInterface := HmiInterface.em1Parameters);
+	        
+	    END_REGION
+	    
+	    REGION enable/disable cms
+	        IF #statUnitStatus.state.idle THEN
+	            ControlNodes.cm2AxisControl.commands.enableAxis := true;
+	        END_IF;
+	        (* IF #statUnitStatus.state.aborted AND #statUnitStatus.state.stopped THEN
+	            ControlNodes.cm2AxisControl.commands.enableAxis := false;
+	        END_IF; *)
+	    END_REGION
+	    
+	    REGION resetCm
+	        // Statement section REGION
+	        (* IF #unitStatus.mode.current <> #lstUnitMode THEN
+	                
+	                _.Unit3.EM1.ControlNodes.cm4FrButton.cmd.reset := true;;
+	            END_IF; *)
+	        
+	        #instCmReset();
+	        
+	    END_REGION
+	    REGION cmGeneralConfig
+	
+	        HmiInterface.cm3NgStrapPositionDetection.configuration.refCount := Config.em1Parameters.cm3NgStrap.refCount;
+	    END_REGION
+	    
+	    REGION cm1PosAxis
+	        // Statement section REGION
+	        (* IF (_.Unit3.EM1.ControlNodes.cm9MaterialDetection9
+	                OR
+	                (_.Unit3.EM1.ControlNodes.cm2AxisControl.commands.jogBackward
+	                AND
+	                _.Unit3.EM1.ControlNodes.cm2MaterialDetection.monitor.signals[1]
+	                AND
+	                NOT _.Unit3.EM1.ControlNodes.cm2AxisControl.monitoring.statusWord.bit06_Done
+	                )
+	                OR
+	                NOT _.Unit3.EM1.ControlNodes.cm14NgStrapSfDoor.monitor.doorClosed
+	               )AND NOT #unitStatus.mode.maintenance
+	                
+	            THEN
+	                
+	                _.Unit3.EM1.ControlNodes.cm2AxisControl.commands.stop := TRUE;
+	            END_IF; *)
+	        
+	        _.Unit3.EM1.ControlNodes.cm2AxisControl.commands.readValues := true;
+	        #instCm2AxisPos(enable := TRUE,
+	                        enableManualCmds := NOT #unitStatus.mode.production,
+	                        axis := _.U3EM1_SV111_NgConveyor_Axis,
+	                        configuration := _.Unit3.EM1.HmiInterface.cm2AxisControl.configuration,
+	                        moduleInterface := _.Unit3.EM1.HmiInterface.cm2AxisControl,
+	                        controlNode := _.Unit3.EM1.ControlNodes.cm2AxisControl);
+	        
+	    END_REGION
+	    
+	    ;
+	END_REGION
+	REGION HandlingPublishedData
+	    (* CASE _.Unit3.EM1.ControlNodes.cm4FrButton.monitor.mode OF
+	       
+	         100:  // 拉带不可以动，xyz需要回到初始位置 
+	             _.Unit3.PublishedDB.u3ToXyz.deliver.u3ToxyzU1Transfered := true;
+	             _.Unit3.PublishedDB.ngConveyorToU1Handlingxyz.deliver.handlingXyz.req.transferEnable :=
+	             _.Unit3.PublishedDB.ngConveyorToU2Handlingxyz.deliver.handlingXyz.req.transferEnable := TRUE;
+	         200:  // 拉带可以动，xyz不可以动 ，按钮只能走前进方向
+	             _.Unit3.PublishedDB.u3ToXyz.deliver.u3ToxyzU2Transfered := FALSE;
+	             _.Unit3.PublishedDB.ngConveyorToU1Handlingxyz.deliver.handlingXyz.req.transferEnable:=
+	             _.Unit3.PublishedDB.ngConveyorToU2Handlingxyz.deliver.handlingXyz.req.transferEnable:=FALSE;
+	         300:  // 拉带可以动，xyz不可以动
+	             _.Unit3.PublishedDB.u3ToXyz.deliver.u3ToxyzU2Transfered := FALSE;
+	             _.Unit3.PublishedDB.ngConveyorToU1Handlingxyz.deliver.handlingXyz.req.transferEnable :=
+	             _.Unit3.PublishedDB.ngConveyorToU2Handlingxyz.deliver.handlingXyz.req.transferEnable := FALSE;
+	         ELSE  // Statement section ELSE
+	             ;
+	     END_CASE; *)
+	    
+	END_REGION
+	
+	REGION Feedback to Unit 
+	    // Feedback from EM to Unit
+	    // EM到Unit的反馈
+	    
+	    REGION State Complete (SC)
+	        //Report a SC back to the Unit.
+	        //In this demo, SC is always set to TRUE. In a real application, real conditions might be added.
+	        
+	        _.LAF_DetermineStateComplete(active := #statUnitStatus.mode.production,
+	                                     resettingSC := #statUnitStatus.state.resetting AND #instResetingJob.jobStatus.completed,
+	                                     startingSC := #statUnitStatus.state.starting AND #instStartingJob.jobStatus.completed,
+	                                     stoppingSC := (#statUnitStatus.state.stopping AND #instStoppingJob.jobStatus.completed) OR #statUnitStatus.state.stopped,
+	                                     abortingSC := #statUnitStatus.state.aborting,
+	                                     clearingSC := #statUnitStatus.state.clearing,
+	                                     holdingSC := #statUnitStatus.state.holding,
+	                                     unholdingSC := #statUnitStatus.state.unholding AND #instUnholdingJob.jobStatus.completed,
+	                                     suspendingSC := FALSE,
+	                                     unsuspendingSC := FALSE,
+	                                     completingSC := FALSE,
+	                                     stateComplete => #tempScInProduction);
+	        _.LAF_DetermineStateComplete(active := #statUnitStatus.mode.manual,
+	                                     resettingSC := true,
+	                                     startingSC := true,
+	                                     stoppingSC := true,
+	                                     abortingSC := true,
+	                                     clearingSC := true,
+	                                     holdingSC := true,
+	                                     unholdingSC := true,
+	                                     suspendingSC := FALSE,
+	                                     unsuspendingSC := FALSE,
+	                                     completingSC := FALSE,
+	                                     stateComplete => #tempScInManual);
+	        _.LAF_DetermineStateComplete(active := #statUnitStatus.mode.maintenance,
+	                                     resettingSC := true,
+	                                     startingSC := true,
+	                                     stoppingSC := true,
+	                                     abortingSC := true,
+	                                     clearingSC := true,
+	                                     holdingSC := true,
+	                                     unholdingSC := true,
+	                                     suspendingSC := FALSE,
+	                                     unsuspendingSC := FALSE,
+	                                     completingSC := FALSE,
+	                                     stateComplete => #tempScInMantaince);
+	        REGION StateComplete (SC) Summary
+	            // Statement section REGION
+	            
+	            #emFeedback.commands.stateComplete := #tempScInProduction OR #tempScInManual OR #tempScInMantaince;
+	            
+	        END_REGION
+	        
+	    END_REGION State Complete (SC) 
+	    
+	END_REGION Feedback to Unit
+	
+	REGION Alarms 
+	    // Alarm handling section
+	    // 报警处理区域
+	    
+	    REGION Collect Alarms
+	        // Add events here that trigger alarms and lead to the respective commands to the unit.
+	        // It is possible to trigger alarms, set unit commands or do both for the specific event
+	        CollectAlarms(resetAlarms := #statUnitStatus.acknowledgeActive,
+	                      disableAlarms := #statUnitStatus.alarmsDisabled,
+	                      commandsToUnit => #emFeedback.commands);
+	    END_REGION
+	    
+	    REGION Manage Alarms
+	        // Derive commands from the ProDiag supervision. The ProDiag supervisions contain categories which define the reaction of
+	        // these supervisions (e.g. abort, stop, hold). These are handed over as commands TO the unit level. Alternatively, if no
+	        // ProDiag should be used, you can use the LAF_ManageBitAlarms TO realize bit alarm handling. This block can be found in
+	        // LAF in folder 70_AlarmHandling.
+	        #instManageBitAlarms(
+	                             alarmDB => Alarms.emAlarms[_.Unit3_EM1],
+	                             hmiInterfaceDB => HmiInterface.em.alarms,
+	                             commandsToUnit := #emFeedback.commands,
+	                             errorNoReaction := _.Unit3.EM1.Alarms.errorNoReaction,
+	                             errorAbort := _.Unit3.EM1.Alarms.errorAbort,
+	                             errorStop := _.Unit3.EM1.Alarms.errorStop,
+	                             warningNoReaction := _.Unit3.EM1.Alarms.warningNoReaction,
+	                             warningHold := _.Unit3.EM1.Alarms.warningHold,
+	                             warningSuspend := _.Unit3.EM1.Alarms.warningSuspend,
+	                             information := _.Unit3.EM1.Alarms.information,
+	                             criteriaAnalysis := _.Unit3.EM1.Alarms.criteriaAnalysis
+	        );
+	        
+	    END_REGION
+	    
+	END_REGION Alarms
+	#statLstUnitMode := #unitStatus.mode.current;
+	#statLstUnitStatus := #unitStatus.state.current;
+	#statLstCurrentStep := ControlNodes.sequence.status.currentStep;
+	
+END_FUNCTION_BLOCK
+END_NAMESPACE
+

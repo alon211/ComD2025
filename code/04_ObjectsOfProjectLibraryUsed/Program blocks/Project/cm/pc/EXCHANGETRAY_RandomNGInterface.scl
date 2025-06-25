@@ -1,0 +1,198 @@
+﻿FUNCTION_BLOCK "LEXCHANGETRAY_RandomNgInterface"
+TITLE = EXCHANGETRAY_RandomNGInterface
+{ S7_Optimized_Access := 'TRUE' ; Published := 'TRUE' }
+AUTHOR : 'SUP/Zhang Shi Long'
+FAMILY : SUP
+VERSION : 0.1
+//Exchange Tray function
+   VAR_INPUT 
+      execute { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Execution command for NG generation
+      ngMax { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt := 8;   // Maximum number of NG items
+      ngMin { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt := 1;   // Minimum number of NG items
+   END_VAR
+
+   VAR_OUTPUT 
+      done { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Internal completion flag
+      error { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Internal error flag
+   END_VAR
+
+   VAR_IN_OUT 
+      cells : Array[*] of Bool;   // Interface for cell control
+   END_VAR
+
+   VAR 
+      statExe2 : Bool;   // Secondary execution state
+      instRandomDint : "LEXCHANGETRAY_RandomDint";   // Random integer generator instance
+      instNonRepeatingRandom : "LEXCHANGETRAY_NonRepeatingRandom";   // Non-repeating random number generator instance
+      statPreExe { S7_SetPoint := 'True'} : Bool;   // Previous execution state
+      statStep : DInt;   // Current step status
+      statValue1 : DInt;   // Value 1 status
+   END_VAR
+
+   VAR_TEMP 
+      tempTraySize : DInt;
+      tempIndex : DInt;
+   END_VAR
+
+
+BEGIN
+	(* 
+	    ==============================================
+	    Random Cell State Generator
+	    ==============================================
+	    Author: System
+	    Date: 2024-01-19
+	    Version: 1.0
+	    Restrictions: None
+	    Requirements: PLC (S7-1200 / S7-1500)
+	    ==============================================
+	    Change log:
+	    Version  | Date       | Author      | Changes
+	    ---------|------------|-------------|------------------
+	    1.0      | 2024-01-19 | System      | Initial version
+	*)
+	
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // Title:            Random Cell State Generator
+	    // Comment/Function: Generates random NG states for cells in a tray
+	    // Library/Family:   Cell State Management
+	    // Author:           System
+	    // Tested with:      S7-PLCSIM Advanced
+	    // Engineering:      TIA Portal
+	    // Restrictions:     None
+	    // Requirements:     PLC (S7-1200 / S7-1500)
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge | Changes applied
+	    //----------|------------|------------------|-----------------------------
+	    // 01.00.00 | 2024-01-19 | System           | First released version
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	    (*
+	    This block generates random NG states for cells in a tray.
+	    功能：随机生成托盘中单元格的NG状态
+	    
+	    Features/功能特点:
+	    1. Initializes all cells as OK/初始化所有单元格为OK状态
+	    2. Generates random number of NG cells/随机生成NG单元格数量
+	    3. Randomly assigns NG state to cells/随机分配NG状态到单元格
+	    
+	    Operation sequence/操作顺序:
+	    1. When execute signal rises, all cells are initialized as OK
+	       当执行信号上升沿触发时，所有单元格初始化为OK状态
+	    2. A random number of NG cells is determined between ngMin and ngMax
+	       在ngMin和ngMax之间确定一个随机数量的NG单元格
+	    3. Random cell positions are selected to be marked as NG
+	       随机选择单元格位置标记为NG状态
+	    4. Done signal is set when operation completes
+	       操作完成时设置Done信号
+	    *)
+	END_REGION DESCRIPTION
+	
+	REGION PROCESS INPUT SIGNALS
+	    // Calculate tray size from array bounds
+	    // 计算托盘大小
+	    #tempTraySize := UPPER_BOUND(ARR := #cells, DIM := 1) - LOWER_BOUND(ARR := #cells, DIM := 1) + 1;
+	END_REGION PROCESS INPUT SIGNALS
+	
+	REGION RESET
+	    // Reset logic on execute rising edge or execute false
+	    // 执行上升沿或执行为false时的重置逻辑
+	    IF #execute AND NOT #statPreExe THEN
+	        #statStep := 1;
+	        FOR #tempIndex := 0 TO #tempTraySize - 1 DO
+	            #cells[#tempIndex] := TRUE; // Initialize all cells as OK/初始化所有单元格为OK
+	        END_FOR;
+	    ELSIF NOT #execute THEN
+	        #statStep := 0;
+	        #statExe2 := FALSE;
+	        #done := FALSE;
+	        #error := FALSE;
+	    END_IF;
+	END_REGION RESET
+	
+	REGION PARAMETER CHECK
+	    // Parameter validation would be implemented here if needed
+	    // 如果需要，参数验证将在此实现
+	    // Currently no parameter validation is required for this block
+	    // 当前此功能块不需要参数验证
+	END_REGION PARAMETER CHECK
+	
+	REGION ENABLING/DISABLING
+	    // Enable/disable logic would be implemented here if needed
+	    // 如果需要，启用/禁用逻辑将在此实现
+	    // Currently this block uses simple execute flag for enabling/disabling
+	    // 当前此功能块使用简单的execute标志进行启用/禁用
+	END_REGION ENABLING/DISABLING
+	
+	REGION STATE MACHINE
+	    // Main state machine for random cell state generation
+	    // 随机单元格状态生成的主状态机
+	    CASE #statStep OF
+	        1:  // Generate random number of NG cells/生成NG单元格数量
+	            #instRandomDint(lowerLimit := #ngMin,
+	                            upperLimit := #ngMax);
+	            #statExe2 := true;
+	            #statStep := 2;
+	            
+	        2:  // Set random cells to NG state/随机设置单元格为NG状态
+	            IF #instNonRepeatingRandom.done THEN
+	                #done := TRUE;
+	                // Initialize all cells as OK/初始化所有单元格为OK
+	                FOR #tempIndex := 0 TO #tempTraySize - 1 DO
+	                    #cells[#tempIndex] := true;
+	                END_FOR;
+	                // Set random cells to NG/随机设置部分单元格为NG
+	                FOR #tempIndex := 0 TO #instRandomDint.randomNumber - 1 DO
+	                    IF #instNonRepeatingRandom.history[#tempIndex] >= #tempTraySize - 1
+	                        OR
+	                        #instNonRepeatingRandom.history[#tempIndex] < 0
+	                    THEN
+	                        ;
+	                    ELSE
+	                        #statValue1 := #instNonRepeatingRandom.history[#tempIndex];
+	                        #cells[#instNonRepeatingRandom.history[#tempIndex]] := FALSE;
+	                    END_IF;
+	                    
+	                    
+	                    
+	                END_FOR;
+	            END_IF;
+	            
+	            IF #instNonRepeatingRandom.done OR #instNonRepeatingRandom.error THEN
+	                #statStep := 3;
+	            END_IF;
+	            
+	        3:  // Complete operation/完成操作
+	            #statExe2 := FALSE;
+	            #statStep := 0;
+	            
+	        ELSE
+	            ;
+	    END_CASE;
+	END_REGION STATE MACHINE
+	
+	REGION CONFIGURATION HANDLING
+	    // Configuration handling would be implemented here if needed
+	    // 如果需要，配置处理将在此实现
+	    // Currently this block does not require configuration handling
+	    // 当前此功能块不需要配置处理
+	END_REGION CONFIGURATION HANDLING
+	
+	REGION PROCESS OUTPUT SIGNALS
+	    // Generate non-repeating random numbers for cell selection
+	    // 生成不重复的随机数用于单元格选择
+	    #instNonRepeatingRandom(lowerLimit := 0,
+	                              upperLimit := #tempTraySize - 1,
+	                              callCount := #instRandomDint.randomNumber,
+	                              execute := #statExe2); // Execution command for NG generation
+	    
+	    // Store previous execute state
+	    // 存储前一个执行状态
+	    #statPreExe := #execute;
+	END_REGION PROCESS OUTPUT SIGNALS
+END_FUNCTION_BLOCK
+

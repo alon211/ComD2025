@@ -1,0 +1,113 @@
+﻿FUNCTION_BLOCK "LEXCHANGETRAY_CylinderResetMerge"
+TITLE = EXCHANGETRAY_CylinderResetMerge
+{ S7_Optimized_Access := 'TRUE' ; Published := 'TRUE' }
+AUTHOR : 'SUP/Zhang Shi Long'
+FAMILY : SUP
+VERSION : 0.1
+//Exchange Tray function
+   VAR_INPUT 
+      ack { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Acknowledge signal
+      reset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Reset signal for cylinder
+   END_VAR
+
+   VAR_IN_OUT 
+      cylinder : "LBC_Simple_typeTwoWayActuatorControlNode";   // Internal cylinder control variable
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // Siemens / (c)Copyright 2020-2024
+	    //-------------------------------------------------------------------------------
+	    // Title:            Cylinder Command Reset Logic Module
+	    // 标题:             气缸命令复位逻辑模块
+	    // Comment/Function: This module manages cylinder command reset logic, including:
+	    //                    - Reset triggers for work/home position commands
+	    //                    - Signal status tracking for feedback conditions
+	    // 注释/功能:        此模块管理气缸命令复位逻辑，包括：
+	    //                    - 工作位/回零位命令的复位触发
+	    //                    - 反馈条件的信号状态跟踪
+	    // Library/Family:   EXCHANGETRAY - Library of Basic
+	    // 库/家族:         换盘机 - 基本控制模块库
+	    // Author:           Siemens Digital Industries
+	    // 作者:            西门子数字工业
+	    // Tested with:      S7-PLCSIM Advanced 6.0
+	    // 测试环境:        S7-PLCSIM Advanced 6.0
+	    // Engineering:      TIA Portal V19
+	    // 工程环境:        TIA Portal V19
+	    // Restrictions:     ENO mechanism is not used - forced to TRUE.
+	    // 限制条件:        不使用 ENO 机制 - 强制设置为 TRUE。
+	    // Requirements:     PLC (S7-1200 / S7-1500)
+	    // 要求:            PLC (S7-1200 / S7-1500)
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 17.04.2025 | SIMATIC Systems Support | Updated block info and comments following AIupdate.scl style.
+	    // 版本     | 日期       | 负责人                  | 更改内容
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 2025年4月17日 | SIMATIC系统支持        | 参照 LBC 风格更新块信息和注释。
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	    (/*
+	    This module manages cylinder command reset logic based on feedback signals and external triggers. 
+	    It resets active commands when:
+	    - An acknowledgment (`#ack`) or system reset (`#reset`) is received
+	    - Position-specific feedback conditions are met (e.g., inWorkPos/inHomePos)
+	    
+	    此模块根据反馈信号和外部触发管理气缸命令复位逻辑。当以下情况发生时重置激活命令：
+	    - 收到确认信号 (`#ack`) 或系统复位 (`#reset`)
+	    - 位置特定反馈条件满足（如检测到工作位/回零位）
+	    */)
+	END_REGION DESCRIPTION
+	
+	REGION INITIALISATION  
+	    // Trigger cylinder reset command based on external triggers
+	    // 根据外部触发启动气缸复位命令
+	    #cylinder.commands.reset := #ack OR #reset;
+	END_REGION INITIALISATION  
+	
+	REGION PROGRAM LOGIC
+	    REGION CYLINDER COMMAND RESET LOGIC
+	        REGION Work Position Command Reset
+	            // Reset work position command when:
+	            // - Acknowledgment or system reset is active
+	            // - Cylinder reaches work position
+	            IF (
+	                #ack
+	                OR
+	                #reset
+	                OR
+	                #cylinder.monitoring.inWorkPos
+	                ) AND #cylinder.commands.commandWorkPos THEN
+	                #cylinder.commands.commandWorkPos := FALSE;
+	            END_IF;
+	        END_REGION Work Position Command Reset
+	        
+	        REGION Home Position Command Reset
+	            // Reset home position command when:
+	            // - Acknowledgment or system reset is active
+	            // - Cylinder reaches home position
+	            IF (
+	                #ack
+	                OR
+	                #reset
+	                OR
+	                #cylinder.monitoring.inHomePos
+	                ) AND #cylinder.commands.commandHomePos THEN
+	                #cylinder.commands.commandHomePos := FALSE;
+	            END_IF;
+	        END_REGION Home Position Command Reset
+	    END_REGION CYLINDER COMMAND RESET LOGIC
+	END_REGION PROGRAM LOGIC
+	
+	REGION OUTPUTS
+	    // ENO mechanism disabled, ENO - forced to TRUE
+	    // ENO 机制禁用，强制设置为 TRUE
+	    ENO := TRUE;
+	END_REGION OUTPUTS
+END_FUNCTION_BLOCK
+

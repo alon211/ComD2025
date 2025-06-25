@@ -1,0 +1,244 @@
+﻿NAMESPACE Unit2
+FUNCTION EXCHANGETRAY_CallEmCommunication : Void
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+VERSION : 0.1
+   VAR_TEMP 
+      simActive : Bool;
+   END_VAR
+
+
+BEGIN
+	    REGION intput
+	        #simActive := _.Global.Data.general.activateSimulation;
+	        
+	        
+	    END_REGION ;
+	    
+	    REGION init
+	        IF _.Unit2.EmNodes.unitStatus.state.starting THEN
+	            EmNodes.emRelations.EM1.deliver.init :=
+	            EmNodes.emRelations.EM2.deliver.init :=
+	            EmNodes.emRelations.EM3.deliver.init :=
+	            EmNodes.emRelations.EM6.deliver.init :=
+	            EmNodes.emRelations.EM5.deliver.init :=
+	            EmNodes.emRelations.EM4.deliver.init := TRUE;
+	            
+	        END_IF;
+	        
+	        EXCHANGETRAY_CallInit(constraintRoller := EmNodes.emRelations.EM2.deliver,
+	                 handlingXyz := EmNodes.emRelations.EM4.deliver,
+	                 constraintWorkstation := EmNodes.emRelations.EM3.deliver,
+	                 plasticWorkstation := EmNodes.emRelations.EM5.deliver,
+	                 B1Roller := EmNodes.emRelations.EM1.deliver,
+	                 B2Roller:=EmNodes.emRelations.EM6.deliver);
+	
+	    END_REGION
+	    
+	    REGION constraint
+	       
+	            
+	            
+	            
+	        IF  EmNodes.emRelations.EM1.recieve.logistics.feedback.outFeeding THEN
+	            EmNodes.emRelations.EM1.deliver.logistics.req.outFeedReq := false;
+	        END_IF;
+	        
+	        
+	        
+	        
+	        // EM1toEM2复位请求:托盘进入EM2
+	        IF _.Global.Data.material.Unit2.contraint.monitor.postion.EM2
+	            AND
+	            EmNodes.emRelations.EM1.deliver.workStationRoller.req.outFeedReq
+	            
+	        THEN
+	            EmNodes.emRelations.EM1.deliver.logistics.feedback.outFeeding := false;
+	            EmNodes.emRelations.EM1.deliver.workStationRoller.req.outFeedReq := FALSE;
+	            EmNodes.emRelations.EM2.deliver.roller.feedback.inFeedEnabled := FALSE;
+	        END_IF;
+	        // EM2toEM3复位请求:托盘开始解拘束
+	        (* IF _.Global.Data.material.Unit2.contraint.monitor.status.contraintStatus = 1
+	            AND
+	            EmNodes.emRelations.EM2.deliver.constraintWorkstation.req.transferEnable
+	            AND
+	            EmNodes.emRelations.EM2.deliver.constraintWorkstation.req.unConstraint
+	        THEN
+	            EmNodes.emRelations.EM2.deliver.constraintWorkstation.req.transferEnable :=
+	            EmNodes.emRelations.EM2.deliver.constraintWorkstation.req.unConstraint := FALSE;
+	        END_IF; *)
+	        // EM3toEM2复位请求:EM2请求EM4抓取
+	        IF EmNodes.emRelations.EM3.deliver.constraintRoller.req.transferEnable
+	            AND
+	            EmNodes.emRelations.EM2.deliver.handlingXyz.req.transferEnable
+	        THEN
+	            EmNodes.emRelations.EM3.deliver.constraintRoller.req.transferEnable := FALSE;
+	            ;
+	        END_IF;
+	        // EM2toEM4复位请求:EM6抓取完成
+	        // 20250512
+	       (* IF EmNodes.emRelations.EM4.deliver.constraintRoller.req.transferEnable
+	            AND
+	            EmNodes.emRelations.EM2.deliver.handlingXyz.req.transferEnable *)
+	       (* IF EmNodes.emRelations.EM4.deliver.constraintRoller.req.transferEnable
+	        THEN
+	            EmNodes.emRelations.EM2.deliver.handlingXyz.req.transferEnable := FALSE;
+	            ;
+	        END_IF; *)
+	        // EM4toEM2复位请求:EM3加拘束
+	        // 20250512
+	      (*  IF EmNodes.emRelations.EM4.deliver.constraintRoller.req.transferEnable
+	            
+	            AND
+	            NOT EmNodes.emRelations.EM2.deliver.handlingXyz.feedback.catchEnable *)
+	      (*  IF EmNodes.emRelations.EM2.deliver.handlingXyz.req.transferEnable
+	        THEN
+	            EmNodes.emRelations.EM4.deliver.constraintRoller.req.transferEnable := FALSE;
+	            ;
+	        END_IF; *)
+	        // EM2toEM3复位请求:托盘加拘束中
+	        IF _.Global.Data.material.Unit2.contraint.monitor.status.contraintStatus = 3
+	            AND
+	            EmNodes.emRelations.EM2.deliver.constraintWorkstation.req.transferEnable
+	            AND
+	            EmNodes.emRelations.EM2.deliver.constraintWorkstation.req.Constraint
+	        THEN
+	            EmNodes.emRelations.EM2.deliver.constraintWorkstation.req.Constraint :=
+	            EmNodes.emRelations.EM2.deliver.constraintWorkstation.req.transferEnable := FALSE;
+	            ;
+	        END_IF;
+	        // EM3toEM2复位请求:EM2请求出盘
+	        IF _.Global.Data.material.Unit2.contraint.monitor.status.contraintStatus = 0
+	            AND
+	            EmNodes.emRelations.EM3.deliver.constraintRoller.req.transferEnable
+	            AND
+	            EmNodes.emRelations.EM2.deliver.roller.req.outFeedReq
+	        THEN
+	            
+	            EmNodes.emRelations.EM3.deliver.constraintRoller.req.transferEnable := FALSE;
+	            ;
+	        END_IF;
+	        // EM2toEM1复位请求:托盘在EM1
+	        IF _.Global.Data.material.Unit2.contraint.monitor.postion.EM1
+	            AND
+	            
+	            EmNodes.emRelations.EM2.deliver.roller.req.outFeedReq
+	        THEN
+	            _.Unit2.EmNodes.emRelations.EM1.deliver.workStationRoller.feedback.inFeedEnabled := FALSE;
+	            EmNodes.emRelations.EM2.deliver.roller.req.outFeedReq := FALSE;
+	            ;
+	        END_IF;
+	        
+	        
+	        EmNodes.emRelations.EM1.recieve.workStationRoller.req := EmNodes.emRelations.EM2.deliver.roller.req;
+	        EmNodes.emRelations.EM1.recieve.workStationRoller.feedback := EmNodes.emRelations.EM2.deliver.roller.feedback;
+	        EmNodes.emRelations.EM1.recieve.workStationRoller.feedback.inFeedEnabled := EmNodes.emRelations.EM2.deliver.roller.feedback.inFeedEnabled;
+	        
+	        EmNodes.emRelations.EM2.recieve.roller.req := EmNodes.emRelations.EM1.deliver.workStationRoller.req;
+	        EmNodes.emRelations.EM2.recieve.roller.feedback := EmNodes.emRelations.EM1.deliver.workStationRoller.feedback;
+	        
+	        EmNodes.emRelations.EM2.recieve.constraintWorkstation.req := EmNodes.emRelations.EM3.deliver.constraintRoller.req;
+	        EmNodes.emRelations.EM2.recieve.constraintWorkstation.feedback := EmNodes.emRelations.EM3.deliver.constraintRoller.feedback;
+	        
+	        EmNodes.emRelations.EM2.recieve.handlingXyz.req:=EmNodes.emRelations.EM4.deliver.constraintRoller.req;
+	        EmNodes.emRelations.EM2.recieve.handlingXyz.feedback := EmNodes.emRelations.EM4.deliver.constraintRoller.feedback;
+	        
+	        EmNodes.emRelations.EM3.recieve.constraintRoller.feedback := EmNodes.emRelations.EM2.deliver.constraintWorkstation.feedback;
+	        EmNodes.emRelations.EM3.recieve.constraintRoller.req := EmNodes.emRelations.EM2.deliver.constraintWorkstation.req;
+	        
+	        EmNodes.emRelations.EM4.recieve.constraintRoller.req := EmNodes.emRelations.EM2.deliver.handlingXyz.req;
+	        EmNodes.emRelations.EM4.recieve.constraintRoller.feedback := EmNodes.emRelations.EM2.deliver.handlingXyz.feedback;
+	        
+	        
+	        
+	        PublishedDB.rollerB1ToLogistic.deliver.logistics := EmNodes.emRelations.EM1.deliver.logistics;
+	        EmNodes.emRelations.EM1.recieve.logistics := PublishedDB.rollerB1ToLogistic.recieve.logistics;
+	        
+	        
+	        
+	        
+	    END_REGION
+	    
+	    REGION plastic
+	        // Logistic to EM6
+	        
+	        IF EmNodes.emRelations.EM6.recieve.logistics.feedback.outFeeding THEN
+	            EmNodes.emRelations.EM6.deliver.logistics.req.outFeedReq := false;
+	        END_IF;
+	        // EM6toEM5复位请求:空托盘进入EM5
+	        IF _.Global.Data.material.Unit2.plastic.monitor.postion.EM5
+	            AND
+	            EmNodes.emRelations.EM6.deliver.workStationRoller.req.outFeedReq
+	            
+	        THEN
+	            EmNodes.emRelations.EM6.deliver.logistics.feedback.outFeeding := false;
+	            EmNodes.emRelations.EM6.deliver.workStationRoller.req.outFeedReq := FALSE;
+	            _.Unit2.EmNodes.emRelations.EM5.deliver.roller.req.inFeedReq := FALSE;
+	        END_IF;
+	        // EM4toEM5复位请求:电芯放完
+	        IF EmNodes.emRelations.EM5.deliver.handlingXyz.req.transferEnable
+	            AND
+	            EmNodes.emRelations.EM4.deliver.plasticRoller.req.transferEnable
+	        THEN
+	            
+	            EmNodes.emRelations.EM5.deliver.handlingXyz.req.transferEnable := FALSE;
+	        END_IF;
+	        // EM5toEM6复位请求:电芯出物流线
+	        IF EmNodes.emRelations.EM5.deliver.roller.req.outFeedReq
+	            AND
+	            _.Global.Data.material.Unit2.plastic.monitor.postion.EM6
+	        THEN
+	            EmNodes.emRelations.EM5.deliver.roller.req.outFeedReq:=
+	            EmNodes.emRelations.EM6.deliver.workStationRoller.req.inFeedReq:=
+	            EmNodes.emRelations.EM6.deliver.workStationRoller.feedback.inFeedEnabled:=
+	            EmNodes.emRelations.EM4.deliver.plasticRoller.req.transferEnable := FALSE;
+	            ;
+	        END_IF;
+	        // EM6toLogistic
+	        EmNodes.emRelations.EM5.recieve.roller.req := EmNodes.emRelations.EM6.deliver.workStationRoller.req;
+	        EmNodes.emRelations.EM5.recieve.roller.feedback := EmNodes.emRelations.EM6.deliver.workStationRoller.feedback;
+	        
+	        EmNodes.emRelations.EM6.recieve.workStationRoller.req := EmNodes.emRelations.EM5.deliver.roller.req;
+	        EmNodes.emRelations.EM6.recieve.workStationRoller.feedback := EmNodes.emRelations.EM5.deliver.roller.feedback;
+	        
+	        EmNodes.emRelations.EM4.recieve.plasticRoller.req := EmNodes.emRelations.EM5.deliver.handlingXyz.req;
+	        EmNodes.emRelations.EM4.recieve.plasticRoller.feedback := EmNodes.emRelations.EM5.deliver.handlingXyz.feedback;
+	        
+	        EmNodes.emRelations.EM5.recieve.handlingXyz.req := EmNodes.emRelations.EM4.deliver.plasticRoller.req;
+	        
+	        PublishedDB.rollerB2ToLogistic.deliver.logistics:= EmNodes.emRelations.EM6.deliver.logistics;
+	        EmNodes.emRelations.EM6.recieve.logistics:=PublishedDB.rollerB2ToLogistic.recieve.logistics;
+	    END_REGION
+	    REGION ngConveyor
+	         PublishedDB.handlingXyzToNgConveyor.deliver.NgConvyorRoller := EmNodes.emRelations.EM4.deliver.NgConvyorRoller;
+	        EmNodes.emRelations.EM4.recieve.NgConvyorRoller := PublishedDB.handlingXyzToNgConveyor.recieve.NgConvyorRoller; 
+	        
+	    END_REGION
+	    REGION tray postion handling
+	        _.Global.Data.material.Unit2.contraint.monitor.postion.logistic := _.Global.Data.material.Unit2.contraint.monitor.postion.position.%X0;
+	        _.Global.Data.material.Unit2.contraint.monitor.postion.EM1 := _.Global.Data.material.Unit2.contraint.monitor.postion.position.%X1;
+	        _.Global.Data.material.Unit2.contraint.monitor.postion.EM2 := _.Global.Data.material.Unit2.contraint.monitor.postion.position.%X2;
+	        _.Global.Data.material.Unit2.contraint.monitor.postion.EM5 := _.Global.Data.material.Unit2.contraint.monitor.postion.position.%X3;
+	        _.Global.Data.material.Unit2.contraint.monitor.postion.EM6 := _.Global.Data.material.Unit2.contraint.monitor.postion.position.%X4;
+	        
+	        _.Global.Data.material.Unit2.plastic.monitor.postion.logistic := _.Global.Data.material.Unit2.plastic.monitor.postion.position.%X0;
+	        _.Global.Data.material.Unit2.plastic.monitor.postion.EM1 := _.Global.Data.material.Unit2.plastic.monitor.postion.position.%X1;
+	        _.Global.Data.material.Unit2.plastic.monitor.postion.EM2 := _.Global.Data.material.Unit2.plastic.monitor.postion.position.%X2;
+	        _.Global.Data.material.Unit2.plastic.monitor.postion.EM5 := _.Global.Data.material.Unit2.plastic.monitor.postion.position.%X3;
+	        _.Global.Data.material.Unit2.plastic.monitor.postion.EM6 := _.Global.Data.material.Unit2.plastic.monitor.postion.position.%X4;
+	        
+	    END_REGION
+	    
+	    
+	    
+	    
+	    
+	    
+	    
+	    
+	    
+	    
+	    
+	    
+END_FUNCTION
+END_NAMESPACE
+

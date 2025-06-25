@@ -1,0 +1,302 @@
+﻿FUNCTION_BLOCK "LEXCHANGETRAY_SimulateVfd"
+TITLE = EXCHANGETRAY_SimulateVfd
+{ S7_Optimized_Access := 'TRUE' ; Published := 'TRUE' }
+AUTHOR : 'SUP/Zhang Shi Long'
+FAMILY : SUP
+VERSION : 0.1
+//Exchange Tray function
+   VAR_INPUT 
+      reset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Reset signal for VFD simulation
+      speedSetPoints { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // Speed setpoints for VFD simulation
+   END_VAR
+
+   VAR_IN_OUT 
+      commandsControlNodes : "LBC_typeSinaSpeedControlNodeCommands";   // Internal control nodes commands
+      monitoring : "LBC_typeSinaSpeedProcessValues";   // Internal monitoring interface
+      commandsModuleInterface : "LBC_typeSinaSpeedManualCommands";   // Internal module interface commands
+      configuration : "LAF_typeVfdParameters";   // Internal configuration parameters
+   END_VAR
+
+   VAR 
+      instRampCI { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : "LGF_RampCI";   // Ramp control instance
+      timeTable { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Array[0..1] of "LGF_typeRampTimeTable";   // Timing table for simulation
+      statEnableAxis { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'True'} : Bool;   // Axis enable status
+      statMoveVelocity { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'True'} : Bool;   // Movement velocity status
+      statSpeedSetPoint { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // Speed setpoint status
+      statDec { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Time;   // Deceleration status
+      statAcc { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Time;   // Acceleration status
+      statFastDec { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Time;   // Fast deceleration status
+      statStop { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Normal stop status
+      statFastStop { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Fast stop status
+      statStopPrevious { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Previous stop status
+      statFastStopPrevious { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Previous fast stop status
+      statStoppingState { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Current stopping state
+      statHoldingState { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Current holding state
+      statResetError { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Error reset status
+      statActualSpeedPrevious { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // Previous actual speed status
+      statSpeedSetPointPrevious { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Real;   // Previous speed setpoint status
+      statEnableAxisPrevious { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Previous axis enable status
+      statMoveVelocityPrevious { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Previous movement velocity status
+      statFbState { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // Function block current state
+      statFbStatePrevious { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // Function block previous state
+      statReset { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Reset status
+      statModifed { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Modified status
+      statStopModify { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Stop modification status
+      statFastStopModify { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Fast stop modification status
+   END_VAR
+
+   VAR_TEMP 
+      tempRampExe : Bool;
+      tempActualSpeed : Real;
+   END_VAR
+
+   VAR CONSTANT 
+      FB_STATE_NO_PROCESSING : Word;   // Function block state: No processing
+      FB_STATE_SIM_START : Word := 16#0010;   // Function block state: Simulation start
+      FB_STATE_SIM_HOLD : Word := 16#0020;   // Function block state: Simulation hold
+      FB_STATE_MODIFY_VELOCITY : Word := 16#0021;   // Function block state: Velocity modification
+      FB_STATE_SIM_UNHOLD : Word := 16#0022;   // Function block state: Simulation unhold
+      FB_STATE_RESETING : Word := 16#0030;   // Function block state: Resetting
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // Company: Tencent Cloud
+	    // Author: Craft AI Assistant
+	    //-------------------------------------------------------------------------------
+	    // Title: Speed Control Module
+	    // Comment/Function: Controls the speed of an axis with acceleration and deceleration ramps
+	    //                   Supports manual and automatic control modes
+	    // Restrictions: ENO mechanism is not used
+	    // Requirements: PLC (S7-1200 / S7-1500)
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge | Changes applied
+	    //----------|------------|------------------|-----------------------------
+	    // 01.00.00 | 2024.01.20| Craft AI         | First version
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(/*
+	The module controls the speed of an axis with configurable acceleration and deceleration ramps.
+	主要功能：轴速度控制，支持加速和减速斜坡
+	Key features 主要特性:
+	- Speed setpoint control 速度设定点控制
+	- Configurable acceleration/deceleration ramps 可配置的加速/减速斜坡
+	- Fast stop functionality 快速停止功能
+	- Manual and automatic control modes 手动和自动控制模式
+	- Status monitoring and error handling 状态监控和错误处理
+	
+	The module processes input commands from both control nodes and module interface.
+	模块处理来自控制节点和模块接口的输入命令。
+	*/)
+	END_REGION DESCRIPTION
+	
+	REGION PROCESS INPUT SIGNALS
+	    // Process input signals and commands from control nodes and module interface
+	    // 处理来自控制节点和模块接口的输入信号和命令
+	    #statEnableAxis := #commandsControlNodes.enableAxis OR (#commandsModuleInterface.enableControl AND #commandsModuleInterface.enableAxis);
+	    #statMoveVelocity := #commandsControlNodes.moveVelocity OR (#commandsModuleInterface.enableControl AND #commandsModuleInterface.moveVelocity);
+	    #statFastStop := #commandsControlNodes.fastStop OR (#commandsModuleInterface.enableControl AND #commandsModuleInterface.fastStop);
+	    #statDec := (REAL_TO_DINT(#configuration.general.simulatePar.dec * 1000));
+	    #statAcc := (REAL_TO_DINT(#configuration.general.simulatePar.acc * 1000));
+	    #statFastDec := (REAL_TO_DINT(#configuration.general.simulatePar.fastDec * 1000));
+	    #statStop := #commandsControlNodes.stop OR (#commandsModuleInterface.enableControl AND #commandsModuleInterface.stop);
+	    #statResetError := #commandsControlNodes.resetAxis OR #commandsControlNodes.reset OR (#commandsModuleInterface.reset OR #commandsModuleInterface.resetAxis) AND #commandsModuleInterface.enableControl;
+	    #statSpeedSetPoint := #speedSetPoints;
+	    #statReset := #reset;
+	END_REGION PROCESS INPUT SIGNALS
+	
+	REGION RESET
+	    // Reset handling
+	    // 复位处理
+	    IF #statReset THEN
+	        #statFbState := #FB_STATE_RESETING;
+	        #instRampCI.start :=
+	        #statStoppingState :=
+	        #statHoldingState := FALSE;
+	        #statReset := true;
+	        #tempActualSpeed := 0.0;
+	    END_IF;
+	END_REGION RESET
+	
+	REGION PARAMETER CHECK
+	    // Parameter validation
+	    // 参数验证
+	    IF #statEnableAxis THEN
+	        // Add parameter validation logic here if needed
+	        // 如果需要，在此添加参数验证逻辑
+	        ;
+	    END_IF;
+	END_REGION PARAMETER CHECK
+	
+	REGION ENABLING/DISABLING
+	    // Enable/Disable handling
+	    // 启用/禁用处理
+	    IF #statEnableAxis THEN
+	        // Enable processing
+	        // 启用处理
+	        ;
+	    END_IF;
+	END_REGION ENABLING/DISABLING
+	
+	REGION STATE MACHINE
+	    REPEAT
+	        #statFbStatePrevious := #statFbState;
+	        CASE #statFbState OF
+	            #FB_STATE_NO_PROCESSING:
+	                IF #statEnableAxis THEN
+	                    #statFbState := #FB_STATE_SIM_START;
+	                END_IF;
+	                
+	            #FB_STATE_SIM_START:
+	                #instRampCI.start := #statEnableAxis;
+	                // Reset modification flags only in non-stop states
+	                // 仅在非停止状态下重置修改标志
+	                IF NOT #statStop AND NOT #statFastStop THEN
+	                    #statStopModify := false;
+	                    #statFastStopModify := false;
+	                END_IF;
+	                
+	                IF NOT #statEnableAxis THEN
+	                    #statFbState := #FB_STATE_NO_PROCESSING;
+	                END_IF;
+	                
+	                IF (#statMoveVelocity AND NOT #statMoveVelocityPrevious)
+	                    OR
+	                    (#statStop AND NOT #statStopPrevious)
+	                    OR
+	                    (#statFastStop AND NOT #statStopPrevious)
+	                THEN
+	                    #statFbState := #"FB_STATE_SIM_HOLD";
+	                    #statStopModify := #statStop;
+	                    #statFastStopModify := #statFastStop;
+	                END_IF;
+	                
+	            #"FB_STATE_SIM_HOLD":
+	                #instRampCI.defaultOutValue := #instRampCI.outputValue;
+	                #statHoldingState := true;
+	                IF #instRampCI.hold THEN
+	                    #statFbState := #FB_STATE_MODIFY_VELOCITY;
+	                END_IF;
+	                
+	            #FB_STATE_MODIFY_VELOCITY:
+	                IF NOT #statModifed THEN
+	                    #statFbState := #FB_STATE_SIM_UNHOLD;
+	                END_IF;
+	                #statModifed := TRUE;
+	                
+	                IF #statStopModify THEN
+	                    #timeTable[0]."time" := #statDec;
+	                    #timeTable[0].outputValue := #instRampCI.outputValue;
+	                    #timeTable[1]."time" := T#0S;
+	                    #timeTable[1].outputValue := 0.0;
+	                    EXIT;
+	                END_IF;
+	                
+	                IF #statFastStopModify THEN
+	                    #timeTable[0]."time" := #statFastDec;
+	                    #timeTable[0].outputValue := #instRampCI.outputValue;
+	                    #timeTable[1]."time" := T#0S;
+	                    #timeTable[1].outputValue := 0.0;
+	                    EXIT;
+	                END_IF;
+	                
+	                IF #instRampCI.outputValue > #statSpeedSetPoint AND NOT #statStopModify AND NOT #statFastStopModify THEN
+	                    #timeTable[0]."time" := #statDec;
+	                    #timeTable[0].outputValue := #instRampCI.outputValue;
+	                    #timeTable[1]."time" := T#0S;
+	                    #timeTable[1].outputValue := #statSpeedSetPoint;
+	                END_IF;
+	                
+	                IF #instRampCI.outputValue < #statSpeedSetPoint AND NOT #statStop AND NOT #statFastStop THEN
+	                    #timeTable[0]."time" := #statAcc;
+	                    #timeTable[0].outputValue := #instRampCI.outputValue;
+	                    #timeTable[1]."time" := T#0S;
+	                    #timeTable[1].outputValue := #statSpeedSetPoint;
+	                END_IF;
+	                
+	                // Reset modification flags only in non-stop states
+	                // 仅在非停止状态下重置修改标志
+	                IF NOT #statStop AND NOT #statFastStop THEN
+	                    #statStopModify := false;
+	                    #statFastStopModify := false;
+	                END_IF;
+	                
+	            #FB_STATE_SIM_UNHOLD:
+	                #statHoldingState := FALSE;
+	                IF NOT #instRampCI.hold THEN
+	                    #statFbState := #FB_STATE_SIM_START;
+	                END_IF;
+	                
+	            #FB_STATE_RESETING:
+	                #instRampCI.start :=
+	                #statStoppingState :=
+	                #statStopModify :=
+	                #statFastStopModify :=
+	                #statHoldingState := FALSE;
+	                #timeTable[0].outputValue := 0.0;
+	                #timeTable[1].outputValue := 0.0;
+	                #instRampCI.defaultOutValue :=
+	                #tempActualSpeed := 0.0;
+	                IF NOT #instRampCI.reset THEN
+	                    IF #statEnableAxis THEN
+	                        #statFbState := #FB_STATE_SIM_START;
+	                    ELSE
+	                        #statFbState := #FB_STATE_NO_PROCESSING;
+	                    END_IF;
+	                END_IF;
+	                
+	        END_CASE;
+	        
+	    UNTIL (#statFbStatePrevious = #statFbState)
+	    END_REPEAT;
+	    
+	    #statMoveVelocityPrevious := #statMoveVelocity;
+	    #statStopPrevious := #statStop;
+	    #statFastStopPrevious := #statFastStop;
+	END_REGION STATE MACHINE
+	
+	REGION CONFIGURATION HANDLING
+	    // Call RampFb for speed control
+	    // 调用RampFb进行速度控制
+	    #instRampCI(
+	                hold := #statHoldingState,
+	                "continue" := TRUE,
+	                cyclicOP := false,
+	                reset := #statReset,
+	                callOB := 30,
+	                setpoints := #timeTable);
+	    #statModifed := FALSE;
+	    #tempActualSpeed := #instRampCI.outputValue;
+	END_REGION CONFIGURATION HANDLING
+	
+	REGION PROCESS OUTPUT SIGNALS
+	    // Write monitoring values
+	    // 写入监控值
+	    #monitoring.actualSpeed := #tempActualSpeed;
+	    #monitoring.enable :=
+	    #monitoring.enabled :=
+	    #monitoring.axisEnabled :=
+	    #monitoring.enableAxis := #statEnableAxis;
+	    
+	    #monitoring.inVelocity := #tempActualSpeed = #statSpeedSetPoint;
+	    
+	    #monitoring.busy := NOT "LGF_CompareLReal"(valueA := #tempActualSpeed, valueB := 0.0);
+	    #monitoring.readyToStart := #statEnableAxis;
+	    #monitoring.enableManualCmds := #commandsModuleInterface.enableControl;
+	    #monitoring.fastStop := #statFastStop;
+	    #monitoring.stop := #statStop;
+	    
+	    #statActualSpeedPrevious := #tempActualSpeed;
+	    IF #statMoveVelocity THEN
+	        #statSpeedSetPointPrevious := #statSpeedSetPoint;
+	    END_IF;
+	    
+	    #statEnableAxisPrevious := #statEnableAxis;
+	END_REGION PROCESS OUTPUT SIGNALS
+END_FUNCTION_BLOCK
+

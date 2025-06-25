@@ -1,0 +1,319 @@
+﻿FUNCTION_BLOCK "LEXCHANGETRAY_Vfd"
+TITLE = EXCHANGETRAY_Vfd
+{ S7_Optimized_Access := 'TRUE' ; Published := 'TRUE' }
+AUTHOR : 'SUP/Zhang Shi Long'
+FAMILY : SUP
+VERSION : 0.1
+//Exchange Tray function
+   VAR_IN_OUT 
+      configuration : "LAF_typeVfdParameters";   // VFD configuration parameters
+      moduleInterface : "LEXCHANGETRAY_typeVfdInterface";   // VFD module interface
+      controlNode : "LEXCHANGETRAY_typeVfdContronNode";   // VFD control node
+   END_VAR
+
+   VAR 
+      statSinaModuleInterface : "LBC_typeSinaSpeedInterface";   // Sina module interface status
+      statSinaControlNode : "LBC_typeSinaSpeedControlNode";   // Sina control node status
+      statManualCommands { S7_SetPoint := 'False'} : "LBC_typeSinaSpeedManualCommands";   // Manual commands execution status
+      statProcessValues { S7_SetPoint := 'False'} : "LBC_typeSinaSpeedProcessValues";   // Process values monitoring status
+      statControlNodeMonitoring : "LBC_typeSinaSpeedControlNodeMonitoring";   // Control node monitoring status
+      statDiagnostics : "LBC_typeDiagnostics";   // Diagnostics information status
+      instSinaSpeed : "LBC_SinaSpeedCn";   // Sina speed control instance
+      instSimVfd : "LEXCHANGETRAY_SimulateVfd";   // VFD simulation instance
+      statSpeedSetPoint : Real;   // Speed setpoint status
+      statSimActive : Bool;   // Simulation active status
+      statEnable : Bool;   // VFD enable status
+      statResetError : Bool;   // Error reset status
+      statError : Bool;   // Error status
+      statSimDec : Time;   // Simulated deceleration status
+      statSimAcc : Time;   // Simulated acceleration status
+      statsimFastDec : Time;   // Simulated fast deceleration status
+      statSimActivePrevious : Bool;   // Previous simulation active status
+      statFbState : Word;   // Function block current state
+      statFbStatePrevious : Word;   // Function block previous state
+      statVfdStopped : Bool;   // VFD stopped status
+   END_VAR
+
+   VAR_TEMP 
+      tempSimActiveEdge : Bool;
+   END_VAR
+
+   VAR CONSTANT 
+      FB_STATE_NO_PROCESSING : Word := 16#0000;   // Function block state: No processing
+      FB_STATE_ERROR_HANDLER : Word := 16#0010;   // Function block state: Error handler仿真控制
+      FB_STATE_INIT_SIMULATING : Word := 16#0020;   // Function block state: Initializing simulation
+      FB_STATE_EXECUTE_SIMULATING : Word := 16#0021;   // Function block state: Executing simulation实际自动控制
+      FB_STATE_CONTROLNODE_OPERTION : Word := 16#0040;   // Function block state: Control node operationFB状态
+      SUB_STATUS_NO_ERROR : Word := 16#0000;   // Sub status: No error
+      ERR_INCORRECT_COUNTING : Word := 16#8201;   // Error: Incorrect counting
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER  
+	    //===============================================================================  
+	    // Siemens / (c)Copyright 2020-2024  
+	    //-----------------------------------------------------------------------------  
+	    // Title:            VFD Simulation & Control Logic (变频器仿真与控制逻辑)  
+	    // Comment/Function:  
+	    //                   - Process input signals from module interface or control node  
+	    //                   - Simulate VFD behavior in manual mode (SIMULATE MODE)  
+	    //                   - State machine-driven execution (init/simulation/control states)  
+	    //                   - Error handling and diagnostics (ERR_INCORRECT_REFSPEED etc.)  
+	    //                   - Output signal mapping to module interface and control node  
+	    // Library/Family:   EXCHANGETRAY - Library of Basic Functions  
+	    // Author:           Siemens Digital Industries  
+	    // Tested with:      S7-PLCSIM Advanced 6.0  
+	    // Engineering:      TIA Portal V19  
+	    // Restrictions:     ENO mechanism is not used - forced to TRUE (不使用ENO机制，强制置位为TRUE)  
+	    // Requirements:     PLC (S7-1200 / S7-1500)  
+	    //-----------------------------------------------------------------------------  
+	    // Change log table:  
+	    // Version  | Date       | Expert in charge        | Changes applied  
+	    //----------|------------|-------------------------|-----------------------------  
+	    // XX.00.00 | XX.XX.XXXX | SIMATIC Systems Support | Initial version  
+	    //===============================================================================  
+	END_REGION BLOCK INFO HEADER  
+	REGION DESCRIPTION  
+	    (/*  
+	    中文描述：  
+	    本代码块实现了一个变频器（VFD）的仿真与控制逻辑，主要功能包括：  
+	    1. 处理来自模块接口（ModuleInterface）或控制节点（ControlNode）的输入信号；  
+	    2. 支持模拟模式（SIMULATE MODE）下的手动控制，生成仿真速度反馈；  
+	    3. 基于状态机（State Machine）的流程控制（初始化、仿真执行、实际控制操作）；  
+	    4. 输出信号映射至模块接口和控制节点，同步监控状态（如错误标志、速度反馈）；  
+	    5. 参数校验（参考速度有效性）及错误处理（ERR_INCORRECT_REFSPEED 等）。  
+	    应用场景：工业自动化中电机驱动的仿真调试与实际控制，支持手动/自动模式切换及故障复位。  
+	
+	    English Description:  
+	    This code block implements a Variable Frequency Drive (VFD) simulation and control logic, including:  
+	    1. Processing input signals from ModuleInterface or ControlNode;  
+	    2. Manual control in simulation mode (SIMULATE MODE) with simulated speed feedback;  
+	    3. State machine-driven execution (initialization, simulation run, real control operation);  
+	    4. Mapping output signals to ModuleInterface/ControlNode and synchronizing monitoring data (error flags, speed feedback);  
+	    5. Parameter validation (reference speed validity) and error handling (ERR_INCORRECT_REFSPEED, etc.).  
+	    Application: Industrial automation motor drive simulation debugging and real-time control, supporting manual/auto mode switching and fault reset.  
+	*/)
+	END_REGION DESCRIPTION  
+	REGION PROCESS INPUT SIGNALS
+	    REGION Input configuration parameter
+	        #statSimActive := #configuration.general.simActive;
+	    END_REGION
+	    REGION Intput moduleInterface commands
+	        #statManualCommands := #moduleInterface.commands;
+	        #moduleInterface.commandConfiguration.driveSinamics := TRUE;
+	        #statSinaModuleInterface.commandConfiguration := #moduleInterface.commandConfiguration;
+	        #statSinaModuleInterface.commands := #moduleInterface.commands;
+	        #statSinaModuleInterface.configuration := #moduleInterface.configuration;
+	    END_REGION
+	    REGION Intput controlnode commands
+	        #statEnable := #controlNode.commands.enableAxis OR (#statManualCommands.enableAxis AND #statManualCommands.enableControl);
+	        #statSinaControlNode.commandConfiguration := #controlNode.commandConfiguration;
+	        #statSinaControlNode.commands := #controlNode.commands;
+	        
+	    END_REGION
+	    
+	    //mapping input and sim input or contorlnodes commands and moduleinterface commands
+	    
+	    #statResetError := #controlNode.commands.resetAxis OR #controlNode.commands.reset OR (#statManualCommands.reset OR #statManualCommands.resetAxis) AND #statManualCommands.enableControl;
+	    IF #moduleInterface.commands.enableControl THEN
+	        #statSpeedSetPoint := #moduleInterface.commandConfiguration.speedSetpoint;
+	    ELSE
+	        #statSpeedSetPoint := #controlNode.commandConfiguration.speedSetpoint;
+	        ;
+	    END_IF;
+	    
+	    REGION SIMULATE MODE
+	        
+	    END_REGION SIMULATE MODE
+	    REGION Interlock dependent edge commands
+	        #tempSimActiveEdge := #statSimActive AND NOT #statSimActivePrevious;
+	        
+	    END_REGION Interlock dependent edge commands
+	    
+	END_REGION PROCESS INPUT SIGNALS
+	REGION RESET
+	    IF #tempSimActiveEdge OR #statResetError THEN
+	        
+	        #statManualCommands.reset :=
+	        #statManualCommands.resetAxis :=
+	        #statManualCommands.moveVelocity :=
+	        #statEnable :=
+	        #statResetError :=
+	        FALSE;
+	        #statFbState := #FB_STATE_NO_PROCESSING;
+	        #statDiagnostics.status := #SUB_STATUS_NO_ERROR;
+	    END_IF;
+	    
+	END_REGION RESET
+	REGION PARAMETER CHECK
+	    //commands handle in here
+	    IF #statSimActive AND NOT #statFbState.%X5
+	        
+	    THEN
+	        //start simulate step
+	        #statFbState := #FB_STATE_INIT_SIMULATING;
+	    END_IF;
+	    IF NOT #statSimActive AND NOT #statFbState.%X6 THEN
+	        //start controlnode step
+	        
+	        #statFbState := #FB_STATE_CONTROLNODE_OPERTION;
+	        
+	    END_IF;
+	    
+	    IF #statError THEN
+	        
+	        #statFbState := #FB_STATE_ERROR_HANDLER;
+	    END_IF;
+	    IF #statResetError THEN
+	        #statDiagnostics.status := #SUB_STATUS_NO_ERROR;
+	    END_IF;
+	    REGION Input configuration parameter
+	        #controlNode.commandConfiguration.referenceSpeed := #configuration.general.refSpeed;
+	        
+	    END_REGION
+	    
+	END_REGION PARAMETER CHECK
+	REGION ENABLING/DISABLING
+	    
+	END_REGION ENABLING/DISABLING
+	REGION STATE MACHINE
+	    REPEAT
+	        #statFbStatePrevious := #statFbState;
+	        CASE #statFbState OF
+	            #FB_STATE_NO_PROCESSING:
+	                ;
+	            #FB_STATE_INIT_SIMULATING:
+	                REGION Simulating init
+	                    
+	                    #statManualCommands.closeBrake :=
+	                    #statManualCommands.editConfiguration :=
+	                    #statManualCommands.enableAxis :=
+	                    #statManualCommands.enableControl :=
+	                    #statManualCommands.fastStop :=
+	                    #statManualCommands.moveVelocity :=
+	                    #statManualCommands.openBrake :=
+	                    #statManualCommands.refreshConfiguration :=
+	                    #statManualCommands.reset :=
+	                    #statManualCommands.resetAxis :=
+	                    #statManualCommands.saveConfiguration :=
+	                    #statManualCommands.stop :=
+	                    #controlNode.commands.closeBrake :=
+	                    #controlNode.commands.enableAxis :=
+	                    #controlNode.commands.fastStop :=
+	                    #controlNode.commands.moveVelocity :=
+	                    #controlNode.commands.openBrake :=
+	                    #controlNode.commands.reset :=
+	                    #controlNode.commands.resetAxis :=
+	                    #controlNode.commands.stop :=
+	                    
+	                    #controlNode.monitoring.monitoring.axisEnabled :=
+	                    #controlNode.monitoring.monitoring.busy :=
+	                    #controlNode.monitoring.monitoring.error :=
+	                    #controlNode.monitoring.monitoring.inVelocity :=
+	                    #controlNode.monitoring.monitoring.readyToStart :=
+	                    #controlNode.monitoring.monitoring.valid :=
+	                    #statError :=
+	                    FALSE;
+	                    #controlNode.monitoring.monitoring.actualSpeed := 0.0;
+	                    #controlNode.monitoring.monitoring.status := #SUB_STATUS_NO_ERROR;
+	                    #statFbState := #FB_STATE_EXECUTE_SIMULATING;
+	                    #statDiagnostics.status := #SUB_STATUS_NO_ERROR;
+	                    #instSimVfd.reset := TRUE;
+	                END_REGION
+	            #FB_STATE_EXECUTE_SIMULATING:
+	                REGION Call simulateFB
+	                    IF #statProcessValues.actualSpeed = #statSpeedSetPoint AND (#statSinaControlNode.commands.moveVelocity OR #statSinaModuleInterface.commands.moveVelocity) THEN
+	                        #statSinaModuleInterface.commands.moveVelocity :=
+	                        #statSinaControlNode.commands.moveVelocity := false;
+	                        ;
+	                    END_IF;
+	                    
+	                    #instSimVfd(speedSetPoints := #statSpeedSetPoint,
+	                                commandsControlNodes := #statSinaControlNode.commands,
+	                                monitoring := #statProcessValues,
+	                                commandsModuleInterface := #statSinaModuleInterface.commands,
+	                                configuration := #configuration); // VFD configuration parameters
+	                    
+	                    #instSimVfd.reset := FALSE;
+	                    #statSinaControlNode.commands.moveVelocity := false;
+	                    #statControlNodeMonitoring.actualSpeed := #statProcessValues.actualSpeed;
+	                    #statControlNodeMonitoring.axisEnabled := #statProcessValues.axisEnabled;
+	                    #statVfdStopped := NOT #statProcessValues.busy;
+	                    #statControlNodeMonitoring.busy := #statProcessValues.busy;
+	                    #statControlNodeMonitoring.error := #statProcessValues.error;
+	                    #statControlNodeMonitoring.inVelocity := #statProcessValues.inVelocity;
+	                    #statControlNodeMonitoring.readyToStart := #statProcessValues.readyToStart;
+	                    #statControlNodeMonitoring.status := #statProcessValues.status;
+	                    #statControlNodeMonitoring.valid := #statProcessValues.valid;
+	                    
+	                END_REGION
+	                
+	            #FB_STATE_CONTROLNODE_OPERTION:
+	                REGION Real input control
+	                    
+	                    #instSinaSpeed(enable := #statEnable,
+	                                   interlock := TRUE,
+	                                   hwID := #configuration.general.hwID,
+	                                   enableManualCmds := #statManualCommands.enableControl,
+	                                   configuration := #moduleInterface.configuration,
+	                                   moduleInterface := #statSinaModuleInterface,
+	                                   controlNode := #statSinaControlNode); // VFD control node
+	                    #statControlNodeMonitoring := #statSinaControlNode.monitoring;
+	                    #statProcessValues := #statSinaModuleInterface.monitoring;
+	                    #statVfdStopped := "LGF_CompareLReal"(valueA := #statProcessValues.actualSpeed, valueB := 0.0);
+	                    #statSinaModuleInterface.commands.moveVelocity :=
+	                    #statSinaControlNode.commands.moveVelocity := false;
+	                END_REGION
+	                
+	            #FB_STATE_ERROR_HANDLER:
+	                REGION Error handling
+	                    IF NOT #statDiagnostics.status.%X15 THEN
+	                        #statFbState := #FB_STATE_NO_PROCESSING;
+	                        ;
+	                    END_IF;
+	                    
+	                END_REGION
+	                
+	                ;
+	        END_CASE;
+	    UNTIL (#statFbStatePrevious = #statFbState OR #statDiagnostics.status.%X15)
+	    END_REPEAT;
+	END_REGION CONFIGURATION HANDLING
+	REGION Setting previous values for edge detection
+	    
+	    #statSimActivePrevious := #statSimActive;
+	END_REGION Setting previous values for edge detection
+	REGION PROCESS OUTPUT SIGNALS
+	    REGION Disabling
+	        
+	    END_REGION Disabling
+	    REGION Error user cleared
+	        
+	    END_REGION Error user cleared
+	    REGION Error auto cleared
+	        
+	    END_REGION Error auto cleared
+	    REGION Write monitoring structure
+	        #statProcessValues.error := #statDiagnostics.status.%X15;
+	        
+	    END_REGION Write monitoring structure
+	    REGION Write Process data to module interface
+	        
+	        #moduleInterface.commands := #statManualCommands;
+	        #moduleInterface.monitoring.vfdStopped := #statVfdStopped;
+	        #moduleInterface.monitoring.simulated := #statSimActive;
+	        #moduleInterface.monitoring.monitoring := #statProcessValues;
+	    END_REGION Write Process data to module interface
+	    REGION Write work data to interface and outputs
+	        #controlNode.commands.moveVelocity := #statSinaControlNode.commands.moveVelocity;
+	        #controlNode.monitoring.simulated := #statSimActive;
+	        #controlNode.monitoring.vfdStopped := #statVfdStopped;
+	        #controlNode.monitoring.monitoring := #statControlNodeMonitoring;
+	        // ENO mechanism disabled, ENO - forced to TRUE
+	        ENO := TRUE;
+	    END_REGION Write static values to outputs    
+	END_REGION PROCESS OUTPUT SIGNALS
+	
+END_FUNCTION_BLOCK
+

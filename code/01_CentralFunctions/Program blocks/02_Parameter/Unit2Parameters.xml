@@ -1,0 +1,191 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Document>
+  <Engineering version="V19" />
+  <SW.Blocks.InstanceDB ID="0">
+    <AttributeList>
+      <InstanceOfName>LAF_typeHmiParameters</InstanceOfName>
+      <InstanceOfType>UDT</InstanceOfType>
+      <Interface><Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v5">
+  <Section Name="Static">
+    <Member Name="em1" Datatype="&quot;LAF_typeRollerEm1ParametersHmi&quot;">
+      <AttributeList>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+      <Sections>
+        <Section Name="None">
+          <Member Name="cm1Vfd205" Datatype="&quot;LAF_typeVfdParametersHmi&quot;">
+            <Sections>
+              <Section Name="None">
+                <Member Name="general" Datatype="&quot;LAF_typeVfdGeneralParametersHmi&quot;">
+                  <Sections>
+                    <Section Name="None">
+                      <Member Name="refSpeed" Datatype="Real">
+                        <StartValue>1000.0</StartValue>
+                      </Member>
+                    </Section>
+                  </Sections>
+                </Member>
+                <Member Name="manual" Datatype="&quot;LAF_typeVfdMannualParameters&quot;">
+                  <Sections>
+                    <Section Name="None">
+                      <Member Name="upperVel" Datatype="Real">
+                        <StartValue>500.0</StartValue>
+                      </Member>
+                      <Member Name="lowVel" Datatype="Real">
+                        <StartValue>10.0</StartValue>
+                      </Member>
+                      <Member Name="highVel" Datatype="Real">
+                        <StartValue>50.0</StartValue>
+                      </Member>
+                    </Section>
+                  </Sections>
+                </Member>
+                <Member Name="production" Datatype="&quot;LAF_typeVfdProductionParameters&quot;">
+                  <Sections>
+                    <Section Name="None">
+                      <Member Name="upperVel" Datatype="Real">
+                        <StartValue>500.0</StartValue>
+                      </Member>
+                      <Member Name="lowVel" Datatype="Real">
+                        <StartValue>10.0</StartValue>
+                      </Member>
+                      <Member Name="highVel" Datatype="Real">
+                        <StartValue>50.0</StartValue>
+                      </Member>
+                    </Section>
+                  </Sections>
+                </Member>
+                <Member Name="maintenance" Datatype="&quot;LAF_typeVfdMaintanceParameters&quot;">
+                  <Sections>
+                    <Section Name="None">
+                      <Member Name="upperVel" Datatype="Real">
+                        <StartValue>500.0</StartValue>
+                      </Member>
+                      <Member Name="lowVel" Datatype="Real">
+                        <StartValue>10.0</StartValue>
+                      </Member>
+                      <Member Name="highVel" Datatype="Real">
+                        <StartValue>50.0</StartValue>
+                      </Member>
+                    </Section>
+                  </Sections>
+                </Member>
+              </Section>
+            </Sections>
+          </Member>
+        </Section>
+      </Sections>
+    </Member>
+    <Member Name="em2" Datatype="&quot;LAF_typeConstraintRollerEm2ParametersHmi&quot;">
+      <AttributeList>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+      <Sections>
+        <Section Name="None">
+          <Member Name="cm1Vfd206" Datatype="&quot;LAF_typeVfdParametersHmi&quot;">
+            <Sections>
+              <Section Name="None">
+                <Member Name="manual" Datatype="&quot;LAF_typeVfdMannualParameters&quot;">
+                  <Sections>
+                    <Section Name="None">
+                      <Member Name="upperVel" Datatype="Real">
+                        <StartValue>500.0</StartValue>
+                      </Member>
+                      <Member Name="lowVel" Datatype="Real">
+                        <StartValue>10.0</StartValue>
+                      </Member>
+                      <Member Name="highVel" Datatype="Real">
+                        <StartValue>50.0</StartValue>
+                      </Member>
+                    </Section>
+                  </Sections>
+                </Member>
+              </Section>
+            </Sections>
+          </Member>
+        </Section>
+      </Sections>
+    </Member>
+    <Member Name="em3" Datatype="&quot;LAF_typeConstraintWorkstationEm3ParametersHmi&quot;">
+      <AttributeList>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+    </Member>
+    <Member Name="em4" Datatype="&quot;LAF_typeXyzhandlingEm4ParametersHmi&quot;">
+      <AttributeList>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+    </Member>
+    <Member Name="em5" Datatype="&quot;LAF_typePlasticWorkstationEm5ParametersHmi&quot;" />
+    <Member Name="em6" Datatype="&quot;LAF_typePlasticRollerEm6ParametersHmi&quot;">
+      <AttributeList>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+    </Member>
+  </Section>
+</Sections></Interface>
+      <Name>Unit2Parameters</Name>
+      <Namespace />
+      <Number>103</Number>
+      <ProgrammingLanguage>DB</ProgrammingLanguage>
+    </AttributeList>
+    <ObjectList>
+      <MultilingualText ID="1" CompositionName="Comment">
+        <ObjectList>
+          <MultilingualTextItem ID="2" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="3" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="4" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="5" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+      <MultilingualText ID="6" CompositionName="Title">
+        <ObjectList>
+          <MultilingualTextItem ID="7" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="8" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="9" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="A" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+    </ObjectList>
+  </SW.Blocks.InstanceDB>
+</Document>

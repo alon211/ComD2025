@@ -1,0 +1,113 @@
+﻿FUNCTION "LAF_ClearAlarms" : Void
+TITLE = LAF_ClearAlarms
+{ S7_Optimized_Access := 'TRUE' ; Published := 'TRUE' }
+AUTHOR : 'Siemens Digital Industries'
+FAMILY : LAF
+VERSION : 1.2
+//This function block is to clear all the current active alarms.
+   VAR_OUTPUT 
+      commandsToUnit : "LUC_typeStateCommands";   // Feedback to the unit
+   END_VAR
+
+   VAR_IN_OUT 
+      errorNoReaction : Array[*] of Bool;   // Error without further impact
+      errorAbort : Array[*] of Bool;   // Error which aborts the whole Unit
+      errorStop : Array[*] of Bool;   // Error which stops just the whole Unit
+      warningNoReaction : Array[*] of Bool;   // Warning without further impact
+      warningHold : Array[*] of Bool;   // Warning which holds the whole Unit
+      warningSuspend : Array[*] of Bool;   // Warning which suspends the whole Unit
+      information : Array[*] of Bool;   // Informations of the EM
+      criteriaAnalysis : Array[*] of Bool;   // CriteriaAnalysis of the EM
+   END_VAR
+
+   VAR_TEMP 
+      tempIndex : DInt;   // For loop variable
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // Siemens AG / (c)Copyright 2024
+	    //-------------------------------------------------------------------------------
+	    // Title:            LAF_ClearAlarms
+	    // Comment/Function: This function block is to clear all the current active alarms.
+	    // Library/Family:   LAF- Library of Automation Framework
+	    // Author:           Siemens Digital Industries
+	    // Tested with:      S7-PLCSIM Advanced V6.0 
+	    // Engineering:      TIA Portal V19
+	    // Restrictions:     -
+	    // Requirements:     -
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.01.00 | 21.06.2024 | SIMATIC Systems Support | First released version
+	    // 01.02.00 | 05.08.2024 | SIMATIC Systems Support | Block information properties updated
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	// Set all commands and alarms to false
+	REGION unit cmnds
+	    #commandsToUnit.reset :=
+	    #commandsToUnit.start :=
+	    #commandsToUnit.stop :=
+	    #commandsToUnit.hold :=
+	    #commandsToUnit.unhold :=
+	    #commandsToUnit.suspend :=
+	    #commandsToUnit.unsuspend :=
+	    #commandsToUnit.abort :=
+	    #commandsToUnit.clear :=
+	    #commandsToUnit.complete := false;
+	END_REGION
+	
+	REGION errorNoReaction
+	    FOR #tempIndex := LOWER_BOUND(ARR := #errorNoReaction, DIM := 1) TO UPPER_BOUND(ARR := #errorNoReaction, DIM := 1) DO
+	        #errorNoReaction[#tempIndex] := false;
+	    END_FOR;
+	END_REGION
+	
+	REGION errorAbort
+	    FOR #tempIndex := LOWER_BOUND(ARR := #errorAbort, DIM := 1) TO UPPER_BOUND(ARR := #errorAbort, DIM := 1) DO
+	        #errorAbort[#tempIndex] := false;
+	    END_FOR;
+	END_REGION
+	
+	REGION errorStop
+	    FOR #tempIndex := LOWER_BOUND(ARR := #errorStop, DIM := 1) TO UPPER_BOUND(ARR := #errorStop, DIM := 1) DO
+	        #errorStop[#tempIndex] := false;
+	    END_FOR;
+	END_REGION
+	
+	REGION warningNoReaction
+	    FOR #tempIndex := LOWER_BOUND(ARR := #warningNoReaction, DIM := 1) TO UPPER_BOUND(ARR := #warningNoReaction, DIM := 1) DO
+	        #warningNoReaction[#tempIndex] := false;
+	    END_FOR;
+	END_REGION
+	
+	REGION warningHold
+	    FOR #tempIndex := LOWER_BOUND(ARR := #warningHold, DIM := 1) TO UPPER_BOUND(ARR := #warningHold, DIM := 1) DO
+	        #warningHold[#tempIndex] := false;
+	    END_FOR;
+	END_REGION
+	
+	REGION warningSuspend
+	    FOR #tempIndex := LOWER_BOUND(ARR := #warningSuspend, DIM := 1) TO UPPER_BOUND(ARR := #warningSuspend, DIM := 1) DO
+	        #warningSuspend[#tempIndex] := false;
+	    END_FOR;
+	END_REGION
+	
+	REGION information
+	    FOR #tempIndex := LOWER_BOUND(ARR := #information, DIM := 1) TO UPPER_BOUND(ARR := #information, DIM := 1) DO
+	        #information[#tempIndex] := false;
+	    END_FOR;
+	END_REGION
+	
+	REGION criteriaAnalysis
+	    FOR #tempIndex := LOWER_BOUND(ARR := #criteriaAnalysis, DIM := 1) TO UPPER_BOUND(ARR := #criteriaAnalysis, DIM := 1) DO
+	        #criteriaAnalysis[#tempIndex] := false;
+	    END_FOR;
+	END_REGION
+	
+END_FUNCTION
+

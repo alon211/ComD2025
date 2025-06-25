@@ -1,0 +1,557 @@
+﻿FUNCTION "LPML_Description" : Void
+TITLE = LBC_Description
+{ S7_Optimized_Access := 'TRUE' ; Published := 'TRUE' }
+AUTHOR : APC_ERLF
+FAMILY : LBC
+NAME : LBC_Description
+VERSION : 0.1
+//Description for the Library of Basic Controls
+
+BEGIN
+	
+	REGION INFO
+	    (/*
+	title: OMAC PackML V2022 for S7-1200 / S7-1500
+	subTitle: LPMLV2022 for SIMATIC
+	fileName: LPMLV2022_SIMATIC
+	siosId: 109821198
+	link: https://support.industry.siemens.com/cs/ww/en/view/109821198
+	classification:   
+	# " " "Frei verwendbar" "Unrestricted" "Intern" "Restricted" "Vertraulich" "Confidential" "Streng vertraulich" "Strictly Confidential"
+	 */)
+	END_REGION INFO
+	
+	REGION PREAMBLE
+	    (/*
+	# Library Overview 
+	
+	#### What you get
+	
+	This document describes the LPMLV2022 block library based on ISA TRA88.00.02-2022. The block library provides you with 
+	the tested code with clearly defined interfaces. They can be used as a basis for your task to be implemented.
+	
+	A key concern of the document is to describe
+	* all blocks of the block library
+	* the fuctionality implemented through these blocks
+	
+	Furthermore, this documentation shows possible fields of application and helps you integrate the library into your STEP 7
+	project using step-by-step instructions.
+	
+	#### Scope of application
+	* STEP 7 Basic V15.1
+	* STEP 7 Professional V15.1 
+	* S7-1200 CPU as of firmware 4.2
+	* S7-1500 CPU as of firmware 2.6
+	
+	------
+	*/)
+	    
+	    (/*
+	## Diffrent user senarios
+	
+	#### Possible application for the LPMLV2022 library
+	
+	The following section shows a scenario for a possible application of the LPMLV2022 library:
+	
+	##### Scenario
+	
+	A production machine consists of different machine modes (e.g. manual or 
+	production mode) and states (e.g. stopped or aborting). The machine state can be 
+	controlled with commands (e.g. start or stop).
+	The library LPMLV2022 provides a standardized mode and state manager to 
+	control a machine. User defined code can be filled in an easy to use template
+	structure. In addition, a machine HMI or an upper level system (MES) can be 
+	connected by using the standardized machine interface.
+	
+	![User scenario](User_scenario.png "User scenario")
+	
+	### OMAC Packaging Working Group
+	#### Structure, contents and aim of the OMAC Packaging Working Group
+	
+	OMAC (The Organization for Machine Automation and Control) is the organization 
+	for automation and manufacturing professionals that is dedicated to supporting the 
+	machine automation and operation needs of manufacturing.
+	
+	The OMAC Packaging Working Group was formed as an initiative from big 
+	international end users. In the working group, end users, machine manufacturers 
+	(OEMs) and controller manufacturers discuss standards for the automation of 
+	production machines in order to reduce the range of variants for different products, 
+	technologies and applications
+	
+	The objective is to achieve significant improvements regarding the following points:
+	* Delivery time
+	* Commissioning time
+	* Machine dimensions
+	* Machine performance
+	* Integration capability
+	* Format change time
+	* Flexibility
+	* Machine modularity
+	* Machine downtime
+	
+	Within the OMAC Packaging Working Group, the PackML working group is 
+	involved with the definition of guidelines and standards to achieve a standard 
+	automation software structure
+	
+	---
+	
+	NOTE
+	:    Knowledge about the contents of the basic OMAC documents is an advantage when it comes to understanding the solutions described in this documentation.
+	
+	---
+	
+	#### See also
+	OMAC website (https://www.omac.org)
+	
+	### OMAC PackML Guidelines
+	
+	The major part of the guidelines describes the OMAC mode management (unit 
+	mode manager and state machine), see _ISA Technical Report TR88.00.02 
+	Machine and Unit States_.
+	
+	In addition the PackML pack tags are listed which are used as standardized 
+	variable structures (pack tags) for the cross-machine coupling between machine 
+	controllers and to higher-level HMI, MES or Enterprise systems, see also _ISA 
+	Technical Report TR88.00.02 Machine and Unit States_.
+	
+	There exist the following variable structures for the pack tags:
+	* Command tags, to control and parameterize the machine
+	* Status tags, to provide information about the machine state
+	* Administration tags, to provide information about the machine efficiency (OEE data) and machine diagnostics
+	
+	### Unit Mode and State Manager
+	
+	#### General information
+	The LPMLV2022 library contains a function block for the unit mode and state management according to PackML V2022.
+	* Unit modes _Manual_, _Maintenance_, _Production_ and _user-defined_ modes
+	* Uniform states within a unit mode.
+	  Defined states, such as _Stopped_, _Starting_, _Execute_, Aborting, etc. can be used to handle the machine states within an operating mode. Users can individually remove states that are not used in compliance with the OMAC guidelines.
+	
+	The machine functionality to be executed in the particular modes and states must 
+	be programmed by the user for the specific application.
+	
+	#### Modes and states according to PackML V2022
+	The _Production_, _Maintenance_, _Manual_ and the _user-defined modes_ with their 
+	associated states defined by PackML V2022 are listed in this section. The state 
+	machines of the _Manual_, _Maintenance_ and the _user-defined modes_ are typically a 
+	subset of the state machine of the _Production_ mode. Which states are used in the 
+	individual modes is not standardized and users can define them as required. The 
+	state model for the _Production_ mode should be considered as the maximum 
+	quantity structure, which can be reduced, but should not be increased. This means 
+	that the state machine of the _Production_ mode is always used and for smaller 
+	quantity structures, individual states are directly run-through or skipped.
+	
+	#### Example of a state machine for the Production mode
+	![Example of a state machine for the Production mode](ExampleProductionMode.png "Example of a state machine for the Production mode")
+	
+	#### Example of a state machine for the Maintenance mode
+	![Example of a state machine for the Maintenance mode](ExampleMaintenanceMode.png "Example of a state machine for the Maintenance mode")
+	
+	#### Status codes
+	Description of the possible unit modes
+	+--------------+------------------------------+---------------------------------------------------------------+
+	| Number       | Unit Mode                    | Description
+	+==============+==============================+===============================================================+
+	| 0            | Invalid                      | Not a valid unit mode.
+	+--------------+------------------------------+---------------------------------------------------------------+
+	| 1            | Production                   | This represents the mode which is utilized for routine production. The machine executes relevant logic in response to commands which are either entered directly by the operator or issued by another supervisory system
+	+--------------+------------------------------+---------------------------------------------------------------+
+	| 2            | Maintenance                  | This mode may allow suitably authorized personnel the ability to run an individual machine independent of other machines in a production line. This mode would typically be used for fault finding, machine trials or testing operational improvements. This mode would also allow the speed of the machine to be adjusted (where this feature is available).
+	+--------------+------------------------------+---------------------------------------------------------------+
+	| 3            | Manual                       | This provides direct control of individual machine modules. This feature is available depending upon the mechanical constraints of the mechanisms being exercised. This feature may be used for the commissioning of individual drives, verifying the operation of synchronized drives, testing the drive as a result of modifying parameters etc
+	+--------------+------------------------------+---------------------------------------------------------------+
+	| 04..31       | UserMode01…UserMode28        |  The requirements for user-defined unit modes differ depending on the machine and application. A typical userdefined unit mode is, for example, a cleaning mode.
+	+--------------+------------------------------+---------------------------------------------------------------+
+	
+	#### States
+	Desccription of the possible states
+	+--------------------+---------------------------------+---------------------------------------------------------------+
+	| Number             | State                           | Description
+	+====================+=================================+===============================================================+
+	| 0                  | Undefined                       | Not a valid state.
+	+--------------------+---------------------------------+---------------------------------------------------------------+
+	| 1                  | Clearing                        | **State Type: Acting**
+	|                    |                                 | Initiated by a _Clear_ command to clear faults that may have occurred and are present in the _Aborted_ state before proceeding to a _Stopped_ state.
+	+--------------------+---------------------------------+---------------------------------------------------------------+
+	| 2                  | Stopped                         | **State Type: Wait**
+	|                    |                                 | The machine is powered and stationary after completing the _Stopping_ state. All communications with other systems are functioning (if applicable). A _Reset_ command will cause a transition from _Stopped_ to the _Resetting_ state.
+	+--------------------+---------------------------------+---------------------------------------------------------------+
+	| 3                  | Starting                        | **State Type: Acting**
+	|                    |                                 | The machine completes the steps needed to start. This state is entered as a result of a _Start_ command (local or remote). When _Starting_ completes, the machine will transition to the _Execute_ state.
+	+--------------------+---------------------------------+---------------------------------------------------------------+
+	| 4                  | Idle                            | **State Type: Wait**
+	|                    |                                 | This is the state that indicates that _Resetting_ is complete. The machine will maintain the conditions that were achieved during the _Resetting_ state, and perform operations required when the machine is in _Idle_. 
+	+--------------------+---------------------------------+---------------------------------------------------------------+
+	| 5                  | Suspended                       | **State Type: Wait**
+	|                    |                                 | Refer to _Suspending_ for when this state is used. In this state the machine does not produce product. It will either stop running or continue to cycle without producing until external process conditions return to normal, at which time, the _Suspended_ state will transition to the _Unsuspending_ state, typically without any operator intervention.
+	+--------------------+---------------------------------+---------------------------------------------------------------+
+	| 6                  | Execute                         | **State Type: Acting**
+	|                    |                                 | Once the machine is processing materials it is in the _Execute_ state until a transition command is received. Different machine modes will result in specific types of Execute activities. For example, if the machine is in the “Production” mode, the _Execute_ will result in products being produced, while perhaps in a user-defined “Clean Out” mode the _Execute_ state would result in the action of cleaning the machine. 
+	+--------------------+---------------------------------+---------------------------------------------------------------+
+	| 7                  | Stopping                        | **State Type: Acting**
+	|                    |                                 | This state is entered in response to a _Stop_ command. While in this state the machine executes the logic that brings it to a controlled stop as reflected by the _Stopped_ state. Normal _Starting_ of the machine cannot be initiated unless _Resetting_ has taken place.
+	+--------------------+---------------------------------+---------------------------------------------------------------+
+	| 8                  | Aborting                        | **State Type: Acting**
+	|                    |                                 | The _Aborting_ state can be entered at any time in response to the _Abort_ command, typically triggered by the occurrence of a machine event that warrants an aborting action. The aborting logic will bring the machine to a rapid safe stop. 
+	+--------------------+---------------------------------+---------------------------------------------------------------+
+	| 9                  | Aborted                         | **State Type: Wait**
+	|                    |                                 | The machine maintains status information relevant to the abort condition. The machine can only exit the _Aborted_ state after an explicit _Clear_ command, subsequent to manual intervention to correct and reset the detected machine faults. 
+	+--------------------+---------------------------------+---------------------------------------------------------------+
+	| 10                 | Holding                         | **State Type: Acting**
+	|                    |                                 | This state is used when **internal** (inside this unit/machine and not from another machine on the production line) machine conditions do not allow the machine to continue producing, that is, the machine leaves the _Execute_ or _Suspended_ states due to internal conditions. This is typically used for routine machine conditions that require minor operator servicing to continue production. This state can be initiated automatically or by an operator and can be easily recovered from. An example of this would be a machine that requires an operator to periodically refill a glue dispenser or carton magazine and due to the machine design, these operations cannot be performed while the machine is running. Since these types of tasks are normal production operations, it is not desirable to go through aborting or stopping sequences, and because these functions are integral to the machine they are not considered to be **“external”**. While in the _Holding_ state, the machine is typically brought to a controlled stop and then transitions to _Held_ upon state complete. To be able to restart production correctly after the _Held_ state, all relevant process set points and return status of the procedures at the time of receiving the _Hold_ command must be saved in the machine controller when executing the _Holding_ procedure. 
+	+--------------------+---------------------------------+---------------------------------------------------------------+
+	| 11                 | Held                            | **State Type: Wait**
+	|                    |                                 | Refer to _Holding_ for when this state is used. In this state the machine does not produce product. It will either stop running or continue to dry cycle. A transition to the _Unholding_ state will occur when **internal** machine conditions change or an _Unhold_ command is initiated by an operator. 
+	+--------------------+---------------------------------+---------------------------------------------------------------+
+	| 12                 | Unholding                       | **State Type: Acting**
+	|                    |                                 | Refer to _Holding_ for when this state is used. A machine will typically enter into _Unholding_ automatically when **internal** conditions, material levels, for example, return to an acceptable level. If an operator is required to perform minor servicing to replenish materials or make adjustments, then the _Unhold_ command may be initiated by the operator 
+	+--------------------+---------------------------------+---------------------------------------------------------------+
+	| 13                 | Suspending                      | **State Type: Acting**
+	|                    |                                 | This state is used when **external** (outside this unit/machine but usually on the same integrated production line) process conditions do not allow the machine to continue producing, that is, the machine leaves _Execute_ due to upstream or downstream conditions on the line. This is typically due to a Blocked or Starved event. This condition may be detected by a local machine sensor or based on a supervisory system external command. While in the _Suspending_ state, the machine is typically brought to a controlled stop and then transitions to Suspended upon state complete. To be able to restart production correctly after the _Suspended_ state, all relevant process set points and return status of the procedures at the time of receiving the _Suspend_ command must be saved in the machine controller when executing the _Suspending_ procedure. 
+	+--------------------+---------------------------------+---------------------------------------------------------------+
+	| 14                 | Resetting                       | **State Type: Acting**
+	|                    |                                 | Refer to _Suspending_ for when this state is used. This state is a result of process conditions returning to normal. The _Unsuspending_ state initiates any required actions or sequences necessary to transition the machine from _Suspended_ back to Execute. To be able to restart production correctly after the _Suspended_ state, all relevant process set points and return status of the procedures at the time of receiving the _Suspend_ command must be saved in the machine controller when executing the _Suspending_ procedure. 
+	+--------------------+---------------------------------+---------------------------------------------------------------+
+	| 15                 | Clearing                        | **State Type: Acting**
+	|                    |                                 | This state is the result of a _Reset_ command from the _Stopped_ or _Completed_state. Faults and stop causes are reset. _Resetting_ will typically cause safety devices to be energized and place the machine in the _Idle_ state where it will wait for a _Start_ command. No hazardous motion should happen in this state.
+	+--------------------+---------------------------------+---------------------------------------------------------------+
+	| 16                 | Completing                      | **State Type: Acting**
+	|                    |                                 | This state is the result of a _Complete_ command from the _Execute_, _Held_ or _Suspended_ states. The _Complete_ command may be internally generated, such as reaching the end of a predefined production count where normal operation has run to completion, or externally generated, such as by a supervisory system. The _Completing_ state is often used to end a production run and summarize production data 
+	+--------------------+---------------------------------+---------------------------------------------------------------+
+	| 17                 | Completed                       | **State Type: Wait**
+	|                    |                                 | The machine has finished the _Completing_ state and is now waiting for a _Reset_ command before transitioning to the _Resetting_ state.
+	+--------------------+---------------------------------+---------------------------------------------------------------+
+	
+	#### Control commands
+	Possible control commands
+	+----------+------------------+
+	| Number   | Control Command
+	+==========+==================+
+	| 0        | Undefined
+	+----------+------------------+
+	| 1        | Reset
+	+----------+------------------+
+	| 2        | Start
+	+----------+------------------+
+	| 3        | Stop                                      
+	+----------+------------------+
+	| 4        | Hold
+	+----------+------------------+
+	| 5        | Unhold
+	+----------+------------------+
+	| 6        | Suspend 
+	+----------+------------------+
+	| 7        | Unsuspend
+	+----------+------------------+
+	| 8        | Abort 
+	+----------+------------------+
+	| 9        | Clear 
+	+----------+------------------+
+	| 10       | Complete 
+	+----------+------------------+
+	
+	#### Unit mode transitions
+	
+	#### Permitted change of the unit mode
+	Changing the unit mode is permitted in any state and can be configured in the 
+	configuration (_configuration.ModeTransitionCfg_). Typically, the following wait states 
+	are used for unit mode changes: _Stopped_, _Idle_, _Aborted_. The unit mode change is 
+	only possible if the state also exists in the requested unit mode.
+	
+	#### State transitions
+	
+	#### Example of reading the table
+	A change is made from the _Idle_ state to the _Starting_ state with the _Start_ command. 
+	The further to the right that a command is located in the table, the higher its priority 
+	for the state change.
+	
+	#### State change with priority assignement
+	![State change with priority assignement](StateChangeTable.png "State change with priority assignement")
+	
+	------
+	*/)
+	    
+	    (/*
+	## Hardware and software requirements
+	
+	#### Requirements for this library
+	To be able to use the functionality of the library described in this document, the 
+	following hardware and software requirements must be met:
+	
+	#### Hardware
+	Hardware components
+	+------+---------------+---------------------+-----------------------------------+
+	| No.  | Component     | Article number      | Alternative 
+	+======+===============+=====================+===================================+
+	| 1    | CPU 1513-1 PN | 6ES7513-1AL02-0AB0  | Other S7-1500 CPU with FW V2.6
+	+------+---------------+---------------------+-----------------------------------+
+	| 2    | Or CPU 1215C  | 6ES7215-1AG40-0XB0  | Other S7-1200 CPU with FW V4.2
+	+------+---------------+---------------------+-----------------------------------+
+	
+	#### Software
+	Software components 
+	+------+---------------------------+---------------------+-----------+
+	| No.  | Component                 | Article number      | Quantity 
+	+======+===========================+=====================+===========+
+	| 1    | STEP 7 Professional V15.1 | 6ES7822-1..05-..    | 1
+	+------+---------------------------+---------------------+-----------+
+	| 2    | Or STEP 7 Basic V15.1     | 6ES7822-0A.05-..    | 1
+	+------+---------------------------+---------------------+-----------+
+	
+	## Library resources 
+	
+	#### What will you find in this section?
+	The following section gives you an overview of the size of the blocks of the
+	LPMLV2022 library in the main, load and retain memory.
+	
+	#### Size of the individual blocks
+	Size of blocks
+	
+	+--------------+---------------------------------------------+-----------------+-----------------+----------------+
+	| Block        | Symbol                                      | Size in main    | Size in load    | Size in retain  
+	|              |                                             | memory [Kbytes] | memory [Kbytes] | memory [Kbytes]
+	+==============+=============================================+=================+=================+================+
+	| FB 30110     | LPMLV2022_UnitModeStateManager              | 8.3             | 134             | -
+	+--------------+---------------------------------------------+-----------------+-----------------+----------------+
+	| FB 30111     | LPMLV2022_UnitModeStateManagerBool          | 1.9             | 42              | -
+	+--------------+---------------------------------------------+-----------------+-----------------+----------------+
+	| FB 30112     | LPMLV2022_UnitModeStateTimes                | 1.3             | 25              | -
+	+--------------+---------------------------------------------+-----------------+-----------------+----------------+
+	| FB 30113     | LPMLV2022_Stacklight                        | 1.3             | 17              | -
+	+--------------+---------------------------------------------+-----------------+-----------------+----------------+
+	| FC 30110     | LPMLV2022_ConfigureEnabledModesCfg          | 0.4             | 9.8             | -
+	+--------------+---------------------------------------------+-----------------+-----------------+----------------+
+	| FC 30111     | LPMLV2022_ConfigureDisabledStatesCfg        | 0.2             | 7.4             | -
+	+--------------+---------------------------------------------+-----------------+-----------------+----------------+
+	| FC 30112     | LPMLV2022_ConfigureModeTransitionCfg        | 0.3             | 8.0             | -
+	+--------------+---------------------------------------------+-----------------+-----------------+----------------+
+	| FC 30113     | LPMLV2022_ConfigureHoldCmdCfg               | 0.2             | 6.7             | -
+	+--------------+---------------------------------------------+-----------------+-----------------+----------------+
+	| FC 30114     | LPMLV2022_ConfigureCompleteCmdCfg           | 0.1             | 5.6             | -
+	+--------------+---------------------------------------------+-----------------+-----------------+----------------+
+	| DB 30110     | instLPMLV2022_UnitModeStateManager          | 0.9             | 5.9             | -
+	+--------------+---------------------------------------------+-----------------+-----------------+----------------+
+	| DB 30111     | instLPMLV2022_UnitModeStateManagerBool      | 1.1             | 7.7             | -
+	+--------------+---------------------------------------------+-----------------+-----------------+----------------+
+	| DB 30112     |  instLPMLV2022_UnitModeStateTimes           | 1.6             | 3.9             | 0.7
+	+--------------+---------------------------------------------+-----------------+-----------------+----------------+
+	| DB 30113     |   instLPMLV2022_Stacklight                  | 0.1             | 1.8             | -
+	+--------------+---------------------------------------------+-----------------+-----------------+----------------+
+	
+	*/)
+	    
+	(/*
+	# Blocks of the Library
+	
+	#### What will you find in this section?
+	This chapter lists and explains all blocks of the LPMLV2022 library. Before that, 
+	however, you are informed of the blocks that are essentially involved in the 
+	implementation of the functionality.
+	
+	## List of the blocks
+	
+	The following table lists all blocks of the LPMLV2022 library.
+	
+	List of the blocks 
+	+--------------+---------------------------------------------+----------------------+
+	| Block        | Symbol                                      | Classifcation    
+	+==============+=============================================+======================+
+	| FB 30110     | LPMLV2022_UnitModeStateManager              | In-house development     
+	+--------------+---------------------------------------------+----------------------+
+	| FB 30111     | LPMLV2022_UnitModeStateManagerBool          | In-house development    
+	+--------------+---------------------------------------------+----------------------+
+	| FB 30112     | LPMLV2022_UnitModeStateTimes                | In-house development    
+	+--------------+---------------------------------------------+----------------------+
+	| FB 30113     | LPMLV2022_Stacklight                        | In-house development    
+	+--------------+---------------------------------------------+----------------------+
+	| FC 30110     | LPMLV2022_ConfigureEnabledModesCfg          | In-house development    
+	+--------------+---------------------------------------------+----------------------+
+	| FC 30111     | LPMLV2022_ConfigureDisabledStatesCfg        | In-house development    
+	+--------------+---------------------------------------------+----------------------+
+	| FC 30112     | LPMLV2022_ConfigureModeTransitionCfg        | In-house development    
+	+--------------+---------------------------------------------+----------------------+
+	| FC 30113     | LPMLV2022_ConfigureHoldCmdCfg               | In-house development    
+	+--------------+---------------------------------------------+----------------------+
+	| FC 30114     | LPMLV2022_ConfigureCompleteCmdCfg           | In-house development    
+	+--------------+---------------------------------------------+----------------------+
+	
+	*/)
+	    
+	END_REGION PREAMBLE
+	
+	REGION APPENDIX
+	(/*
+	# Working with the Library
+	
+	#### What would you find in this section?
+	This chapter consists of instructions for integrating the LPMLV2022
+	library into your STEP 7 project and instructions for using the library blocks.
+	
+	## Integrating the library into STEP 7
+	
+	The table below lists the steps for integrating the LPMLV2022
+	library into your STEP 7 project. Subsequently, you can use the blocks of the 
+	LPMLV2022 library.
+	
+	NOTE
+	:   The following section assumes that a STEP 7 project exists.
+	
+	Integrating the library into STEP 7
+	+--------+------------------------------------------------------------------------------+---------+
+	| No.    | Action                                                                       | Note
+	+========+==============================================================================+=========+
+	| 1      | Extract the library LPMLV2022_V1_x_x.zip to a local folder.                  | 
+	+--------+------------------------------------------------------------------------------+---------+
+	| 2      | In TIA Portal select “Options” -> “Global libraries” -> “Open library…”.     | 
+	+--------+------------------------------------------------------------------------------+---------+
+	| 3      | Browse to the file LPMLV2022.al15_1.                                         |
+	|        | It can be found in the subfolder LPMLV2022 of the extracted zip file.        | 
+	+--------+------------------------------------------------------------------------------+---------+
+	| 4      | Open the global library in read-only mode.                                   | 
+	+--------+------------------------------------------------------------------------------+---------+
+	| 5      | The LPMLV2022 library is now available in the task card “Global libraries”   |  
+	+--------+------------------------------------------------------------------------------+---------+
+	
+	------
+	
+	## Integrating the library blocks into STEP 7
+	
+	The table below lists the steps for integrating the blocks of the LPMLV2022
+	library into your STEP 7 program.
+	
+	![IntegratingBlocks](IntegratingBlocks.png "Integrating Blocks")
+	
+	Integrating the library into STEP 7
+	+--------+--------------------------------------------------------------------------------------+--------+
+	| No.    | Action                                                                               | Note
+	+========+======================================================================================+========+
+	| 1      | Copy the folder _ModeStateManagement->LPMLV2022_Tags_ with Drag & Drop into          |
+	|        | the folder “PLC tags” in the PLC.                                                    | 
+	+--------+--------------------------------------------------------------------------------------+--------+
+	| 2      | Copy the folder _ModeStateManagement->LPMLV2022_Types_ with Drag & Drop into         |
+	|        | the folder “PLC data types” in the PLC.                                              |  
+	+--------+--------------------------------------------------------------------------------------+--------+
+	| 3      | Copy the _LPMLV2022_UnitModeStateManager_ FB in subfolder                            |
+	|        | _ModeStateManagement->LPMLV2022_Blocks_ with Drag & Drop into the “Program           |
+	|        | blocks” in the PLC.                                                                  |
+	|        | Alternatively copy the whole folder _ModeStateManagement->LPMLV2022_Blocks_ via      |
+	|        | Drag & Drop into the “Program blocks” in the PLC. In this case also additional and   |
+	|        | optional blocks of LPMLV2022 library are available in the user program (e.g.         |
+	|        | _LPMLV2022_UnitModeStateTimes_, _LPMLV2022_ConfigureDisabledStates_).                |                                             
+	+--------+--------------------------------------------------------------------------------------+--------+
+	| 4      | Now the blocks can be configured and called in the user program.                     | 
+	+--------+--------------------------------------------------------------------------------------+--------+
+	| 5      | Optional: copy the folder _PackTags_->_LPMLV2022_PackTags_Tags_ with Drag & Drop     |    
+	|        | into the folder “PLC tags” in the PLC.                                               |  
+	+--------+--------------------------------------------------------------------------------------+--------+
+	| 6      | Optional: copy the folder _PackTags_->_LPMLV2022_PackTags_Types_ with Drag &         |
+	|        | Drop into the folder “PLC data types” in the PLC.                                    |
+	+--------+--------------------------------------------------------------------------------------+--------+
+	
+	------
+	
+	# Notes and Support
+	#### What will you find in this section?
+	
+	This chapter provides further support in handling the described LPMLV2022 library.
+	
+	*/)
+	    
+	(/*
+	# Appendix
+	
+	## Service and support
+	
+	#### Industry Online Support
+	DO you have Any questions OR need assistance?
+	
+	Siemens Industry Online Support offers round the clock access TO our entire service AND support know-how AND portfolio.  
+	The Industry Online Support is the central address FOR information about our products, solutions AND services.  
+	Product information, manuals, downloads, FAQs, application examples AND videos, all information is accessible with just a few mouse clicks:  
+	https://support.industry.siemens.com
+	
+	#### Technical Support
+	The Technical Support OF Siemens Industry provides you fast AND competent support regarding all technical queries with numerous tailor-made offers - ranging from basic support TO individual support contracts. Please send queries TO Technical support via Web form:  
+	https://www.siemens.com/industry/supportrequest
+	
+	#### SITRAIN - Digital Industry Academy
+	We support you with our globally available training courses FOR Industry with practical experience, innovative learning methods AND a concept that's tailored to the customer's specific needs.  
+	FOR more information on our offered trainings AND courses, as well as their locations AND dates, refer TO our Web page:  
+	https://www.siemens.com/sitrain
+	
+	#### service offer
+	our range OF services includes the following:
+	* Plant data services
+	* Spare parts services
+	* Repair services
+	* On-site AND maintenance services
+	* Retrofitting AND modernization services
+	* Service programs AND contract's
+	
+	You can find detailed information on our range OF services in the service catalog Web page:  
+	https://support.industry.siemens.com/cs/sc  
+	
+	#### Industry Online support app
+	you will receive optimum support wherever you are with the "Siemens Industry Online Support" app. The app is available FOR iOS AND Android:  
+	https://support.industry.siemens.com/cs/ww/en/sc/2067
+	
+	------
+	
+	## Industry Mall 
+	
+	![IndustryMall](IndustryMall.png "Industry Mall")
+	
+	The Siemens Industry Mall is the platform on which the entire siemens Industry 
+	product portfolio is accessible. From the selection of products to the order and the 
+	delivery tracking, the Industry Mall enables the complete purchasing processing –
+	directly and independently of time and location:
+	https://mall.industry.siemens.com
+	
+	## Application support
+	
+	Siemens AG
+	Digital Industries
+	Factory Automation
+	Production Machines
+	DI FA PMA APC
+	Frauenauracher Str. 80
+	91056 Erlangen, Germany
+	mailto: https://tech.team.motioncontrol@siemens.com
+	
+	*/)
+	    
+	(/*
+	## Links and Literature
+	+-----+-----------------------------------------------------------------------+
+	| No. |Topic     
+	+=====+=======================================================================+
+	| \1\ | Siemens Industry Online Support
+	|     | https://support.industry.siemens.com 
+	+-----+-----------------------------------------------------------------------+
+	| \2\ | Link to the entry page of the application example
+	|     | https://support.industry.siemens.com/cs/ww/en/view/109821198
+	+-----+-----------------------------------------------------------------------+
+	| \3\ | OMAC
+	|     | https://www.omac.org
+	+-----+-----------------------------------------------------------------------+
+	| \4\ | Siemens Packaging
+	|     | https://www.siemens.com/packaging
+	+-----+-----------------------------------------------------------------------+
+	
+	------
+	*/)
+	    
+	(/*
+	## Change documentation
+	
+	+-----------+-------------------+------------------------------------------------+
+	| Version   | Date              | Modifications    
+	+===========+===================+================================================+
+	| V1.0      | 12/2022           | First Version     
+	+-----------+-------------------+------------------------------------------------+
+	
+	 */)
+	END_REGION APPENDIX
+	
+END_FUNCTION
+

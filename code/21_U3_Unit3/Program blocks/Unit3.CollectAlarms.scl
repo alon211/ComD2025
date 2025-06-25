@@ -1,0 +1,130 @@
+﻿NAMESPACE Unit3
+FUNCTION CollectAlarms : Void
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+VERSION : 0.1
+   VAR_INPUT 
+      resetAlarms : Bool;   // Reset the currently pending alarms
+      disableAlarms : Bool;   // Disable all the Alarms - pending alarms will stay until a reset is triggered
+   END_VAR
+
+   VAR_OUTPUT 
+      commandsToUnit : _.LUC_typeStateCommands;   // Feedback to the unit
+   END_VAR
+
+   VAR_TEMP 
+      indexTmp : DInt;
+   END_VAR
+
+
+BEGIN
+	// Collects alarms from the respective level and categorises the alarms into the different alarm classes.
+	// Filling the alarm DB with specific alarm messages which are defined in the comment of the defined alarm.
+	// The definition of possible alarms within a unit is handled here.
+	
+	
+	REGION Reeset Alarms
+	    
+	    IF #resetAlarms OR true THEN
+	        _.LAF_ClearAlarms(commandsToUnit => #commandsToUnit,
+	                          errorNoReaction := Alarms.errorNoReaction,
+	                          errorAbort := Alarms.errorAbort,
+	                          errorStop := Alarms.errorStop,
+	                          warningNoReaction := Alarms.warningNoReaction,
+	                          warningHold := Alarms.warningHold,
+	                          warningSuspend := Alarms.warningSuspend,
+	                          information := Alarms.information,
+	                          criteriaAnalysis := Alarms.criteriaAnalysis);
+	    END_IF;
+	    
+	END_REGION
+	
+	REGION Disable alarms
+	    
+	    IF #disableAlarms THEN
+	        RETURN;
+	    END_IF;
+	    
+	END_REGION
+	
+	REGION Error no reaction
+	    ErrorAlarmsMerge(emAlarms := Alarms.emAlarms,
+	                     alarm := Alarms.errorNoReaction[0]);
+	    //Alarms.errorNoReaction[0] := Alarms.emAlarms[0].error OR Alarms.emAlarms[1].error OR Alarms.emAlarms[2].error;
+	    Alarms.errorNoReaction[1] := FALSE;
+	    
+	END_REGION
+	
+	REGION Error and abort
+	    
+	    // If the global Power is disabled abort the unit, Acknowledge to Reset 
+	    IF (NOT _.Global.Data.general.enablePower) THEN
+	        #commandsToUnit.abort := TRUE;
+	    END_IF;
+	    
+	END_REGION
+	
+	REGION Error and stop
+	    
+	    _.Unit3.ErrorAlarmsMerge(emAlarms := Alarms.emAlarms,
+	                             alarm := Alarms.errorStop[0]);
+	    
+	END_REGION
+	
+	REGION Warning no reaction
+	    WarningAlarmsMerge(emAlarms := Alarms.emAlarms,
+	                       alarm := Alarms.warningNoReaction[0]);
+	    
+	    
+	    //Alarms.warningNoReaction[0] := Alarms.emAlarms[0].warning OR Alarms.emAlarms[1].warning OR Alarms.emAlarms[2].warning;
+	    Alarms.warningNoReaction[1] := FALSE;
+	    
+	END_REGION
+	
+	REGION Warning hold
+	    
+	    // Alarm assignment 
+	    Alarms.warningHold[0] := #commandsToUnit.hold := FALSE;
+	    Alarms.warningHold[1] := #commandsToUnit.hold := FALSE;
+	    
+	    // Command evaluation
+	    IF Alarms.warningHold[0] OR Alarms.warningHold[1] THEN
+	        #commandsToUnit.hold := TRUE;
+	    ELSE
+	        #commandsToUnit.hold := FALSE;
+	    END_IF;
+	    
+	END_REGION
+	
+	REGION Warning suspend
+	    
+	    // Alarm assignment 
+	    Alarms.warningSuspend[0] := FALSE;
+	    Alarms.warningSuspend[1] := FALSE;
+	    
+	    // Command evaluation
+	    IF Alarms.warningSuspend[0] OR Alarms.warningSuspend[1] THEN
+	        #commandsToUnit.suspend := TRUE;
+	    ELSE
+	        #commandsToUnit.suspend := FALSE;
+	    END_IF;
+	    
+	END_REGION
+	
+	REGION Information
+	    InfoAlarmsMerge(emAlarms := Alarms.emAlarms,
+	                    alarm := Alarms.errorNoReaction[0]);
+	    // Alarms.information[0] := Alarms.emAlarms[0].info OR Alarms.emAlarms[1].info OR Alarms.emAlarms[2].info;
+	    Alarms.information[1] := FALSE;
+	    
+	END_REGION
+	
+	REGION Criteria Analysis 
+	    
+	    Alarms.criteriaAnalysis[0] := FALSE;
+	    Alarms.criteriaAnalysis[1] := FALSE;
+	    
+	END_REGION
+	
+END_FUNCTION
+END_NAMESPACE
+

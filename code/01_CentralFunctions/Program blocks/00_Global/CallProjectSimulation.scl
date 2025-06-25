@@ -1,0 +1,744 @@
+﻿FUNCTION_BLOCK "CallProjectSimulation"
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+VERSION : 0.1
+   VAR 
+      statNextStepBool : Bool;
+      statCurrentStep : DInt;
+      statInit : Bool;
+      statStop : Bool;
+      statReset : Bool;
+      statNextStepBoolPre : Bool;
+      ack : Bool;
+      U2EM1setSingleStepMode : Bool;
+      U2EM1nextStep : Bool;
+      U2EM2setSingleStepMode : Bool;
+      U2EM2nextStep : Bool;
+      U2EM3setSingleStepMode : Bool;
+      U2EM3nextStep : Bool;
+      U2EM4setSingleStepMode : Bool;
+      U2EM4nextStep : Bool;
+      U2EM5setSingleStepMode : Bool;
+      U2EM5nextStep : Bool;
+      U2EM6setSingleStepMode : Bool;
+      U2EM6nextStep : Bool;
+      U2EM1Step : DInt;
+      U2EM2Step : DInt;
+      U2EM3Step : DInt;
+      U2EM4Step : DInt;
+      U2EM5Step : DInt;
+      U2EM6Step : DInt;
+      U2EM1cm1Vfd205 { S7_SetPoint := 'False'} : "LEXCHANGETRAY_typeRollerVfdInterface";
+      U2EM1cm2SingalTM { S7_SetPoint := 'False'} : "LEXCHANGETRAY_typeRollerIoSignalInterface";
+      U2EM2cm1Vfd206 { S7_SetPoint := 'False'} : "LEXCHANGETRAY_typeRollerVfdInterface";
+      U2EM2cm1Vfd : "LEXCHANGETRAY_typeVfdInterface";
+      U2EM2cm2TrayLiftingCylinder : "LBC_Simple_typeTwoWayActuatorInterface" := (((), (), (), (), (), ()), ((), (), (), (), (), (), (), (), (), (), ()), ((), T#1S, (), (), (), ()));   // Module interface for external systems
+      U2EM2cm3CellLiftingCylinder : "LBC_Simple_typeTwoWayActuatorInterface" := (((), (), (), (), (), ()), ((), (), (), (), (), (), (), (), (), (), ()), ((), T#1S, (), (), (), ()));   // Module interface for external systems
+      U2EM2cm4PositioningPinCylinder : "LBC_Simple_typeTwoWayActuatorInterface" := (((), (), (), (), (), ()), ((), (), (), (), (), (), (), (), (), (), ()), ((), T#1S, (), (), (), ()));   // Module interface for external systems
+      U2EM2cm5AxisControl : "LBC_typeAxisSimpleControlNode_1";   // Module interface for external systems
+      U2EM2cm6SignalTM : "LEXCHANGETRAY_typeConstraintRollerIoSignalInterface";
+      U2EM2cm7Pc : "LEXCHANGETRAY_typePc_Interface";
+      U2EM2cm8Scanner : "LEXCHANGETRAY_typeSR1000Interface";
+      U2EM3cm1SV112_Constraint1_Axis : "LBC_typeAxisSimpleControlNode_1";
+      U2EM3cm2SV113_Constraint2_Axis : "LBC_typeAxisSimpleControlNode_1";
+      U2EM3cm3SV115_Screw1_Axis { S7_SetPoint := 'False'} : "LEXCHANGETRAY_typeAxisSimpleControlNode_2";
+      U2EM3cm4SV116_Screw2_Axis { S7_SetPoint := 'False'} : "LEXCHANGETRAY_typeAxisSimpleControlNode_2";
+      U2EM3cm6SlideCylinder1 : "LBC_Simple_typeTwoWayActuatorInterface" := (((), (), (), (), (), ()), ((), (), (), (), (), (), (), (), (), (), ()), ((), T#1S, (), (), (), ()));
+      U2EM3cm7hookClawCylinder1 : "LBC_Simple_typeTwoWayActuatorInterface" := (((), (), (), (), (), ()), ((), (), (), (), (), (), (), (), (), (), ()), ((), T#1S, (), (), (), ()));
+      U2EM3cm8SlideCylinder2 : "LBC_Simple_typeTwoWayActuatorInterface" := (((), (), (), (), (), ()), ((), (), (), (), (), (), (), (), (), (), ()), ((), T#1S, (), (), (), ()));
+      U2EM3cm9hookClawCylinder2 : "LBC_Simple_typeTwoWayActuatorInterface" := (((), (), (), (), (), ()), ((), (), (), (), (), (), (), (), (), (), ()), ((), T#1S, (), (), (), ()));
+      U2EM3cm10SignalTM : "LEXCHANGETRAY_typeConstraintWorkstationIoSignalInterface";
+      U2EM3cm11PressureGaugeRs485 : "typePressureGuageRs485Interface";
+      statIndex { S7_SetPoint := 'True'} : Int;
+      errors { S7_SetPoint := 'True'} : Array[0..9] of Int;
+      timer1 {InstructionName := 'TON_TIME'; LibVersion := '1.0'; S7_SetPoint := 'False'} : Array[0..23] of TON_TIME;
+   END_VAR
+
+   VAR_TEMP 
+      index : Int;
+      index2 : Int;
+   END_VAR
+
+
+BEGIN
+	REGION errors捕捉
+	    IF #ack THEN
+	        FOR #index := 0 TO 9 DO // Statement section IF
+	            #errors[#index] := 0;
+	        END_FOR;
+	
+	    END_IF;
+	    #statIndex := 0;
+	    FOR #index := 0 TO 80 DO // Statement section IF
+	        IF Unit2.Alarms.errorStop[#index] THEN
+	            FOR #index2 := 0 TO 9 DO
+	                IF #errors[#index2] = 0 THEN
+	                    #statIndex := #index2;
+	                    EXIT;
+	                END_IF;
+	            END_FOR;
+	            
+	            #errors[#statIndex] := #index
+	            ;
+	        END_IF;
+	    END_FOR;
+	    FOR #index := 401 TO 404 DO // Statement section IF
+	        IF Unit2.Alarms.errorStop[#index] THEN
+	            FOR #index2 := 0 TO 9 DO
+	                IF #errors[#index2] = 0 THEN
+	                    #statIndex := #index2;
+	                    EXIT;
+	                END_IF;
+	            END_FOR;
+	            #errors[#statIndex] := #index;
+	        END_IF;
+	    END_FOR;
+	END_REGION
+	
+	
+	REGION 单步控制
+	    // Statement section REGION
+	    Unit2.EM1.HmiInterface.sequence.commands.setSingleStepMode := #U2EM1setSingleStepMode;
+	    Unit2.EM1.HmiInterface.sequence.commands.nextStep := #U2EM1nextStep;
+	    Unit2.EM2.HmiInterface.sequence.commands.setSingleStepMode := #U2EM2setSingleStepMode;
+	    Unit2.EM2.HmiInterface.sequence.commands.nextStep := #U2EM2nextStep;
+	    Unit2.EM3.HmiInterface.sequence.commands.setSingleStepMode := #U2EM3setSingleStepMode;
+	    Unit2.EM3.HmiInterface.sequence.commands.nextStep := #U2EM3nextStep;
+	    Unit2.EM4.HmiInterface.sequence.commands.setSingleStepMode := #U2EM4setSingleStepMode;
+	    Unit2.EM4.HmiInterface.sequence.commands.nextStep := #U2EM4nextStep;
+	    Unit2.EM5.HmiInterface.sequence.commands.setSingleStepMode := #U2EM5setSingleStepMode;
+	    Unit2.EM5.HmiInterface.sequence.commands.nextStep := #U2EM5nextStep;
+	    Unit2.EM6.HmiInterface.sequence.commands.setSingleStepMode := #U2EM6setSingleStepMode;
+	    Unit2.EM6.HmiInterface.sequence.commands.nextStep := #U2EM6nextStep;
+	    IF #U2EM4nextStep THEN
+	        #U2EM4nextStep := false;
+	    END_IF;
+	    
+	END_REGION
+	
+	
+	
+	//解拘束位置
+	Unit2.EM3.Config.em3Parameters.cm2Axis113.production.distanceList[2].position :=
+	Unit2.EM3.Config.em3Parameters.cm1Axis112.production.distanceList[2].position := 150.0;
+	Unit2.EM3.Config.em3Parameters.cm2Axis113.production.distanceList[2].velocity :=
+	Unit2.EM3.Config.em3Parameters.cm1Axis112.production.distanceList[2].velocity := 50.0;
+	//R_DECELERATION_POS
+	Unit2.EM3.Config.em3Parameters.cm2Axis113.production.distanceList[3].position :=
+	Unit2.EM3.Config.em3Parameters.cm1Axis112.production.distanceList[3].position := 100.0;
+	Unit2.EM3.Config.em3Parameters.cm2Axis113.production.distanceList[3].velocity:=
+	Unit2.EM3.Config.em3Parameters.cm1Axis112.production.distanceList[3].velocity := 20.0;
+	//SLOW_TRAY_POS
+	Unit2.EM3.Config.em3Parameters.cm2Axis113.production.distanceList[4].position :=
+	Unit2.EM3.Config.em3Parameters.cm1Axis112.production.distanceList[4].position := 50.0;
+	Unit2.EM3.Config.em3Parameters.cm2Axis113.production.distanceList[4].velocity :=
+	Unit2.EM3.Config.em3Parameters.cm1Axis112.production.distanceList[4].velocity := 50.0;
+	//FAST_TRAY_POS
+	Unit2.EM3.Config.em3Parameters.cm2Axis113.production.distanceList[5].position :=
+	Unit2.EM3.Config.em3Parameters.cm1Axis112.production.distanceList[5].position := 50.0;
+	Unit2.EM3.Config.em3Parameters.cm2Axis113.production.distanceList[5].velocity :=
+	Unit2.EM3.Config.em3Parameters.cm1Axis112.production.distanceList[5].velocity := 50.0;
+	//CONSTRAINT_POS
+	Unit2.EM3.Config.em3Parameters.cm2Axis113.production.distanceList[6].position :=
+	Unit2.EM3.Config.em3Parameters.cm1Axis112.production.distanceList[6].position := 30.0;
+	Unit2.EM3.Config.em3Parameters.cm2Axis113.production.distanceList[6].velocity :=
+	Unit2.EM3.Config.em3Parameters.cm1Axis112.production.distanceList[6].velocity := 50.0;
+	//F_DECELERATION_POS
+	Unit2.EM3.Config.em3Parameters.cm2Axis113.production.distanceList[1].position :=
+	Unit2.EM3.Config.em3Parameters.cm1Axis112.production.distanceList[1].position := 100.0;
+	Unit2.EM3.Config.em3Parameters.cm2Axis113.production.distanceList[1].velocity :=
+	Unit2.EM3.Config.em3Parameters.cm1Axis112.production.distanceList[1].velocity := 50.0;
+	
+	
+	
+	
+	Unit2.EM3.Config.em3Parameters.cm3Axis115.production.distanceList[0].velocity := 20.0;
+	Unit2.EM3.Config.em3Parameters.cm3Axis115.production.distanceList[0].torqueLimit := 1.0;
+	Unit2.EM3.Config.em3Parameters.cm3Axis115.production.distanceList[1].velocity := 40.0;
+	Unit2.EM3.Config.em3Parameters.cm3Axis115.production.distanceList[1].torqueLimit := 2.0;
+	Unit2.EM3.Config.em3Parameters.cm4Axis116.production.distanceList[0].velocity := 20.0;
+	Unit2.EM3.Config.em3Parameters.cm4Axis116.production.distanceList[0].torqueLimit := 1.0;
+	Unit2.EM3.Config.em3Parameters.cm4Axis116.production.distanceList[1].velocity := 40.0;
+	Unit2.EM3.Config.em3Parameters.cm4Axis116.production.distanceList[1].torqueLimit := 2.0;
+	REGION U2EM3 CYLINDER
+	    // 复位逻辑
+	    IF Unit2.EM3.HmiInterface.cm6SlideCylinder1.monitoring.goToHomePos THEN
+	        _.Unit2.EM3.HmiInterface.cm10SignalTM.commands.slideCylinderWorkPositionDetection1 := FALSE;
+	    END_IF;
+	    IF Unit2.EM3.HmiInterface.cm7hookClawCylinder1.monitoring.goToHomePos THEN
+	        _.Unit2.EM3.HmiInterface.cm10SignalTM.commands.hookClawCylinderWorkPositionDetection1 := FALSE;
+	    END_IF;
+	    IF Unit2.EM3.HmiInterface.cm8SlideCylinder2.monitoring.goToHomePos THEN
+	        _.Unit2.EM3.HmiInterface.cm10SignalTM.commands.slideCylinderWorkPositionDetection2 := FALSE;
+	    END_IF;
+	    IF Unit2.EM3.HmiInterface.cm9hookClawCylinder2.monitoring.goToHomePos THEN
+	        _.Unit2.EM3.HmiInterface.cm10SignalTM.commands.hookClawCylinderWorkPositionDetection2 := FALSE;
+	    END_IF;
+	    IF _.Unit2.EM3.HmiInterface.cm6SlideCylinder1.monitoring.goToWorkPos THEN
+	        _.Unit2.EM3.HmiInterface.cm10SignalTM.commands.slideCylinderHomePositionDetection1 := FALSE;
+	    END_IF;
+	    IF Unit2.EM3.HmiInterface.cm7hookClawCylinder1.monitoring.goToWorkPos THEN
+	        _.Unit2.EM3.HmiInterface.cm10SignalTM.commands.hookClawCylinderHomePositionDetection1 := FALSE;
+	    END_IF;
+	    IF Unit2.EM3.HmiInterface.cm8SlideCylinder2.monitoring.goToWorkPos THEN
+	        _.Unit2.EM3.HmiInterface.cm10SignalTM.commands.slideCylinderHomePositionDetection2 := FALSE;
+	    END_IF;
+	    IF Unit2.EM3.HmiInterface.cm9hookClawCylinder2.monitoring.goToWorkPos THEN
+	        _.Unit2.EM3.HmiInterface.cm10SignalTM.commands.hookClawCylinderHomePositionDetection2 := FALSE;
+	    END_IF;
+	    
+	    // 定时器逻辑
+	    #timer1[0](IN := _.Unit2.EM3.HmiInterface.cm6SlideCylinder1.monitoring.goToHomePos,
+	               PT := T#1S);
+	    IF #timer1[0].ET >= T#0.1S AND #timer1[0].ET <= T#0.5S THEN
+	        _.Unit2.EM3.HmiInterface.cm10SignalTM.commands.slideCylinderMedianPositionDetection1 := TRUE;
+	        ;
+	    END_IF;
+	    IF #timer1[0].Q THEN
+	        _.Unit2.EM3.HmiInterface.cm10SignalTM.commands.slideCylinderHomePositionDetection1 := TRUE;
+	        // _.Unit2.EM3.HmiInterface.cm10SignalTM.commands.slideCylinderMedianPositionDetection1 := FALSE;
+	    END_IF;
+	    
+	    #timer1[1](IN := Unit2.EM3.HmiInterface.cm6SlideCylinder1.monitoring.goToWorkPos,
+	               PT := T#1S);
+	    IF #timer1[1].ET >= T#0.1S AND #timer1[1].ET <= T#0.5S THEN
+	        _.Unit2.EM3.HmiInterface.cm10SignalTM.commands.slideCylinderMedianPositionDetection1 := TRUE;
+	        ;
+	    END_IF;
+	    
+	    IF #timer1[1].Q THEN
+	        _.Unit2.EM3.HmiInterface.cm10SignalTM.commands.slideCylinderWorkPositionDetection1 := TRUE;
+	        //_.Unit2.EM3.HmiInterface.cm10SignalTM.commands.slideCylinderMedianPositionDetection1 := FALSE;
+	    END_IF;
+	    
+	    #timer1[2](IN := Unit2.EM3.HmiInterface.cm7hookClawCylinder1.monitoring.goToHomePos,
+	               PT := T#1S);
+	    
+	    IF #timer1[2].Q THEN
+	        _.Unit2.EM3.HmiInterface.cm10SignalTM.commands.hookClawCylinderHomePositionDetection1 := TRUE;
+	    END_IF;
+	    
+	    #timer1[3](IN := Unit2.EM3.HmiInterface.cm7hookClawCylinder1.monitoring.goToWorkPos,
+	               PT := T#1S);
+	    IF #timer1[3].Q THEN
+	        _.Unit2.EM3.HmiInterface.cm10SignalTM.commands.hookClawCylinderWorkPositionDetection1 := TRUE;
+	    END_IF;
+	    
+	    #timer1[4](IN := Unit2.EM3.HmiInterface.cm8SlideCylinder2.monitoring.goToHomePos,
+	               PT := T#1S);
+	    IF #timer1[4].ET >= T#0.1S AND #timer1[4].ET <= T#0.5S THEN
+	        _.Unit2.EM3.HmiInterface.cm10SignalTM.commands.slideCylinderMedianPositionDetection2 := TRUE;
+	        ;
+	    END_IF;
+	    IF #timer1[4].Q THEN
+	        _.Unit2.EM3.HmiInterface.cm10SignalTM.commands.slideCylinderHomePositionDetection2 := TRUE;
+	        //_.Unit2.EM3.HmiInterface.cm10SignalTM.commands.slideCylinderMedianPositionDetection2 := FALSE;
+	    END_IF;
+	    
+	    #timer1[5](IN := Unit2.EM3.HmiInterface.cm8SlideCylinder2.monitoring.goToWorkPos,
+	               PT := T#1S);
+	    IF #timer1[5].ET >= T#0.1S AND #timer1[5].ET <= T#0.5S THEN
+	        _.Unit2.EM3.HmiInterface.cm10SignalTM.commands.slideCylinderMedianPositionDetection2 := TRUE;
+	        ;
+	    END_IF;
+	    IF #timer1[5].Q THEN
+	        _.Unit2.EM3.HmiInterface.cm10SignalTM.commands.slideCylinderWorkPositionDetection2 := TRUE;
+	        //_.Unit2.EM3.HmiInterface.cm10SignalTM.commands.slideCylinderMedianPositionDetection2 := FALSE;
+	    END_IF;
+	    
+	    #timer1[6](IN := Unit2.EM3.HmiInterface.cm9hookClawCylinder2.monitoring.goToHomePos,
+	               PT := T#1S);
+	    IF #timer1[6].Q THEN
+	        _.Unit2.EM3.HmiInterface.cm10SignalTM.commands.hookClawCylinderHomePositionDetection2 := TRUE;
+	    END_IF;
+	    
+	    #timer1[7](IN := Unit2.EM3.HmiInterface.cm9hookClawCylinder2.monitoring.goToWorkPos,
+	               PT := T#1S);
+	    IF #timer1[7].Q THEN
+	        _.Unit2.EM3.HmiInterface.cm10SignalTM.commands.hookClawCylinderWorkPositionDetection2 := TRUE;
+	    END_IF;
+	END_REGION
+	REGION U2EM2 CYLINDER
+	    // 复位逻辑
+	    IF Unit2.EM2.HmiInterface.cm2TrayLiftingCylinder.monitoring.goToHomePos THEN
+	        _.Unit2.EM2.HmiInterface.cm6SignalTM.commands.trayLiftingCylinderWorkingPositionDetection1 :=
+	        _.Unit2.EM2.HmiInterface.cm6SignalTM.commands.trayLiftingCylinderWorkingPositionDetection2 := FALSE;
+	    END_IF;
+	    IF Unit2.EM2.HmiInterface.cm3CellLiftingCylinder.monitoring.goToHomePos THEN
+	        _.Unit2.EM2.HmiInterface.cm6SignalTM.commands.cellLiftingCylinderWorkingPositionDetection1 :=
+	        _.Unit2.EM2.HmiInterface.cm6SignalTM.commands.cellLiftingCylinderWorkingPositionDetection2 := FALSE;
+	    END_IF;
+	    IF Unit2.EM2.HmiInterface.cm4PositioningPinCylinder.monitoring.goToHomePos THEN
+	        _.Unit2.EM2.HmiInterface.cm6SignalTM.commands.positioningPinCylinderWorkingPositionDetection1 :=
+	        _.Unit2.EM2.HmiInterface.cm6SignalTM.commands.positioningPinCylinderWorkingPositionDetection2 := FALSE;
+	    END_IF;
+	    IF Unit2.EM2.HmiInterface.cm2TrayLiftingCylinder.monitoring.goToWorkPos THEN
+	        _.Unit2.EM2.HmiInterface.cm6SignalTM.commands.trayLiftingCylinderHomePositionDetection1 :=
+	        _.Unit2.EM2.HmiInterface.cm6SignalTM.commands.trayLiftingCylinderHomePositionDetection2 := FALSE;
+	    END_IF;
+	    IF Unit2.EM2.HmiInterface.cm3CellLiftingCylinder.monitoring.goToWorkPos THEN
+	        _.Unit2.EM2.HmiInterface.cm6SignalTM.commands.cellLiftingCylinderHomePositionDetection1 :=
+	        _.Unit2.EM2.HmiInterface.cm6SignalTM.commands.cellLiftingCylinderHomePositionDetection2 := FALSE;
+	    END_IF;
+	    IF Unit2.EM2.HmiInterface.cm4PositioningPinCylinder.monitoring.goToWorkPos THEN
+	        _.Unit2.EM2.HmiInterface.cm6SignalTM.commands.positioningPinCylinderHomePositionDetection1 :=
+	        _.Unit2.EM2.HmiInterface.cm6SignalTM.commands.positioningPinCylinderHomePositionDetection2 := FALSE;
+	    END_IF;
+	    
+	    // 定时器逻辑
+	    #timer1[8](IN := Unit2.EM2.HmiInterface.cm2TrayLiftingCylinder.monitoring.goToHomePos,
+	               PT := T#1S);
+	    IF #timer1[8].Q THEN
+	        _.Unit2.EM2.HmiInterface.cm6SignalTM.commands.trayLiftingCylinderHomePositionDetection1 := TRUE;
+	        _.Unit2.EM2.HmiInterface.cm6SignalTM.commands.trayLiftingCylinderHomePositionDetection2 := TRUE;
+	    END_IF;
+	    
+	    #timer1[9](IN := Unit2.EM2.HmiInterface.cm3CellLiftingCylinder.monitoring.goToHomePos,
+	               PT := T#1S);
+	    IF #timer1[9].Q THEN
+	        _.Unit2.EM2.HmiInterface.cm6SignalTM.commands.cellLiftingCylinderHomePositionDetection1 := TRUE;
+	        _.Unit2.EM2.HmiInterface.cm6SignalTM.commands.cellLiftingCylinderHomePositionDetection2 := TRUE;
+	    END_IF;
+	    
+	    #timer1[10](IN := Unit2.EM2.HmiInterface.cm4PositioningPinCylinder.monitoring.goToHomePos,
+	                PT := T#1S);
+	    IF #timer1[10].Q THEN
+	        _.Unit2.EM2.HmiInterface.cm6SignalTM.commands.positioningPinCylinderHomePositionDetection1 := TRUE;
+	        _.Unit2.EM2.HmiInterface.cm6SignalTM.commands.positioningPinCylinderHomePositionDetection2 := TRUE;
+	    END_IF;
+	    
+	    #timer1[11](IN := Unit2.EM2.HmiInterface.cm2TrayLiftingCylinder.monitoring.goToWorkPos,
+	                PT := T#1S);
+	    IF #timer1[11].Q THEN
+	        _.Unit2.EM2.HmiInterface.cm6SignalTM.commands.trayLiftingCylinderWorkingPositionDetection1 := TRUE;
+	        _.Unit2.EM2.HmiInterface.cm6SignalTM.commands.trayLiftingCylinderWorkingPositionDetection2 := TRUE;
+	    END_IF;
+	    
+	    #timer1[12](IN := Unit2.EM2.HmiInterface.cm3CellLiftingCylinder.monitoring.goToWorkPos,
+	                PT := T#1S);
+	    IF #timer1[12].Q THEN
+	        _.Unit2.EM2.HmiInterface.cm6SignalTM.commands.cellLiftingCylinderWorkingPositionDetection1 := TRUE;
+	        _.Unit2.EM2.HmiInterface.cm6SignalTM.commands.cellLiftingCylinderWorkingPositionDetection2 := TRUE;
+	    END_IF;
+	    
+	    #timer1[13](IN := Unit2.EM2.HmiInterface.cm4PositioningPinCylinder.monitoring.goToWorkPos,
+	                PT := T#1S);
+	    IF #timer1[13].Q THEN
+	        _.Unit2.EM2.HmiInterface.cm6SignalTM.commands.positioningPinCylinderWorkingPositionDetection1 := TRUE;
+	        _.Unit2.EM2.HmiInterface.cm6SignalTM.commands.positioningPinCylinderWorkingPositionDetection2 := TRUE;
+	    END_IF;
+	END_REGION
+	REGION U2EM4 CYLINDER
+	    // 变量赋值逻辑
+	    _.Unit2.EM4.HmiInterface.cm8SignalTM.commands.withOrWithoutCellDetectionU2EM4_1 := Unit2.EM4.HmiInterface.cm8SignalTM.commands.gripperCylinderWorkPositionDetectionOfBigCellU2EM4_1;
+	    _.Unit2.EM4.HmiInterface.cm8SignalTM.commands.withOrWithoutCellDetectionU2EM4_2 := Unit2.EM4.HmiInterface.cm8SignalTM.commands.gripperCylinderWorkPositionDetectionOfBigCellU2EM4_2;
+	    _.Unit2.EM4.HmiInterface.cm8SignalTM.commands.withOrWithoutCellDetectionU2EM4_3 := Unit2.EM4.HmiInterface.cm8SignalTM.commands.gripperCylinderWorkPositionDetectionOfBigCellU2EM4_3;
+	    _.Unit2.EM4.HmiInterface.cm8SignalTM.commands.withOrWithoutCellDetectionU2EM4_4 := Unit2.EM4.HmiInterface.cm8SignalTM.commands.gripperCylinderWorkPositionDetectionOfBigCellU2EM4_4;
+	    
+	    // 复位逻辑
+	    IF Unit2.EM4.HmiInterface.cm4Cylinder.monitoring.goToHomePos THEN
+	        _.Unit2.EM4.HmiInterface.cm8SignalTM.commands.gripperCylinderWorkPositionDetectionOfBigCellU2EM4_1 := FALSE;
+	    END_IF;
+	    IF Unit2.EM4.HmiInterface.cm4Cylinder.monitoring.goToWorkPos THEN
+	        _.Unit2.EM4.HmiInterface.cm8SignalTM.commands.GripperCylinderHomePositionDetectionU2EM4_1 := FALSE;
+	    END_IF;
+	    IF Unit2.EM4.HmiInterface.cm5Cylinder.monitoring.goToHomePos THEN
+	        _.Unit2.EM4.HmiInterface.cm8SignalTM.commands.gripperCylinderWorkPositionDetectionOfBigCellU2EM4_2 := FALSE;
+	    END_IF;
+	    IF Unit2.EM4.HmiInterface.cm5Cylinder.monitoring.goToWorkPos THEN
+	        _.Unit2.EM4.HmiInterface.cm8SignalTM.commands.GripperCylinderHomePositionDetectionU2EM4_2 := FALSE;
+	    END_IF;
+	    IF Unit2.EM4.HmiInterface.cm6Cylinder.monitoring.goToHomePos THEN
+	        _.Unit2.EM4.HmiInterface.cm8SignalTM.commands.gripperCylinderWorkPositionDetectionOfBigCellU2EM4_3 := FALSE;
+	    END_IF;
+	    IF Unit2.EM4.HmiInterface.cm6Cylinder.monitoring.goToWorkPos THEN
+	        _.Unit2.EM4.HmiInterface.cm8SignalTM.commands.GripperCylinderHomePositionDetectionU2EM4_3 := FALSE;
+	    END_IF;
+	    IF Unit2.EM4.HmiInterface.cm7Cylinder.monitoring.goToHomePos THEN
+	        _.Unit2.EM4.HmiInterface.cm8SignalTM.commands.gripperCylinderWorkPositionDetectionOfBigCellU2EM4_4 := FALSE;
+	    END_IF;
+	    IF Unit2.EM4.HmiInterface.cm7Cylinder.monitoring.goToWorkPos THEN
+	        _.Unit2.EM4.HmiInterface.cm8SignalTM.commands.GripperCylinderHomePositionDetectionU2EM4_4 := FALSE;
+	    END_IF;
+	    
+	    // 定时器逻辑
+	    #timer1[14](IN := Unit2.EM4.HmiInterface.cm4Cylinder.monitoring.goToHomePos,
+	   PT := T#1S);
+	    IF #timer1[14].Q THEN
+	        _.Unit2.EM4.HmiInterface.cm8SignalTM.commands.GripperCylinderHomePositionDetectionU2EM4_1 := TRUE;
+	    END_IF;
+	    
+	    #timer1[15](IN := Unit2.EM4.HmiInterface.cm5Cylinder.monitoring.goToHomePos,
+	   PT := T#1S);
+	    IF #timer1[15].Q THEN
+	        _.Unit2.EM4.HmiInterface.cm8SignalTM.commands.GripperCylinderHomePositionDetectionU2EM4_2 := TRUE;
+	    END_IF;
+	    
+	    #timer1[16](IN := Unit2.EM4.HmiInterface.cm6Cylinder.monitoring.goToHomePos,
+	   PT := T#1S);
+	    IF #timer1[16].Q THEN
+	        _.Unit2.EM4.HmiInterface.cm8SignalTM.commands.GripperCylinderHomePositionDetectionU2EM4_3 := TRUE;
+	    END_IF;
+	    
+	    #timer1[17](IN := Unit2.EM4.HmiInterface.cm7Cylinder.monitoring.goToHomePos,
+	   PT := T#1S);
+	    IF #timer1[17].Q THEN
+	        _.Unit2.EM4.HmiInterface.cm8SignalTM.commands.GripperCylinderHomePositionDetectionU2EM4_4 := TRUE;
+	    END_IF;
+	    
+	    #timer1[18](IN := Unit2.EM4.HmiInterface.cm4Cylinder.monitoring.goToWorkPos,
+	   PT := T#1S);
+	    IF #timer1[18].Q THEN
+	        _.Unit2.EM4.HmiInterface.cm8SignalTM.commands.gripperCylinderWorkPositionDetectionOfBigCellU2EM4_1 := TRUE;
+	    END_IF;
+	    
+	    #timer1[19](IN := Unit2.EM4.HmiInterface.cm5Cylinder.monitoring.goToWorkPos,
+	   PT := T#1S);
+	    IF #timer1[19].Q THEN
+	        _.Unit2.EM4.HmiInterface.cm8SignalTM.commands.gripperCylinderWorkPositionDetectionOfBigCellU2EM4_2 := TRUE;
+	    END_IF;
+	    
+	    #timer1[20](IN := Unit2.EM4.HmiInterface.cm6Cylinder.monitoring.goToWorkPos,
+	   PT := T#1S);
+	    IF #timer1[20].Q THEN
+	        _.Unit2.EM4.HmiInterface.cm8SignalTM.commands.gripperCylinderWorkPositionDetectionOfBigCellU2EM4_3 := TRUE;
+	    END_IF;
+	    
+	    #timer1[21](IN := Unit2.EM4.HmiInterface.cm7Cylinder.monitoring.goToWorkPos,
+	   PT := T#1S);
+	    IF #timer1[21].Q THEN
+	        _.Unit2.EM4.HmiInterface.cm8SignalTM.commands.gripperCylinderWorkPositionDetectionOfBigCellU2EM4_4 := TRUE;
+	    END_IF;
+	END_REGION
+	REGION U2EM5 CYLINDER
+	    // 复位逻辑
+	    IF Unit2.EM5.HmiInterface.cm2Cylinder.monitoring.goToHomePos THEN
+	        _.Unit2.EM5.HmiInterface.cm3SignalTM.commands.plasticTrayLiftingCylinderworkingPositionDetectionU2EM5_1 := FALSE;
+	    END_IF;
+	    IF Unit2.EM5.HmiInterface.cm2Cylinder.monitoring.goToWorkPos THEN
+	        _.Unit2.EM5.HmiInterface.cm3SignalTM.commands.plasticTrayLiftingCylinderHomePositionDetectionU2EM5_1 := FALSE;
+	    END_IF;
+	    
+	    // 定时器逻辑
+	    #timer1[22](IN := Unit2.EM5.HmiInterface.cm2Cylinder.monitoring.goToHomePos,
+	                PT := T#1S);
+	    IF #timer1[22].Q THEN
+	        _.Unit2.EM5.HmiInterface.cm3SignalTM.commands.plasticTrayLiftingCylinderHomePositionDetectionU2EM5_1 := TRUE;
+	    END_IF;
+	    
+	    #timer1[23](IN := Unit2.EM5.HmiInterface.cm2Cylinder.monitoring.goToWorkPos,
+	                PT := T#1S);
+	    IF #timer1[23].Q THEN
+	        _.Unit2.EM5.HmiInterface.cm3SignalTM.commands.plasticTrayLiftingCylinderworkingPositionDetectionU2EM5_1 := TRUE;
+	    END_IF;
+	END_REGION
+	IF Unit2.EM4.ControlNodes.sequence.status.currentStep=122 THEN
+	    _.Unit3.EM1.HmiInterface.cm1SignalTm.commands.u2CellsSignal1 := true;
+	    ;
+	END_IF;
+	IF Unit3.EM1.ControlNodes.sequence.status.currentStep = 209 THEN
+	    _.Unit3.EM1.HmiInterface.cm1SignalTm.commands.u2CellsSignal1 := FALSE;
+	    ;
+	END_IF;
+	_.Global.Data.simulationSetting.unit2 := TRUE;
+	CASE #statCurrentStep OF
+	    1:  // Statement section case 1
+	        Unit2.EM4.ControlNodes.cm1AxisControl.commandConfiguration.home.mode := 7;
+	        Unit2.EM4.ControlNodes.cm2AxisControl.commandConfiguration.home.mode := 7;
+	        Unit2.EM4.ControlNodes.cm3AxisControl.commandConfiguration.home.mode := 7;
+	        Unit2.EM3.ControlNodes.cm1SV112_Constraint1_Axis.commandConfiguration.home.mode :=
+	        Unit2.EM3.ControlNodes.cm2SV113_Constraint2_Axis.commandConfiguration.home.mode :=
+	        Unit2.EM3.ControlNodes.cm3SV115_Screw1_Axis.commandConfiguration.home.mode :=
+	        Unit2.EM3.ControlNodes.cm4SV116_Screw2_Axis.commandConfiguration.home.mode :=
+	        Unit2.EM2.ControlNodes.cm5AxisControl.commandConfiguration.home.mode :=
+	        Unit3.EM1.ControlNodes.cm2AxisControl.commandConfiguration.home.mode := 7;
+	        
+	        IF NOT Unit2.EM4.ControlNodes.cm1AxisControl.monitoring.statusWord.bit05_HomingDone THEN
+	            Unit2.EM4.ControlNodes.cm1AxisControl.commands.home := TRUE;
+	        END_IF;
+	        IF NOT Unit2.EM4.ControlNodes.cm2AxisControl.monitoring.statusWord.bit05_HomingDone THEN
+	            Unit2.EM4.ControlNodes.cm2AxisControl.commands.home := TRUE;
+	        END_IF;
+	        IF NOT Unit2.EM4.ControlNodes.cm3AxisControl.monitoring.statusWord.bit05_HomingDone THEN
+	            Unit2.EM4.ControlNodes.cm3AxisControl.commands.home := TRUE;
+	        END_IF;
+	        
+	        IF NOT Unit2.EM3.ControlNodes.cm2SV113_Constraint2_Axis.monitoring.statusWord.bit05_HomingDone THEN
+	            Unit2.EM3.ControlNodes.cm2SV113_Constraint2_Axis.commands.home := TRUE;
+	        END_IF;
+	        IF NOT Unit2.EM3.ControlNodes.cm3SV115_Screw1_Axis.monitoring.statusWord.bit05_HomingDone THEN
+	            Unit2.EM3.ControlNodes.cm3SV115_Screw1_Axis.commands.home := TRUE;
+	        END_IF;
+	        IF NOT Unit2.EM3.ControlNodes.cm4SV116_Screw2_Axis.monitoring.statusWord.bit05_HomingDone THEN
+	            Unit2.EM3.ControlNodes.cm4SV116_Screw2_Axis.commands.home := TRUE;
+	        END_IF;
+	        IF NOT Unit2.EM2.ControlNodes.cm5AxisControl.monitoring.statusWord.bit05_HomingDone THEN
+	            Unit2.EM2.ControlNodes.cm5AxisControl.commands.home := TRUE;
+	        END_IF;
+	        IF NOT Unit2.EM4.ControlNodes.cm2AxisControl.monitoring.statusWord.bit05_HomingDone THEN
+	            Unit2.EM4.ControlNodes.cm2AxisControl.commands.home := TRUE;
+	        END_IF;
+	        IF NOT Unit3.EM1.ControlNodes.cm2AxisControl.monitoring.statusWord.bit05_HomingDone THEN
+	            Unit3.EM1.ControlNodes.cm2AxisControl.commands.home := TRUE;
+	        END_IF;
+	        
+	        
+	        
+	        
+	        "ParametersControl".uploadPlcToHmi := TRUE;
+	        "ParametersControl".downloadHmiToPlc :=
+	        "ParametersControl".downloadHmiToPlc := FALSE;
+	        
+	        "Hmi".mainHeader[0].hmiToPlc.selectedUnits := 16#6;
+	        IF "ParametersControl".uploadPlcToHmiDone THEN
+	            #statCurrentStep := #statCurrentStep + 1;
+	            ;
+	        END_IF;
+	        
+	       
+	    2:
+	        "ParametersControl".uploadPlcToHmi :=
+	        "ParametersControl".uploadPlcToHmiDone := FALSE;
+	        "ParametersControl".downloadHmiToPlc :=TRUE;
+	        "Hmi".mainHeader[0].hmiToPlc.modeRequests := 16#1;
+	    3:
+	        "ParametersControl".uploadPlcToHmi :=
+	        "ParametersControl".uploadPlcToHmiDone := FALSE;
+	        "ParametersControl".downloadHmiToPlc :=
+	        "ParametersControl".downloadHmiToPlc := FALSE;
+	        "Hmi".mainHeader[0].hmiToPlc.stateCommands := 16#4;
+	    4:
+	        "Hmi".mainHeader[0].hmiToPlc.stateCommands := 16#1;
+	    5:
+	        "Hmi".mainHeader[0].hmiToPlc.stateCommands := 16#0;
+	        #statCurrentStep :=7;
+	    6:
+	        Unit2.EM3.HmiInterface.cm10SignalTM.commands.hookClawCylinderHomePositionDetection1 := TRUE;
+	        Unit2.EM3.HmiInterface.cm10SignalTM.commands.hookClawCylinderHomePositionDetection2 := TRUE;
+	        Unit2.EM3.HmiInterface.cm10SignalTM.commands.slideCylinderHomePositionDetection1 := TRUE;
+	        Unit2.EM3.HmiInterface.cm10SignalTM.commands.slideCylinderHomePositionDetection2 := TRUE;
+	        Unit2.EM4.HmiInterface.cm8SignalTM.commands.GripperCylinderHomePositionDetectionU2EM4_1 := TRUE;
+	        Unit2.EM4.HmiInterface.cm8SignalTM.commands.GripperCylinderHomePositionDetectionU2EM4_3 := TRUE;
+	        Unit2.EM4.HmiInterface.cm8SignalTM.commands.GripperCylinderHomePositionDetectionU2EM4_2 := TRUE;
+	        Unit2.EM4.HmiInterface.cm8SignalTM.commands.GripperCylinderHomePositionDetectionU2EM4_4 := TRUE;
+	        Unit2.Em5.HmiInterface.cm3SignalTM.commands.plasticTrayLiftingCylinderHomePositionDetectionU2EM5_1 := TRUE;
+	    7:
+	        
+	        Unit2.PublishedDB.rollerB1ToLogistic.recieve.logistics.req.outFeedReq := TRUE;
+	        Unit2.PublishedDB.rollerB2ToLogistic.recieve.logistics.req.outFeedReq := TRUE;
+	        Global.Data.material.Unit2.contraint.monitor.postion.position := 16#1;
+	        Global.Data.material.Unit2.plastic.monitor.postion.position := 16#1;
+	    8:
+	        Unit2.EM1.HmiInterface.cm2SingalTM.commands.trayAutomaticFeedingDetectionEm1 := TRUE;
+	        (* Unit2.EM2.HmiInterface.cm6SignalTM.commands.trayLiftingCylinderHomePositionDetection1 := TRUE;
+	        Unit2.EM2.HmiInterface.cm6SignalTM.commands.trayLiftingCylinderHomePositionDetection2 := TRUE;
+	        Unit2.EM2.HmiInterface.cm6SignalTM.commands.cellLiftingCylinderHomePositionDetection1 := TRUE;
+	        Unit2.EM2.HmiInterface.cm6SignalTM.commands.cellLiftingCylinderHomePositionDetection2 := TRUE;
+	        Unit2.EM2.HmiInterface.cm6SignalTM.commands.positioningPinCylinderHomePositionDetection1 := TRUE;
+	        Unit2.EM2.HmiInterface.cm6SignalTM.commands.positioningPinCylinderHomePositionDetection2 := TRUE; *)
+	        
+	        
+	    9:
+	        Unit2.EM2.HmiInterface.cm6SignalTM.commands.trayInPlaceDetection := TRUE;
+	        Unit2.EM1.HmiInterface.cm2SingalTM.commands.trayAutomaticFeedingDetectionEm1 := false;
+	        #statCurrentStep := #statCurrentStep + 1;
+	    10:
+	        #statCurrentStep := #statCurrentStep + 1;;
+	        
+	    11:
+	       (* Unit2.EM2.HmiInterface.cm6SignalTM.commands.trayLiftingCylinderWorkingPositionDetection1 := TRUE;
+	        Unit2.EM2.HmiInterface.cm6SignalTM.commands.trayLiftingCylinderWorkingPositionDetection2 := TRUE; *)
+	        #statCurrentStep := #statCurrentStep + 1;;
+	        
+	    12:
+	        Unit2.EM2.HmiInterface.cm6SignalTM.commands.detectionBeforePalletPositioning := TRUE;
+	        Unit2.EM2.HmiInterface.cm6SignalTM.commands.detectionAfterTrayPositioning := TRUE;
+	        
+	        
+	    13://STEP104 需等待
+	        (* Unit2.EM3.HmiInterface.cm10SignalTM.commands.slideCylinderHomePositionDetection1 := false;
+	        Unit2.EM3.HmiInterface.cm10SignalTM.commands.slideCylinderHomePositionDetection2 := false; *)
+	        IF Unit2.EM4.ControlNodes.sequence.status.currentStep=111 THEN
+	            #statCurrentStep := 23;
+	            ;
+	        END_IF;
+	        ;
+	    14:
+	        //STEP104
+	        Unit2.EM3.HmiInterface.cm10SignalTM.commands.slideCylinderMedianPositionDetection1 := TRUE;
+	        Unit2.EM3.HmiInterface.cm10SignalTM.commands.slideCylinderMedianPositionDetection2 := TRUE; 
+	        ;
+	    15:
+	        IF _.Unit2.EM3.ControlNodes.sequence.status.currentStep=105 THEN
+	            (* Unit2.EM3.HmiInterface.cm10SignalTM.commands.slideCylinderMedianPositionDetection1 := 
+	            Unit2.EM3.HmiInterface.cm10SignalTM.commands.slideCylinderMedianPositionDetection2 := false *)
+	            ;
+	    (*        Unit2.EM3.HmiInterface.cm10SignalTM.commands.slideCylinderWorkPositionDetection1 :=
+	            Unit2.EM3.HmiInterface.cm10SignalTM.commands.slideCylinderWorkPositionDetection2 := TRUE; *)
+	            //#statCurrentStep := #statCurrentStep + 1;
+	        END_IF;
+	        ;
+	    16://STEP 108=7
+	        IF _.Unit2.EM3.ControlNodes.sequence.status.currentStep = 107 THEN
+	            Unit2.EM3.HmiInterface.cm10SignalTM.commands.slideCylinderMedianPositionDetection1 :=
+	            Unit2.EM3.HmiInterface.cm10SignalTM.commands.slideCylinderMedianPositionDetection2 := TRUE;
+	        END_IF;
+	        
+	        
+	    17://STEP 108 
+	        IF _.Unit2.EM3.ControlNodes.sequence.status.currentStep = 108 THEN
+	            
+	            #statCurrentStep := #statCurrentStep + 1;
+	        END_IF;
+	    18:
+	        IF _.Unit2.EM3.ControlNodes.sequence.status.currentStep = 108 THEN
+	            
+	   (*         Unit2.EM3.HmiInterface.cm10SignalTM.commands.hookClawCylinderWorkPositionDetection1 :=
+	            Unit2.EM3.HmiInterface.cm10SignalTM.commands.hookClawCylinderWorkPositionDetection2 := TRUE; *)
+	            ;
+	        END_IF;
+	    19:
+	        //STEP 130;
+	        (* Unit2.EM3.HmiInterface.cm10SignalTM.commands.slideCylinderWorkPositionDetection1:=
+	        Unit2.EM3.HmiInterface.cm10SignalTM.commands.slideCylinderWorkPositionDetection2:=
+	        Unit2.EM3.HmiInterface.cm10SignalTM.commands.hookClawCylinderWorkPositionDetection1 :=
+	        Unit2.EM3.HmiInterface.cm10SignalTM.commands.hookClawCylinderWorkPositionDetection2 := FALSE; *)
+	        
+	        
+	        ;
+	    20: //STEP 130;
+	       (* Unit2.EM3.HmiInterface.cm10SignalTM.commands.slideCylinderHomePositionDetection1 :=
+	        Unit2.EM3.HmiInterface.cm10SignalTM.commands.slideCylinderHomePositionDetection2 :=
+	        Unit2.EM3.HmiInterface.cm10SignalTM.commands.hookClawCylinderHomePositionDetection1 :=
+	        Unit2.EM3.HmiInterface.cm10SignalTM.commands.hookClawCylinderHomePositionDetection2 := TRUE; *)
+	        IF #U2EM3Step=1 THEN
+	            #statCurrentStep := #statCurrentStep + 1;
+	            ;
+	        END_IF;
+	        
+	    21:
+	        IF #U2EM2Step=108 THEN
+	            ;
+	            
+	            (* Unit2.EM2.HmiInterface.cm6SignalTM.commands.positioningPinCylinderWorkingPositionDetection1 :=
+	            Unit2.EM2.HmiInterface.cm6SignalTM.commands.positioningPinCylinderWorkingPositionDetection2 := TRUE; *)
+	        END_IF;
+	        IF #U2EM2Step = 109 THEN
+	            #statCurrentStep := #statCurrentStep + 1;
+	        END_IF;
+	        
+	    22: //STEP 111
+	        IF #U2EM2Step = 111  THEN
+	            Unit2.EM2.HmiInterface.cm6SignalTM.commands.detectionAfterTrayPositioning :=
+	            Unit2.EM2.HmiInterface.cm6SignalTM.commands.detectionBeforePalletPositioning :=
+	            Unit2.EM2.HmiInterface.cm6SignalTM.commands.cellLiftingCylinderWorkingPositionDetection1 :=
+	            Unit2.EM2.HmiInterface.cm6SignalTM.commands.cellLiftingCylinderWorkingPositionDetection2 := TRUE;
+	        END_IF;
+	        
+	        
+	    23://STEP 103
+	        IF #U2EM6Step = 103 THEN
+	            Unit2.EM6.HmiInterface.cm2SingalTM.commands.trayAutomaticFeedingDetectionU2Em6 := true;
+	            ;
+	        END_IF;
+	        
+	        ;
+	    24:
+	
+	            Unit2.EM5.HmiInterface.cm3SignalTM.commands.plasticTrayTrayInplaceDetectionU2EM5 := TRUE;
+	
+	        IF #U2EM5Step=105 THEN
+	            //#statCurrentStep := #statCurrentStep + 1;
+	            ;
+	        END_IF;
+	    25:
+	
+	        _.Unit2.PublishedDB.rollerB1ToLogistic.recieve.logistics.req.inFeedReq :=
+	        _.Unit2.PublishedDB.rollerB2ToLogistic.recieve.logistics.req.inFeedReq := TRUE;
+	    26:
+	        IF #U2EM4Step=105 THEN
+	            Unit2.EM4.HmiInterface.cm8SignalTM.commands.gripperCylinderWorkPositionDetectionOfBigCellU2EM4_1 := TRUE;
+	            Unit2.EM4.HmiInterface.cm8SignalTM.commands.gripperCylinderWorkPositionDetectionOfBigCellU2EM4_2 := TRUE;
+	            Unit2.EM4.HmiInterface.cm8SignalTM.commands.gripperCylinderWorkPositionDetectionOfBigCellU2EM4_3 := TRUE;
+	            Unit2.EM4.HmiInterface.cm8SignalTM.commands.gripperCylinderWorkPositionDetectionOfBigCellU2EM4_4 := TRUE;
+	        END_IF;
+	    27:
+	        IF #U2EM4Step=110 THEN
+	            Unit2.EM4.HmiInterface.cm8SignalTM.commands.GripperCylinderHomePositionDetectionU2EM4_1 := TRUE;
+	            Unit2.EM4.HmiInterface.cm8SignalTM.commands.GripperCylinderHomePositionDetectionU2EM4_2 := TRUE;
+	            Unit2.EM4.HmiInterface.cm8SignalTM.commands.GripperCylinderHomePositionDetectionU2EM4_3 := TRUE;
+	            Unit2.EM4.HmiInterface.cm8SignalTM.commands.GripperCylinderHomePositionDetectionU2EM4_4 := TRUE;
+	            ;
+	        END_IF;
+	        IF #U2EM4Step=104 THEN
+	            #statCurrentStep := 24;
+	            ;
+	        END_IF;
+	        
+	        
+	    999:
+	        "Hmi".mainHeader[0].hmiToPlc.stateCommands := 16#0002;
+	        
+	END_CASE;
+	IF #statNextStepBool THEN
+	    #statCurrentStep := #statCurrentStep + 1;
+	    #statNextStepBool := false;
+	    ;
+	END_IF;
+	IF #statStop THEN
+	    #statStop := FALSE;
+	    #statCurrentStep:=999;
+	END_IF;
+	IF #statReset THEN
+	    #statReset := FALSE;
+	    _.Global.Data.general.acknowledge := true;
+	   
+	END_IF;
+	IF _.Global.Data.general.acknowledge THEN
+	    #statCurrentStep := 3;
+	    ;
+	END_IF;
+	
+	IF #statInit THEN
+	    #statInit := FALSE;
+	    #statCurrentStep := 1;
+	END_IF;
+	_.Global.Data.general.acknowledge:=#ack;
+	IF  _.Global.Data.general.acknowledge THEN
+	    _.Unit2.EM1.ControlNodes.cm2SingalTM.reset :=
+	    "_".Unit2.EM2.ControlNodes.cm6SignalTM.reset :=
+	    "_".Unit2.EM3.ControlNodes.cm10SignalTM.reset :=
+	    "_".Unit2.EM4.ControlNodes.cm8SignalTM.reset :=
+	    "_".Unit2.EM5.ControlNodes.cm3SignalTM.reset :=
+	    "_".Unit2.EM6.ControlNodes.cm2SingalTM.reset := TRUE;
+	    ;
+	END_IF;
+	
+	#U2EM1Step := _.Unit2.EM1.ControlNodes.sequence.status.currentStep;
+	#U2EM2Step := _.Unit2.EM2.ControlNodes.sequence.status.currentStep;
+	#U2EM3Step := _.Unit2.EM3.ControlNodes.sequence.status.currentStep;
+	#U2EM4Step := _.Unit2.EM4.ControlNodes.sequence.status.currentStep;
+	#U2EM5Step := _.Unit2.EM5.ControlNodes.sequence.status.currentStep;
+	#U2EM6Step := _.Unit2.EM6.ControlNodes.sequence.status.currentStep;
+	
+	#U2EM1cm1Vfd205 := _.Unit2.EM1.HmiInterface.cm1Vfd205;
+	#U2EM1cm2SingalTM := _.Unit2.EM1.HmiInterface.cm2SingalTM;
+	#U2EM2cm1Vfd206 := _.Unit2.EM2.HmiInterface.cm1Vfd206;
+	#U2EM2cm2TrayLiftingCylinder := _.Unit2.EM2.HmiInterface.cm2TrayLiftingCylinder;
+	#U2EM2cm3CellLiftingCylinder := _.Unit2.EM2.HmiInterface.cm3CellLiftingCylinder;
+	#U2EM2cm4PositioningPinCylinder := _.Unit2.EM2.HmiInterface.cm4PositioningPinCylinder;
+	#U2EM2cm5AxisControl := _.Unit2.EM2.ControlNodes.cm5AxisControl;
+	#U2EM2cm6SignalTM := _.Unit2.EM2.HmiInterface.cm6SignalTM;
+	#U2EM2cm7Pc := _.Unit2.EM2.HmiInterface.cm7Pc;
+	#U2EM2cm8Scanner := _.Unit2.EM2.HmiInterface.cm8Scanner;
+	#U2EM3cm1SV112_Constraint1_Axis := _.Unit2.EM3.ControlNodes.cm1SV112_Constraint1_Axis;
+	#U2EM3cm2SV113_Constraint2_Axis := _.Unit2.EM3.ControlNodes.cm2SV113_Constraint2_Axis;
+	#U2EM3cm3SV115_Screw1_Axis := _.Unit2.EM3.ControlNodes.cm3SV115_Screw1_Axis;
+	#U2EM3cm4SV116_Screw2_Axis := _.Unit2.EM3.ControlNodes.cm4SV116_Screw2_Axis;
+	#U2EM3cm6SlideCylinder1 := _.Unit2.EM3.HmiInterface.cm6SlideCylinder1;
+	#U2EM3cm7hookClawCylinder1 := _.Unit2.EM3.HmiInterface.cm7hookClawCylinder1;
+	#U2EM3cm8SlideCylinder2 := _.Unit2.EM3.HmiInterface.cm8SlideCylinder2;
+	#U2EM3cm9hookClawCylinder2 := _.Unit2.EM3.HmiInterface.cm9hookClawCylinder2;
+	#U2EM3cm10SignalTM := _.Unit2.EM3.HmiInterface.cm10SignalTM;
+	#U2EM3cm11PressureGaugeRs485 := _.Unit2.EM3.HmiInterface.cm11PressureGaugeRs485;
+END_FUNCTION_BLOCK
+

@@ -1,0 +1,741 @@
+﻿NAMESPACE Unit3.EM1
+FUNCTION_BLOCK Sequence
+TITLE = EquipmentC_StateActions
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+VERSION : 0.1
+//State model of equipment module following the OMAC standard.
+   VAR 
+      statSelectedJobNumber { ExternalWritable := 'False'} : DInt;   // Evaluated Job Number
+      instSequenceSCLControl { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LAF_ControlSclSequence;
+      instSequenceSCLStatus { ExternalWritable := 'False'; S7_SetPoint := 'False'} : _.LAF_StatusSclSequence;
+      statHomebusyEdge { ExternalWritable := 'False'; S7_SetPoint := 'True'} : Bool;
+      statHomebusyEdgeLst { ExternalWritable := 'False'} : Bool;
+      statLstCurPos { ExternalWritable := 'False'} : LReal;
+      statbHalt { ExternalWritable := 'False'} : Bool;
+      statDoneLst { ExternalWritable := 'False'} : Bool;
+      statStartingPos { ExternalWritable := 'False'} : Bool;
+      statCurrentStepPrevious { ExternalWritable := 'False'} : DInt;
+   END_VAR
+
+   VAR_TEMP 
+      tempCustomerAction : Bool;   // Placeholder for possible actions
+      tempMaterialDetectionIndex : DInt;
+      tempMaterialDtectedU1 : Bool;
+      tempMaterialDtectedU2 : Bool;
+      tempRequestLock : Bool;
+      tempLockStatus : Bool;
+   END_VAR
+
+   VAR CONSTANT 
+      STEP_IDLE : DInt := 1;   // Transitio to "Run"
+      STEP_101 : DInt := 101;
+      STEP_102 : DInt := 102;
+      STEP_201 : DInt := 201;   // init_Para
+      STEP_202 : DInt := 202;   // waiting cell
+      STEP_203 : DInt := 203;   // lock_manipulators
+      STEP_204 : DInt := 204;   // run_feed_act_mode
+      STEP_205 : DInt := 205;
+      STEP_206 : DInt := 206;   // POS ABS STARTING
+      STEP_207 : DInt := 207;
+      STEP_208 : DInt := 208;   // POS RUNNING
+      STEP_209 : DInt := 209;   // stop_status
+      STEP_210 : DInt := 210;
+      STEP_301 : DInt := 301;
+      STEP_302 : DInt := 302;
+      STEP_401 : DInt := 401;
+      STEP_402 : DInt := 402;
+      STEP_403 : DInt := 403;
+      STEP_501 : DInt := 501;   // middleJudge
+      STEP_502 : DInt := 502;   // ngStrapPositionDetection
+      STEP_503 : DInt := 503;
+      STEP_504 : DInt := 504;
+      STEP_601 : DInt := 601;
+      STEP_701 : DInt := 701;
+      STEP_702 : DInt := 702;
+      STEP_801 : DInt := 801;
+      STEP_802 : DInt := 802;
+      STEP_803 : DInt := 803;
+      STEP_IMMEDIATE_STOP : DInt := 901;   // Step executed when an immediate stop command is triggered for the sequence (i.e. when unit is in state aborting)
+      TO_DO_INSERT_CONDITION_FOR_TRANSITION_HERE : Bool := TRUE;   // Template : Add conditions
+      NGCONVEYOR_MANUAL_MODE_START : Word := 16#0041;
+      NGCONVEYOR_MANUAL_MODE_END : Word := 16#0049;
+      NGCONVEYOR_IDLE_STATE : Word;
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // ExchangeTray Project / (c)Copyright 2023
+	    //-------------------------------------------------------------------------------
+	    // Title:            NG输送机序列控制 / NG Conveyor Sequence Control
+	    // Comment/Function: 实现NG输送机的状态动作控制 / Implements state actions control for NG Conveyor
+	    // Library/Family:   ExchangeTrayProject
+	    // Author:           SUP/Zhang Shi Long
+	    // Tested with:      TIA Portal V17
+	    // Engineering:      TIA Portal V17
+	    // Restrictions:     无 / None
+	    // Requirements:     西门子S7-1500 PLC / Siemens S7-1500 PLC
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | dd.mm.yyyy | (name of expert)        | First released version
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	REGION INPUT
+	    // Statement section REGION
+	    #statHomebusyEdge := ControlNodes.cm2AxisControl.monitoring.statusWord.bit11_HomingCommand;
+	    
+	END_REGION
+	
+	REGION DESCRIPTION
+	    (/*
+	        此功能块实现NG输送机的状态动作控制序列，遵循OMAC标准状态模型。
+	        主要功能包括：
+	        1. 初始化设备参数
+	        2. 控制输送机运动
+	        3. 处理物料检测
+	        4. 实现位置控制和回原点功能
+	    
+	        This function block implements the state actions control sequence for NG Conveyor, 
+	        following the OMAC standard state model.
+	        Main functions include:
+	        1. Initialize equipment parameters
+	        2. Control conveyor movements
+	        3. Handle material detection
+	        4. Implement position control and homing functions
+	        */)
+	END_REGION DESCRIPTION
+	IF HmiInterface.sequence.commands.setSingleStepMode THEN
+	    IF NOT HmiInterface.sequence.commands.nextStep THEN
+	        ControlNodes.sequence.status.nextStep := ControlNodes.sequence.status.currentStep;
+	    END_IF;
+	END_IF;
+	REGION Sequence control
+	    // General control of the sequence
+	    #instSequenceSCLControl(idleStep := #STEP_IDLE,
+	                            stoppedStep := #STEP_IMMEDIATE_STOP,
+	                            resetJobs => ControlNodes.jobs.commands.reset,
+	                            hmiInterface := HmiInterface.sequence,
+	                            sequence := ControlNodes.sequence);
+	END_REGION Sequence control
+	
+	REGION Steps
+	    //===============================================================================
+	    // 状态机实现 / State machine implementation
+	    // 实现NG输送机的状态转换逻辑 / Implements the state transition logic for NG Conveyor
+	    // 主要功能: / Main functions:
+	    // 1. 处理设备启动、停止、保持等基本操作 / Handle basic operations like start, stop, hold
+	    // 2. 控制输送机运动 / Control conveyor movements
+	    // 3. 处理物料检测 / Handle material detection
+	    // 4. 实现位置控制和回原点功能 / Implement position control and homing functions
+	    //===============================================================================
+	    // Only execute sequence if active
+	    IF ControlNodes.sequence.status.seqActive THEN
+	        
+	        // Determine the current step
+	        CASE ControlNodes.sequence.status.currentStep OF
+	            #STEP_IDLE:
+	                // 
+	                
+	                // If a new job is activated, move to the first step of that job
+	                IF ControlNodes.sequence.status.executionEnabled THEN
+	                    CASE ControlNodes.jobs.commands.setJobNumber OF
+	                        _.U3EM1_JOB_STARTING:
+	                            ControlNodes.sequence.status.nextStep := #STEP_101;
+	                            
+	                        _.U3EM1_JOB_POS_MOVING:
+	                            ControlNodes.sequence.status.nextStep := #STEP_201;
+	                        _.U3EM1_JOB_STOPPING:
+	                            ControlNodes.sequence.status.nextStep := #STEP_601;
+	                        _.U3EM1_JOB_RESETING:
+	                            ControlNodes.sequence.status.nextStep := #STEP_401;
+	                        _.U3EM1_JOB_HOMING:
+	                            ControlNodes.sequence.status.nextStep := #STEP_501;
+	                        _.U3EM1_JOB_UNHLODING:
+	                            ControlNodes.sequence.status.nextStep := #STEP_701;
+	                        _.U3EM1_JOB_HOLODING:
+	                            ControlNodes.sequence.status.nextStep := #STEP_301;
+	                        _.U3EM1_JOB_SPECIALFUNC_ABSPOS:
+	                            ControlNodes.sequence.status.nextStep := #STEP_801;
+	                    END_CASE;
+	                END_IF;
+	                
+	                // Reset Safe State
+	                ControlNodes.em.status.safeState := FALSE;
+	                
+	                
+	                REGION ########JOB_SPECIALFUNC_ABSPOS STEP_801 
+	                    
+	                END_REGION
+	                
+	            #STEP_801:
+	                IF _.Unit3.EM1.ControlNodes.cm2AxisControl.monitoring.statusWord.bit06_Done THEN
+	                    
+	                    ControlNodes.cm2AxisControl.commands.posAbsolute := TRUE;
+	                END_IF;
+	                
+	                IF ControlNodes.cm2AxisControl.monitoring.posAbsoluteBusy THEN
+	                    ControlNodes.sequence.status.nextStep := #STEP_802;
+	                END_IF;
+	                IF ControlNodes.cm2AxisControl.monitoring.error THEN
+	                    
+	                    ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                END_IF;
+	            #STEP_802:
+	                REGION POS RUNNING STEP_802
+	                    // Actions
+	                    
+	                    
+	                    // Transitions
+	                    
+	                    IF _.LGF_CompareLReal(valueA := ControlNodes.cm2AxisControl.commandConfiguration.posAbsolute.position, valueB := ControlNodes.cm2AxisControl.monitoring.position) THEN
+	                        ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                    END_IF;
+	                    
+	                END_REGION
+	            #STEP_401:
+	                REGION ########JOB_RESTING STEP_401   
+	                    // Actions
+	                    
+	                    ControlNodes.cm3NgStrapPositionDetection.commands.resetCount := TRUE;
+	                    ControlNodes.cm3NgStrapPositionDetection.commands.resetError := TRUE;
+	                    HmiInterface.cm3NgStrapPositionDetection.commands.simOK := TRUE;
+	                    ControlNodes.cm2AxisControl.commands.resetAxis := TRUE;
+	                    HmiInterface.cm4FrButton.commands.resetError := TRUE;
+	                    
+	                    #statStartingPos := FALSE;
+	                    #statbHalt := FALSE;
+	                    
+	                    
+	                    // Transitions
+	                    ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                    ;
+	                    
+	                    
+	                    // reset Axisctrl FB
+	                    
+	                    
+	                    
+	                    
+	                END_REGION ;
+	                
+	                
+	            #STEP_101:
+	                REGION ########JOB_STARTING STEP_101
+	                    // Statement section REGION
+	                    // Actions
+	                    
+	                    _.Unit3.PublishedDB.ngConveyorToU1Handlingxyz.deliver.handlingXyz.req.transferEnable := false;
+	                    _.Unit3.PublishedDB.ngConveyorToU2Handlingxyz.deliver.handlingXyz.req.transferEnable :=
+	                    _.Unit3.PublishedDB.ngConveyorToU1Handlingxyz.recieve.handlingXyz.req.transferEnable :=
+	                    _.Unit3.PublishedDB.ngConveyorToU2Handlingxyz.recieve.handlingXyz.req.transferEnable := false;
+	                    IF _.Unit3.EmNodes.unitStatus.mode.maintenance THEN
+	                        ControlNodes.cm2AxisControl.commandConfiguration.jog.velocity := Config.em1Parameters.cm2Axis111.maintenance.vel;
+	                        
+	                    END_IF;
+	                    IF _.Unit3.EmNodes.unitStatus.mode.manual THEN
+	                        ControlNodes.cm2AxisControl.commandConfiguration.jog.velocity := Config.em1Parameters.cm2Axis111.manual.vel;
+	                        
+	                    END_IF;
+	                    IF _.Unit3.EmNodes.unitStatus.mode.production THEN
+	                        ControlNodes.cm2AxisControl.commandConfiguration.jog.velocity := Config.em1Parameters.cm2Axis111.manual.vel;
+	                        ControlNodes.cm2AxisControl.commandConfiguration.posAbsolute.position := Config.em1Parameters.cm2Axis111.production.distanceList[0].position;
+	                        ControlNodes.cm2AxisControl.commandConfiguration.posAbsolute.velocity := Config.em1Parameters.cm2Axis111.production.distanceList[0].velocity;
+	                    END_IF;
+	                    
+	                    
+	                    // Transitions
+	                    ControlNodes.sequence.status.nextStep := #STEP_102;
+	                    
+	                END_REGION ;
+	            #STEP_102:
+	                REGION STEP_102
+	                    
+	                    #tempMaterialDtectedU1 :=
+	                    ControlNodes.cm1SignalTm.monitoring.u1CellsSignal1
+	                    OR
+	                    ControlNodes.cm1SignalTm.monitoring.u1CellsSignal2
+	                    OR
+	                    ControlNodes.cm1SignalTm.monitoring.u1CellsSignal3
+	                    OR
+	                    ControlNodes.cm1SignalTm.monitoring.u1CellsSignal4;
+	                    #tempMaterialDtectedU2 :=
+	                    ControlNodes.cm1SignalTm.monitoring.u2CellsSignal1
+	                    OR
+	                    ControlNodes.cm1SignalTm.monitoring.u2CellsSignal2
+	                    OR
+	                    ControlNodes.cm1SignalTm.monitoring.u2CellsSignal3
+	                    OR
+	                    ControlNodes.cm1SignalTm.monitoring.u2CellsSignal4;
+	                    
+	                    
+	                    IF #tempMaterialDtectedU1 THEN
+	                        _.Unit3.EM1.Alarms.errorStop[5] := TRUE;
+	                    END_IF;
+	                    IF #tempMaterialDtectedU2 THEN
+	                        _.Unit3.EM1.Alarms.errorStop[4] := TRUE;
+	                    END_IF;
+	                    ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                    ;
+	                END_REGION
+	                REGION ########JOB_HOMING
+	                END_REGION ;
+	            #STEP_501:
+	                REGION STEP_501 Middle judge
+	                    
+	                    // Transitions
+	                    
+	                    (* IF #bHalt THEN
+	                        ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                     ELSE
+	                        ControlNodes.sequence.status.nextStep := #STEP_502;
+	                     END_IF; *)
+	                    ControlNodes.sequence.status.nextStep := #STEP_502;
+	                END_REGION ;
+	            #STEP_502:
+	                REGION STEP_502 Ng strap position detection
+	                    IF NOT ControlNodes.cm3NgStrapPositionDetection.monitoring.signal THEN
+	                        REGION directSingleHome
+	                            
+	                            ControlNodes.cm2AxisControl.commandConfiguration.jog.velocity := 100;
+	                            "_".Unit3.EM1."ControlNodes".cm2AxisControl.commands.jogForward := true;
+	                            
+	                        END_REGION ;
+	                    ELSE
+	                        // Transitions
+	                        "_".Unit3.EM1."ControlNodes".cm2AxisControl.commands.jogForward := FALSE;
+	                        REGION ngStrapPositionDetection On
+	                            IF _.Unit3.EM1.ControlNodes.cm2AxisControl.monitoring.statusWord.bit06_Done
+	                                AND
+	                                _.Unit3.EM1.ControlNodes.cm2AxisControl.monitoring.velocity = 0.0
+	                            THEN
+	                                ControlNodes.sequence.status.nextStep := #STEP_503;
+	                                ;
+	                            END_IF;
+	                            
+	                            
+	                            
+	                            
+	                        END_REGION ;
+	                    END_IF;
+	                    
+	                END_REGION
+	                
+	            #STEP_503:
+	                REGION STEP_503 Ng strap position detection
+	                    // Actions
+	                    
+	                    REGION setHome
+	                        
+	                        ControlNodes.cm2AxisControl.commandConfiguration.home.position := 0;
+	                        "_".Unit3.EM1."ControlNodes".cm2AxisControl.commandConfiguration.home.mode := 7;
+	                        
+	                    END_REGION ;
+	                    IF NOT ControlNodes.cm2AxisControl.monitoring.stopDone THEN
+	                        ControlNodes.cm2AxisControl.commands.home := true;
+	                    END_IF;
+	                    
+	                    
+	                    
+	                    // Transitions
+	                    REGION Homed
+	                        IF ControlNodes.cm2AxisControl.monitoring.position = 0 THEN
+	                            ;
+	                            ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                        END_IF;
+	                        
+	                    END_REGION ;
+	                    
+	                    
+	                END_REGION ;
+	                
+	            #STEP_504:
+	                
+	                // Detect signals
+	                // Detect signals
+	                #tempMaterialDtectedU1 :=
+	                ControlNodes.cm1SignalTm.monitoring.u1CellsSignal1
+	                OR
+	                ControlNodes.cm1SignalTm.monitoring.u1CellsSignal2
+	                OR
+	                ControlNodes.cm1SignalTm.monitoring.u1CellsSignal3
+	                OR
+	                ControlNodes.cm1SignalTm.monitoring.u1CellsSignal4;
+	                #tempMaterialDtectedU2 :=
+	                ControlNodes.cm1SignalTm.monitoring.u2CellsSignal1
+	                OR
+	                ControlNodes.cm1SignalTm.monitoring.u2CellsSignal2
+	                OR
+	                ControlNodes.cm1SignalTm.monitoring.u2CellsSignal3
+	                OR
+	                ControlNodes.cm1SignalTm.monitoring.u2CellsSignal4;
+	                
+	                IF #tempMaterialDtectedU1 THEN
+	                    _.Unit3.EM1.Alarms.errorStop[5] := TRUE;
+	                END_IF;
+	                IF #tempMaterialDtectedU2 THEN
+	                    _.Unit3.EM1.Alarms.errorStop[4] := TRUE;
+	                END_IF;
+	                ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                ;
+	                
+	                
+	                
+	                
+	                
+	                
+	                
+	                
+	                REGION ########JOB_POS_MOVING
+	                END_REGION ;
+	            #STEP_201:
+	                
+	                REGION STEP_201 Init para
+	                    // 初始化参数步骤 / Initialize parameters step
+	                    // 检查是否处于暂停状态 / Check if in halt state
+	                    IF NOT #statbHalt THEN
+	                        // 如果不是暂停状态，初始化各项参数 / If not in halt state, initialize parameters
+	                        _.Unit3.EM1.ControlNodes.cm3NgStrapPositionDetection.commands.resetError := TRUE;  // 重置NG带位置检测错误 / Reset NG strap position detection error
+	                        "_".Unit3.PublishedDB.req.u3ToxyzU2Transfered := TRUE;  // 设置U3到XYZ U2传输标志 / Set U3 to XYZ U2 transfer flag
+	                        _.Unit3.EM1.HmiInterface.cm3NgStrapPositionDetection.commands.resetCount := TRUE;  // 重置NG带位置检测计数 / Reset NG strap position detection count
+	                        
+	                        // 设置轴控制参数 / Set axis control parameters
+	                        ControlNodes.cm2AxisControl.commandConfiguration.jog.velocity := Config.em1Parameters.cm2Axis111.manual.vel;  // 设置点动速度 / Set jog velocity
+	                        ControlNodes.cm2AxisControl.commandConfiguration.posAbsolute.position := Config.em1Parameters.cm2Axis111.production.distanceList[0].position;  // 设置绝对位置 / Set absolute position
+	                        ControlNodes.cm2AxisControl.commandConfiguration.posAbsolute.velocity := Config.em1Parameters.cm2Axis111.production.distanceList[0].velocity;  // 设置速度 / Set velocity
+	                        ControlNodes.cm2AxisControl.commandConfiguration.posAbsolute.acceleration := Config.em1Parameters.cm2Axis111.production.distanceList[0].acceleration;  // 设置加速度 / Set acceleration
+	                        ControlNodes.cm2AxisControl.commandConfiguration.posAbsolute.deceleration := Config.em1Parameters.cm2Axis111.production.distanceList[0].deceleration;  // 设置减速度 / Set deceleration
+	                    ELSE
+	                        // 如果处于暂停状态，直接转到停止状态步骤 / If in halt state, go directly to stop status step
+	                        ControlNodes.sequence.status.nextStep := #STEP_209;
+	                    END_IF;
+	                    _.Unit3.PublishedDB.u3ToXyz.deliver.u3ToxyzU1Transfered := FALSE;
+	                    _.Unit3.PublishedDB.u3ToXyz.deliver.u3ToxyzU1Transfered := FALSE;
+	                    
+	                    
+	                    
+	                    // Transitions
+	                    
+	                    ControlNodes.sequence.status.nextStep := #STEP_202;
+	                END_REGION
+	                
+	                
+	            #STEP_202:
+	                
+	                
+	                REGION STEP_202 Waiting cell
+	                    // 等待单元步骤 / Waiting cell step
+	                    // 检测信号 / Detect signals
+	                    #tempMaterialDtectedU1 := FALSE;
+	                    // 检测U1单元信号 / Detect U1 cell signals
+	                    #tempMaterialDtectedU1 :=
+	                    ControlNodes.cm1SignalTm.monitoring.u1CellsSignal1
+	                    OR
+	                    ControlNodes.cm1SignalTm.monitoring.u1CellsSignal2
+	                    OR
+	                    ControlNodes.cm1SignalTm.monitoring.u1CellsSignal3
+	                    OR
+	                    ControlNodes.cm1SignalTm.monitoring.u1CellsSignal4;
+	                    
+	                    // 检测U2单元信号 / Detect U2 cell signals
+	                    #tempMaterialDtectedU2 :=
+	                    ControlNodes.cm1SignalTm.monitoring.u2CellsSignal1
+	                    OR
+	                    ControlNodes.cm1SignalTm.monitoring.u2CellsSignal2
+	                    OR
+	                    ControlNodes.cm1SignalTm.monitoring.u2CellsSignal3
+	                    OR
+	                    ControlNodes.cm1SignalTm.monitoring.u2CellsSignal4;
+	                    
+	                    // 如果U1没有检测到物料，启用传输 / If no material detected at U1, enable transfer
+	                    IF NOT #tempMaterialDtectedU1 THEN
+	                        _.Unit3.PublishedDB.ngConveyorToU1Handlingxyz.deliver.handlingXyz.req.transferEnable := TRUE;  // 启用传输请求 / Enable transfer request
+	                        _.Unit3.PublishedDB.ngConveyorToU1Handlingxyz.deliver.handlingXyz.feedback.running := FALSE;  // 清除运行反馈 / Clear running feedback
+	                    END_IF;
+	                    
+	                    // 如果U2没有检测到物料，启用传输 / If no material detected at U2, enable transfer
+	                    IF NOT #tempMaterialDtectedU2 THEN
+	                        _.Unit3.PublishedDB.ngConveyorToU2Handlingxyz.deliver.handlingXyz.feedback.running := FALSE;  // 清除运行反馈 / Clear running feedback
+	                        _.Unit3.PublishedDB.ngConveyorToU2Handlingxyz.deliver.handlingXyz.req.transferEnable := TRUE;  // 启用传输请求 / Enable transfer request
+	                        ;
+	                    END_IF;
+	                    
+	                    // 转换条件 / Transitions
+	                    
+	                    // 自动模式条件：检测到物料且接收到传输使能请求 / Auto mode condition: material detected and transfer enable request received
+	                    IF ((#tempMaterialDtectedU1 OR #tempMaterialDtectedU2)
+	                        AND
+	                        _.Unit3.PublishedDB.ngConveyorToU1Handlingxyz.recieve.handlingXyz.req.transferEnable
+	                        AND
+	                        _.Unit3.PublishedDB.ngConveyorToU2Handlingxyz.recieve.handlingXyz.req.transferEnable
+	                        )
+	                    THEN
+	                        // 自动模式 / Auto mode
+	                        "_".Unit3.EM1."ControlNodes".sequence.status.nextStep := #STEP_206;  // 转到绝对位置启动步骤 / Go to position absolute starting step
+	                        _.Unit3.PublishedDB.ngConveyorToU2Handlingxyz.deliver.handlingXyz.feedback.running := TRUE;  // 设置U2运行反馈 / Set U2 running feedback
+	                        _.Unit3.PublishedDB.ngConveyorToU1Handlingxyz.deliver.handlingXyz.feedback.running := TRUE;  // 设置U1运行反馈 / Set U1 running feedback
+	                        _.Unit3.PublishedDB.ngConveyorToU2Handlingxyz.deliver.handlingXyz.req.transferEnable :=
+	                        "_".Unit3.PublishedDB.ngConveyorToU1Handlingxyz.deliver.handlingXyz.req.transferEnable := FALSE;  // 清除传输请求 / Clear transfer requests
+	                    END_IF;
+	                    
+	                    // 手动模式条件 / Manual mode condition
+	                    IF _.Unit3.EM1.ControlNodes.cm4FrButton.monitoring.mode = #NGCONVEYOR_MANUAL_MODE_START THEN
+	                        ControlNodes.sequence.status.nextStep := #STEP_204;  // 转到运行进料实际模式步骤 / Go to run feed actual mode step
+	                        _.Unit3.PublishedDB.ngConveyorToU2Handlingxyz.deliver.handlingXyz.req.transferEnable :=
+	                        "_".Unit3.PublishedDB.ngConveyorToU1Handlingxyz.deliver.handlingXyz.req.transferEnable := FALSE;  // 清除传输请求 / Clear transfer requests
+	                    END_IF;
+	                    
+	                    
+	                END_REGION
+	                
+	            #STEP_203:
+	                REGION STEP_203 Lock manipulators
+	                    // Action
+	                    
+	                    ControlNodes.cm3NgStrapPositionDetection.commands.resetCount := true;
+	                    
+	                    
+	                    ;
+	                END_REGION
+	                // Transitions
+	                
+	                
+	            #STEP_204:
+	                // 运行进料实际模式步骤 / Run feed actual mode step
+	                // 在手动模式下控制输送机运行 / Control conveyor operation in manual mode
+	                
+	                REGION STEP_204 Run feed act mode
+	                    // 动作部分 / Action section
+	                    // 根据前进按钮状态控制输送机点动 / Control conveyor jog based on forward button state
+	                    _.Unit3.EM1.ControlNodes.cm2AxisControl.commands.jogForward := _.Unit3.EM1.ControlNodes.cm4FrButton.monitoring.forwardButton;
+	                    
+	                    // 转换条件 / Transition conditions
+	                    // 检查是否返回空闲状态 / Check if returning to idle state
+	                    IF _.Unit3.EM1.ControlNodes.cm4FrButton.monitoring.mode = #NGCONVEYOR_IDLE_STATE THEN
+	                        ControlNodes.sequence.status.nextStep := #STEP_IDLE;  // 返回空闲步骤 / Return to idle step
+	                    END_IF;
+	                    
+	                END_REGION
+	                
+	                
+	                
+	                // POS ABS
+	            #STEP_206:
+	                REGION STEP_206 Pos abs starting
+	                    // Actions
+	                    IF NOT ControlNodes.cm2AxisControl.monitoring.statusWord.bit08_PositioningCommand THEN
+	                        
+	                        ControlNodes.cm2AxisControl.commands.posAbsolute := TRUE;
+	                        ;
+	                    END_IF;
+	                    
+	                    
+	                    
+	                    IF ControlNodes.cm3NgStrapPositionDetection.monitoring.simulated THEN
+	                        
+	                        HmiInterface.cm3NgStrapPositionDetection.commands.simStart := TRUE;
+	                    END_IF;
+	                    
+	                    
+	                    
+	                    // Transitions
+	                    
+	                    IF ControlNodes.cm2AxisControl.monitoring.posAbsoluteBusy
+	                        OR
+	                        _.Unit3.EM1.ControlNodes.cm2AxisControl.monitoring.position = _.Unit3.EM1.ControlNodes.cm2AxisControl.commandConfiguration.posAbsolute.position
+	                    THEN
+	                        ControlNodes.sequence.status.nextStep := #STEP_208;
+	                    END_IF;
+	                END_REGION
+	                
+	            #STEP_208:
+	                REGION STEP_208 Pos running
+	                    // Actions
+	                    
+	                    
+	                    // Transitions
+	                    IF _.LGF_CompareLReal(valueA := ControlNodes.cm2AxisControl.commandConfiguration.posAbsolute.position, valueB := ControlNodes.cm2AxisControl.monitoring.position) THEN
+	                        ControlNodes.sequence.status.nextStep := #STEP_209;
+	                    END_IF;
+	                    
+	                END_REGION
+	                
+	                
+	                
+	            #STEP_209:
+	                REGION STEP_209 Stop status
+	                    REGION DETECT POS CORRECT
+	                        IF ControlNodes.cm3NgStrapPositionDetection.monitoring.countVal <> HmiInterface.cm3NgStrapPositionDetection.configuration.refCount THEN
+	                            ControlNodes.cm3NgStrapPositionDetection.commands.raiseError := TRUE;
+	                            ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                            RETURN;
+	                        END_IF;
+	                        
+	                    END_REGION
+	                    REGION halt_handling
+	                        #statbHalt := _.Unit3.EM1.ControlNodes.cm2AxisControl.commandConfiguration.posAbsolute.position <> _.Unit3.EM1.ControlNodes.cm2AxisControl.monitoring.position;
+	                        #statLstCurPos := _.Unit3.EM1.ControlNodes.cm2AxisControl.monitoring.position;
+	                        
+	                    END_REGION
+	                    
+	                    
+	                    
+	                    // Transitions
+	                    ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                    
+	                    ;
+	                    
+	                END_REGION
+	                REGION ########JOB_HOLODING STEP_301
+	                    
+	                    
+	                END_REGION
+	                
+	                
+	                REGION ########JOB_UNHOLODING STEP_701
+	                    
+	                    
+	                END_REGION
+	                
+	            #STEP_701:
+	                
+	                #statbHalt := FALSE;
+	                IF NOT _.Unit3.EM1.ControlNodes.cm1SignalTm.monitoring.ngMateriaFullSignal THEN
+	                    ControlNodes.cm2AxisControl.commands.stop := FALSE;
+	                END_IF;
+	                
+	                IF ControlNodes.cm2AxisControl.monitoring.position <> _.Unit3.EM1.ControlNodes.cm2AxisControl.commandConfiguration.posAbsolute.position
+	                    AND
+	                    ControlNodes.cm2AxisControl.monitoring.position <> 0
+	                    
+	                THEN
+	                    ControlNodes.cm2AxisControl.commands.posAbsolute := TRUE;
+	                    ;
+	                END_IF;
+	                
+	                IF (ControlNodes.cm2AxisControl.monitoring.position = _.Unit3.EM1.ControlNodes.cm2AxisControl.commandConfiguration.posAbsolute.position
+	                    OR
+	                    ControlNodes.cm2AxisControl.monitoring.position = 0)
+	                    AND
+	                    HmiInterface.cm3NgStrapPositionDetection.monitoring.signal
+	                    
+	                THEN
+	                    ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                    ;
+	                END_IF;
+	                
+	                IF _.Unit3.EM1.ControlNodes.cm2AxisControl.monitoring.position = _.Unit3.EM1.ControlNodes.cm2AxisControl.commandConfiguration.posAbsolute.position
+	                    
+	                THEN
+	                    ControlNodes.sequence.status.nextStep := #STEP_702;
+	                END_IF;
+	                
+	                IF _.Unit3.EM1.ControlNodes.cm4FrButton.monitoring.mode >= #NGCONVEYOR_MANUAL_MODE_START
+	                    AND
+	                    _.Unit3.EM1.ControlNodes.cm4FrButton.monitoring.mode <= #NGCONVEYOR_MANUAL_MODE_END
+	                THEN
+	                    ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                    ;
+	                END_IF;
+	                
+	            #STEP_702:
+	                REGION STEP_702 Detect pos correct
+	                    // Statement section REGION
+	                    IF ControlNodes.cm3NgStrapPositionDetection.monitoring.countVal <> HmiInterface.cm3NgStrapPositionDetection.configuration.refCount THEN
+	                        ControlNodes.cm3NgStrapPositionDetection.commands.raiseError := TRUE;
+	                    END_IF;
+	                    ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                END_REGION
+	                
+	                
+	            #STEP_601:
+	                
+	                REGION STEP_601 Job stopping
+	                    // Statement section REGION
+	                    _.Unit3.EM1.ControlNodes.cm2AxisControl.commands.stop := TRUE;
+	                    _.Unit3.EM1.ControlNodes.cm2AxisControl.commands.jogBackward := FALSE;
+	                    _.Unit3.EM1.ControlNodes.cm2AxisControl.commands.jogForward := FALSE;
+	                    _.Unit3.EM1.ControlNodes.cm2AxisControl.commands.posAbsolute := FALSE;
+	                    _.Unit3.EM1.ControlNodes.cm2AxisControl.commands.moveVelocity := FALSE;
+	                    _.Unit3.EM1.ControlNodes.cm2AxisControl.commands.home := FALSE;
+	                    // Transitions
+	                    IF _.Unit3.EM1.ControlNodes.cm2AxisControl.monitoring.statusWord.bit06_Done THEN
+	                        ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                        ;
+	                    END_IF;
+	                    
+	                END_REGION ;
+	                
+	                
+	                
+	                
+	                
+	                
+	                //-------------------------------------------
+	                // Immediate Stop
+	                //-------------------------------------------  
+	                REGION ################IMMEDIATE_STOP
+	                END_REGION ;
+	            #STEP_IMMEDIATE_STOP:
+	                REGION STEP_901 Immediate stop step
+	                    // Actions, wait for Init
+	                END_REGION
+	                
+	                ControlNodes.cm2AxisControl.commands.stop := TRUE;
+	                IF _.Unit3.EM1.ControlNodes.sequence.status.previousStep = #STEP_208 THEN
+	                    #statbHalt := true;
+	                    #statLstCurPos := _.Unit3.EM1.ControlNodes.cm2AxisControl.monitoring.position;
+	                END_IF;
+	                IF ControlNodes.cm2AxisControl.monitoring.statusWord.bit06_Done THEN
+	                    ControlNodes.sequence.status.nextStep := #STEP_IDLE;
+	                    ;
+	                END_IF;
+	                
+	                // Safe State
+	                "_".Unit3.EM1."ControlNodes".em.status.safeState := TRUE;
+	                
+	                
+	                
+	                
+	        END_CASE;
+	    END_IF;
+	END_REGION Steps
+	
+	REGION Status updates      
+	    REGION Sequence Status
+	        // Update the status
+	        #instSequenceSCLStatus(parentReferenceDesignator := Config.em.referenceDesignator.combined,
+	                               idleStep := #STEP_IDLE,
+	                               stoppedStep := #STEP_IMMEDIATE_STOP,
+	                               setJobNumber := ControlNodes.jobs.commands.setJobNumber,
+	                               activeJobNumber => ControlNodes.jobs.status.activeJobNumber,
+	                               previousCycleJobNumber => ControlNodes.jobs.status.previousCycleJobNumber,
+	                               hmiInterface := HmiInterface.sequence,
+	                               sequence := ControlNodes.sequence);
+	    END_REGION Sequence Status
+	    
+	    REGION Update Job History
+	        // Update the History of jobs if a new job was started
+	        IF (ControlNodes.jobs.status.activeJobNumber <> ControlNodes.jobs.status.previousCycleJobNumber) THEN
+	            _.LAF_UpdateJobHistory(jobs := ControlNodes.jobs);
+	        END_IF;
+	    END_REGION
+	    
+	    REGION Output steps as String
+	        // Write outputs as strings 
+	        ControlNodes.sequence.status.currentStepSTRING := StepToString(ControlNodes.sequence.status.currentStep);
+	        ControlNodes.sequence.status.previousStepSTRING := StepToString(ControlNodes.sequence.status.previousStep);
+	        ControlNodes.sequence.status.nextStepSTRING := StepToString(ControlNodes.sequence.status.nextStep);
+	    END_REGION Output steps as String   
+	END_REGION Status updates
+	
+	
+	REGION OUTPUT
+	    #statHomebusyEdgeLst := #statHomebusyEdge;
+	    #statDoneLst := _.Unit3.EM1.ControlNodes.cm2AxisControl.monitoring.statusWord.bit06_Done;
+	END_REGION
+END_FUNCTION_BLOCK
+END_NAMESPACE
+

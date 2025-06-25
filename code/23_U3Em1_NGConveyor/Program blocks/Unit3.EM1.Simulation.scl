@@ -1,0 +1,152 @@
+﻿NAMESPACE Unit3.EM1
+FUNCTION_BLOCK Simulation
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+VERSION : 0.1
+   VAR 
+      scenario { ExternalWritable := 'False'} : Int := 0;
+      singleStep { ExternalWritable := 'False'} : Bool;
+      nextStep { ExternalWritable := 'False'} : Bool;
+      start { ExternalWritable := 'False'} : Bool;
+      stop { ExternalWritable := 'False'} : Bool;
+      stepCounter { ExternalWritable := 'False'} : Int;
+      nextStepCounter { ExternalWritable := 'False'} : Int;
+      timer1 {InstructionName := 'TON_TIME'; LibVersion := '1.0'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : TON_TIME;
+      instR_TRIG {InstructionName := 'R_TRIG'; LibVersion := '1.0'; ExternalWritable := 'False'} : R_TRIG;
+      timer1_PT { ExternalWritable := 'False'; S7_SetPoint := 'True'} : Time;
+      lstPosAbsoluteBusy { ExternalWritable := 'False'} : Bool;
+      I { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;
+      timer1_in { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;
+      lstStart { ExternalWritable := 'False'} : Bool;
+   END_VAR
+
+
+BEGIN
+	HmiInterface.cm1SignalTm.configuration.simActive :=
+	HmiInterface.cm3NgStrapPositionDetection.configuration.simActive := _.Global.Data.general.activateSimulation;
+	
+	REGION hmiä»¿çœŸ
+	    IF _.Global.Data.general.activateSimulation THEN
+	        REGION starting_101
+	            //å¤ä½ä¿¡å·
+	            IF ControlNodes.sequence.status.currentStep = 101
+	                AND NOT
+	                _.Global.Data.simulationSetting.unit1
+	            THEN
+	                HmiInterface.cm1SignalTm.commands.u1CellsSignal1 :=
+	                HmiInterface.cm1SignalTm.commands.u1CellsSignal2 :=
+	                HmiInterface.cm1SignalTm.commands.u1CellsSignal3 :=
+	                HmiInterface.cm1SignalTm.commands.u1CellsSignal4 :=
+	                FALSE;
+	                
+	            END_IF;
+	            IF ControlNodes.sequence.status.currentStep = 101
+	                AND NOT
+	                _.Global.Data.simulationSetting.unit2
+	            THEN
+	                
+	                HmiInterface.cm1SignalTm.commands.u2CellsSignal1 :=
+	                HmiInterface.cm1SignalTm.commands.u2CellsSignal2 :=
+	                HmiInterface.cm1SignalTm.commands.u2CellsSignal3 :=
+	                HmiInterface.cm1SignalTm.commands.u2CellsSignal4 :=
+	                FALSE;
+	                
+	            END_IF;
+	        END_REGION
+	        REGION ç­‰å¾…ç”µèŠ¯202
+	            // æ”¶åˆ°XYZè¯·æ±‚æ”¾ç”µæ± æ ‡å¿—
+	            IF ControlNodes.sequence.status.currentStep = 202 THEN
+	                IF NOT _.Global.Data.simulationSetting.unit1 THEN
+	                    _.Unit3.PublishedDB.ngConveyorToU1Handlingxyz.recieve.handlingXyz.req.transferEnable := TRUE;
+	                    
+	                    ;
+	                ELSE
+	                    IF _.Unit3.PublishedDB.ngConveyorToU1Handlingxyz.recieve.handlingXyz.req.transferEnable THEN
+	                        HmiInterface.cm1SignalTm.commands.u1CellsSignal1 := TRUE;
+	                        ;
+	                    END_IF;
+	                    ;
+	                    
+	                END_IF;
+	                IF NOT _.Global.Data.simulationSetting.unit2 THEN
+	                    _.Unit3.PublishedDB.ngConveyorToU2Handlingxyz.recieve.handlingXyz.req.transferEnable := TRUE;
+	                ELSE
+	                    IF _.Unit3.PublishedDB.ngConveyorToU2Handlingxyz.recieve.handlingXyz.req.transferEnable THEN
+	                        HmiInterface.cm1SignalTm.commands.u2CellsSignal1 := TRUE;
+	                        ;
+	                    END_IF;
+	                END_IF;
+	            END_IF;
+	            
+	            
+	            
+	            
+	        END_REGION
+	        REGION 208
+	            //æ¸…ç©ºä»¿çœŸç”µèŠ¯ä¿¡å·
+	            IF NOT _.Global.Data.simulationSetting.U3Em1.cm2CellsDetectError THEN
+	                IF (
+	                    ControlNodes.sequence.status.currentStep = 209
+	                    
+	                    
+	                    OR
+	                    ControlNodes.sequence.status.currentStep = 701)
+	                    AND
+	                    ControlNodes.cm2AxisControl.monitoring.statusWord.bit06_Done THEN
+	                    HmiInterface.cm1SignalTm.commands.u2CellsSignal1 :=
+	                    HmiInterface.cm1SignalTm.commands.u2CellsSignal2 :=
+	                    HmiInterface.cm1SignalTm.commands.u2CellsSignal3 :=
+	                    HmiInterface.cm1SignalTm.commands.u2CellsSignal4 :=
+	                    FALSE;
+	                END_IF;
+	                
+	                ;
+	            END_IF;
+	            IF NOT _.Global.Data.simulationSetting.U3Em1.cm3CellsDetectError THEN
+	                IF (ControlNodes.sequence.status.currentStep = 209
+	                    
+	                    OR ControlNodes.sequence.status.currentStep = 701) AND ControlNodes.cm2AxisControl.monitoring.statusWord.bit06_Done THEN
+	                    HmiInterface.cm1SignalTm.commands.u1CellsSignal1 :=
+	                    HmiInterface.cm1SignalTm.commands.u1CellsSignal2 :=
+	                    HmiInterface.cm1SignalTm.commands.u1CellsSignal3 :=
+	                    HmiInterface.cm1SignalTm.commands.u1CellsSignal4 :=
+	                    FALSE;
+	                END_IF;
+	                
+	                ;
+	            END_IF;
+	        END_REGION
+	        
+	        
+	        
+	        
+	        
+	        
+	        HmiInterface.cm3NgStrapPositionDetection.commands.simOK := NOT _.Global.Data.simulationSetting.U3Em1.cm12ngStrapPositionDetectionError;
+	        
+	        
+	    END_IF;
+	    
+	END_REGION
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	REGION OUTPUT
+	    
+	    #timer1(IN := #timer1_in,
+	            PT := #timer1_PT);
+	    #lstPosAbsoluteBusy := _.Unit3.EM1.ControlNodes.cm2AxisControl.monitoring.posAbsoluteBusy;
+	    #lstStart := #start;
+	    
+	END_REGION
+	
+	
+	
+END_FUNCTION_BLOCK
+END_NAMESPACE
+

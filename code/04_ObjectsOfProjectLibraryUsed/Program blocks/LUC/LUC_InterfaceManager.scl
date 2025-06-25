@@ -1,0 +1,425 @@
+﻿FUNCTION_BLOCK "LUC_InterfaceManager"
+TITLE = LUC_InterfaceManager
+{ S7_Optimized_Access := 'TRUE' ; Published := 'TRUE' }
+AUTHOR : 'Siemens Digital Industries'
+FAMILY : LUC
+VERSION : 1.2
+//This function block collects commands from different interfaces and summarizes them in the outputs. The main use of this block is to manage the LPMLV2022_UnitModeStateManager when the commands come from different interfaces.
+   VAR_INPUT 
+      processInterface { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : "LUC_typeStateCommands";   // Commands from the own unit and lower level modules
+      enableLocalInterface { S7_HiddenAssignment := 'HideIfNoParamAssigned'} : Bool;   // Enable control via the local interface
+      localInterface { S7_HiddenAssignment := 'HideIfNoParamAssigned'} : "LUC_typeCommands";   // Operator commands from a local systems (i.e. pusbuttons)
+      enableHmiInterface { S7_HiddenAssignment := 'HideIfNoParamAssigned'} : Bool;   // Enable control via the hmi interface
+      hmiInterface { S7_HiddenAssignment := 'HideIfNoParamAssigned'} : "LUC_typeCommands";   // Operator commands from HMI
+      enableRemoteInterface { S7_HiddenAssignment := 'HideIfNoParamAssigned'} : Bool;   // Enable control via the remote interface
+      remoteInterface { S7_HiddenAssignment := 'HideIfNoParamAssigned'} : "LUC_typeCommands";   // Operator commands from remote (i.e. OPC UA)
+   END_VAR
+
+   VAR_OUTPUT 
+      unitMode { ExternalWritable := 'False'} : DInt := #LPMLV2022_MODE_INVALID;   // Requested unit mode
+      unitModeChangeRequest { ExternalWritable := 'False'} : Bool;   // Request unit mode
+      cntrlCmd { ExternalWritable := 'False'} : DInt := #LPMLV2022_CMD_UNDEFINED;   // Request control command
+      cmdChangeRequest { ExternalWritable := 'False'} : Bool;   // Enable change into requested state
+      SC { ExternalWritable := 'False'} : Bool;   // State change from FALSE to TRUE (rising edge) triggers state complete signal
+      localControlEnabled { ExternalWritable := 'False'; S7_HiddenAssignment := 'HideIfNoParamAssigned'} : Bool;   // Control via local interface enabled
+      hmiControlEnabled { ExternalWritable := 'False'; S7_HiddenAssignment := 'HideIfNoParamAssigned'} : Bool;   // Control via hmi interface enabled
+      remoteControlEnabled { ExternalWritable := 'False'; S7_HiddenAssignment := 'HideIfNoParamAssigned'} : Bool;   // Control via remote interface enabled
+      error { ExternalWritable := 'False'} : Bool;   // Error occurred
+      status { ExternalWritable := 'False'} : Word;   // Status information
+   END_VAR
+
+   VAR 
+      statRequested { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // Structure of process information of the requested states/modes
+         mode { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;   // Mode which is requested
+         state { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;   // State which is requested
+      END_STRUCT;
+      statPrevious { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Struct   // Structure of process information of the previous cycle
+         modesLocalInterface { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // Commands for mode change of local interface of the previous cycle
+         modesRemoteInterface { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // Commands for mode change of remote interface of the previous cycle
+         modesHmiInterface { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+         statesProcessInterface { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // Commands for state change of process interface of the previous cycle
+         statesLocalInterface { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // Commands for state change of local interface of the previous cycle
+         statesRemoteInterface { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // Commands for state change of remote interface of the previous cycle
+         statesHmiInterface { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;
+      END_STRUCT;
+      statStatus { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Word;   // 16#0000-16#7FFF: Status of the FB  16#8000-16#FFFF: Error identification (see following Table)
+   END_VAR
+
+   VAR_TEMP 
+      tempModeRequest : Struct   // Temporary commands for mode change
+         processInterface : Word;   // Process commands for mode change
+         hmiInterface : Word;   // Module interface commands for mode change
+         remoteInterface : Word;   // Remote interface commands for mode change
+         localInterface : Word;
+         detectedEdgesLocal : Word;   // Detected rising edges of local commands for mode change
+         detectedEdgesRemote : Word;   // Detected rising edges of remote commands for mode change
+         detectedEdgesHmi : Word;
+         detectedEdges : Word;   // Summary of detected edges for mode changes of all interfaces
+      END_STRUCT;
+      tempStateRequest : Struct   // Temporary commands for state change
+         processInterface : Word;   // Process commands for state change
+         hmiInterface : Word;   // Module interface commands for state change
+         remoteInterface : Word;   // Remote interface commands for state change
+         localInterface : Word;
+         detectedEdgesProcess : Word;   // Detected rising edges of process commands for state change
+         detectedEdgesLocal : Word;   // Detected rising edges of local commands for state change
+         detectedEdgesRemote : Word;   // Detected rising edges of remote commands for state change
+         detectedEdgesHmi : Word;
+         detectedEdges : Word;   // Summary of detected edges for state changes of all interfaces
+      END_STRUCT;
+      tempIndex : DInt;   // Index variables for loops
+      tempEnableLocalControl : Bool;   // Temporary variable for the enabling of the local interface that will be processed
+      tempEnableHmiControl : Bool;   // Temporary variable for the enabling of the HMI interface that will be processed
+      tempEnableRemoteControl : Bool;   // Temporary variable for the enabling of the remote interface that will be processed
+   END_VAR
+
+   VAR CONSTANT 
+      LPMLV2022_MODE_INVALID : DInt := 0;   // OMAC PackMLV2022 unit mode Invalid
+      LPMLV2022_MODE_PRODUCTION : DInt := 1;   // OMAC PackMLV2022 unit mode Production
+      LPMLV2022_MODE_MAINTENANCE : DInt := 2;   // OMAC PackMLV2022 unit mode Maintenance
+      LPMLV2022_MODE_MANUAL : DInt := 3;   // OMAC PackMLV2022 unit mode Manual
+      LPMLV2022_MODE_USER_01 : DInt := 4;   // OMAC PackMLV2022 user-defined unit mode 01
+      LPMLV2022_MODE_USER_02 : DInt := 5;   // OMAC PackMLV2022 user-defined unit mode 02
+      LPMLV2022_MODE_USER_03 : DInt := 6;   // OMAC PackMLV2022 user-defined unit mode 03
+      LPMLV2022_MODE_USER_04 : DInt := 7;   // OMAC PackMLV2022 user-defined unit mode 04
+      LPMLV2022_MODE_USER_05 : DInt := 8;   // OMAC PackMLV2022 user-defined unit mode 05
+      LPMLV2022_CMD_UNDEFINED : DInt := 0;   // OMAC PackMLV2022 control command Undefined
+      LPMLV2022_CMD_RESET : DInt := 1;   // OMAC PackMLV2022 control command Reset
+      LPMLV2022_CMD_START : DInt := 2;   // OMAC PackMLV2022 control command Start
+      LPMLV2022_CMD_STOP : DInt := 3;   // OMAC PackMLV2022 control command Stop
+      LPMLV2022_CMD_HOLD : DInt := 4;   // OMAC PackMLV2022 control command Hold
+      LPMLV2022_CMD_UNHOLD : DInt := 5;   // OMAC PackMLV2022 control command Unhold
+      LPMLV2022_CMD_SUSPEND : DInt := 6;   // OMAC PackMLV2022 control command Suspend
+      LPMLV2022_CMD_UNSUSPEND : DInt := 7;   // OMAC PackMLV2022 control command Unsuspend
+      LPMLV2022_CMD_ABORT : DInt := 8;   // OMAC PackMLV2022 control command Abort
+      LPMLV2022_CMD_CLEAR : DInt := 9;   // OMAC PackMLV2022 control command Clear
+      LPMLV2022_CMD_COMPLETE : DInt := 10;   // OMAC PackMLV2022 control command Complete
+      LPMLV2022_CMD_STATE_COMPLETE : DInt := 11;   // OMAC PackMLV2021 control command State Complete
+      NO_EDGES_WORD : Word := 16#0000;   // Word to reset or initialize a word variable
+      NO_EDGES_BYTE : Byte := 16#00;   // Byte to reset or initialize a word variable
+      STATUS_NO_ERROR_OCCURRED : Word := 16#0000;   // No error occurred during execution
+      ERR_MISSING_LOCAL_CTRL_ENABLE : Word := 16#8006;   // Missing release signal for local control "enableLocalControl" 
+      ERR_MISSING_HMI_CTRL_ENABLE : Word := 16#8007;   // Missing release signal for local control "enableHmiControl" 
+      ERR_MISSING_REMOTE_CTRL_ENABLE : Word := 16#8008;   // Missing release signal for remote control "enableRemoteControl" 
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	  //===============================================================================
+	  // Siemens AG / (c)Copyright 2024
+	  //-------------------------------------------------------------------------------
+	  // Title:            LUC_InterfaceManager
+	  // Comment/Function: This function block collects commands from different interfaces and summarizes them in the outputs.
+	  // The main use of this block is to manage the LPMLV2022_UnitModeStateManager when the commands come from different interfaces.
+	  // Library/Family:   LUC - Library of Unit Control
+	  // Author:           Siemens Digital Industries
+	  // Tested with:      S7-PLCSIM Advanced V6.0 
+	  // Engineering:      TIA Portal V19
+	  // Restrictions:     -
+	  // Requirements:     -
+	  //-------------------------------------------------------------------------------
+	  // Change log table:
+	  // Version  | Date       | Expert in charge        | Changes applied
+	  //----------|------------|-------------------------|-----------------------------
+	  // 01.00.00 | 15.12.2023 | SIMATIC Systems Support | First released version
+	  // 01.01.00 | 21.06.2024 | SIMATIC Systems Support | Implemented 3 different interfaces of control (local, hmi, remote)and diagnosis status through just a word value "status". 
+	  // 01.02.00 | 05.09.2024 | SIMATIC Systems Support | Optimized code.
+	  //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	(/*
+	#### Description of input interfaces
+	For the purposes of changing the mode and/or the state of the unit, the LUC_InterfaceManager can receive commands through the process, local, HMI or remote interfaces.
+	In case there are more than one interface of control enabled and there are state commands and mode requested at the same time, the prioritization is the following:
+	
+	* State Request Commands. The priorities in the state requested commands are:
+	    1. _Abort_ has the priority.
+	    2. _Stop_  has the second priority.
+	    3. In case of no abort or stop command, priority is sorted as following: _Reset_, _Start_, _Hold_, _Unhold_, _Suspend_, _Unsuspend_, _Clear_, _Complete_, _State_Complete_. 
+	
+	* Mode Request. The priority in the modes requested is dependent on the mode requested. The hierarchy is the following:
+	    1. Production.
+	    2. Maintenance. 
+	    3. Manual.
+	    4. User_Mode_01.
+	    5. User_Mode_02.
+	    6. User_Mode_03.
+	    7. User_Mode_04.
+	    8. User_Mode_05.
+	
+	##### Process Commands
+	This variable reads the state commands that come from the block _LUC_StatusCollector_ (where the Equipment Modules state commands are collected and evaluated).
+	
+	##### Local interface
+	This is used in the scenario in which mode/sate change commands come from other PLC blocks within the unit automation solution, the LUC_InterfaceManager has a local interface (_localInterfaceCmds_)
+	To allow the control through local interface _enableLocalControl_ must be enabled. 
+	
+	##### HMI interface
+	This is used in case of controlling mode/state through an HMI, the LUC_InterfaceManager has an HMI interface (_hmiInterfaceCmds_)
+	To allow the control through local interface _enableHmiControl_ must be enabled.
+	
+	##### Remote interface
+	For the purposes of changing the production mode and/or unit state of the machine remotely, the LUC_InterfaceManager has a remote interface (_remoteInterfaceCmds_). 
+	This interface is then used by the LUC_RemoteCtrl_OpcUa block for the purpose of receiving mode/state commands.
+	For the OPC UA commands to have any effect, remote control must be enabled.
+	
+	![ModuleInterface](ModuleInterface.png "Module interface")
+	
+	#### Monitoring the LUC_InterfaceManager 
+	The current status of the block is known through the output interface  :
+	
+	##### Output interface 
+	The output interface is typically used for interfacing the block with other PLC blocks and it provides feedback about:
+	- Requested mode/stateCmd
+	- Mode/stateCmd boolean change request
+	- StateComplete  
+	- Local Control Enabled
+	- HMI Control Enabled
+	- Remote Control Enabled
+	- Status word
+	- Diagnostics structure that contains a buffer with precise information about mode/state change with timestamp.
+	 */)
+	END_REGION DESCRIPTION
+	
+	REGION INPUTS / INITIALIZATION
+	    //Clean up of status
+	    #statStatus := #STATUS_NO_ERROR_OCCURRED;
+	    
+	    REGION Mapping of inputs to temp
+	        // Mapping of enable commands
+	        #tempEnableRemoteControl := #enableRemoteInterface;
+	        #tempEnableHmiControl := #enableHmiInterface;
+	        #tempEnableLocalControl := #enableLocalInterface;
+	        // Mapping commands for state change request into a word for easier evaluation
+	        //Process Interface
+	        #tempStateRequest.processInterface.%X0 := #processInterface.reset;
+	        #tempStateRequest.processInterface.%X1 := #processInterface.start;
+	        #tempStateRequest.processInterface.%X2 := #processInterface.stop;
+	        #tempStateRequest.processInterface.%X3 := #processInterface.hold;
+	        #tempStateRequest.processInterface.%X4 := #processInterface.unhold;
+	        #tempStateRequest.processInterface.%X5 := #processInterface.suspend;
+	        #tempStateRequest.processInterface.%X6 := #processInterface.unsuspend;
+	        #tempStateRequest.processInterface.%X7 := #processInterface.abort;
+	        #tempStateRequest.processInterface.%X8 := #processInterface.clear;
+	        #tempStateRequest.processInterface.%X9 := #processInterface.complete;
+	        #tempStateRequest.processInterface.%X10 := #processInterface.stateComplete;
+	        #tempStateRequest.processInterface.%X11 :=
+	        #tempStateRequest.processInterface.%X12 :=
+	        #tempStateRequest.processInterface.%X13 :=
+	        #tempStateRequest.processInterface.%X14 :=
+	        #tempStateRequest.processInterface.%X15 := FALSE;
+	        //Local Interface
+	        #tempStateRequest.localInterface.%X0 := #localInterface.stateCommands.reset;
+	        #tempStateRequest.localInterface.%X1 := #localInterface.stateCommands.start;
+	        #tempStateRequest.localInterface.%X2 := #localInterface.stateCommands.stop;
+	        #tempStateRequest.localInterface.%X3 := #localInterface.stateCommands.hold;
+	        #tempStateRequest.localInterface.%X4 := #localInterface.stateCommands.unhold;
+	        #tempStateRequest.localInterface.%X5 := #localInterface.stateCommands.suspend;
+	        #tempStateRequest.localInterface.%X6 := #localInterface.stateCommands.unsuspend;
+	        #tempStateRequest.localInterface.%X7 := #localInterface.stateCommands.abort;
+	        #tempStateRequest.localInterface.%X8 := #localInterface.stateCommands.clear;
+	        #tempStateRequest.localInterface.%X9 := #localInterface.stateCommands.complete;
+	        #tempStateRequest.localInterface.%X10 := #localInterface.stateCommands.stateComplete;
+	        #tempStateRequest.localInterface.%X11 :=
+	        #tempStateRequest.localInterface.%X12 :=
+	        #tempStateRequest.localInterface.%X13 :=
+	        #tempStateRequest.localInterface.%X14 :=
+	        #tempStateRequest.localInterface.%X15 := FALSE;
+	        //HMI Interface
+	        #tempStateRequest.hmiInterface.%X0 := #hmiInterface.stateCommands.reset;
+	        #tempStateRequest.hmiInterface.%X1 := #hmiInterface.stateCommands.start;
+	        #tempStateRequest.hmiInterface.%X2 := #hmiInterface.stateCommands.stop;
+	        #tempStateRequest.hmiInterface.%X3 := #hmiInterface.stateCommands.hold;
+	        #tempStateRequest.hmiInterface.%X4 := #hmiInterface.stateCommands.unhold;
+	        #tempStateRequest.hmiInterface.%X5 := #hmiInterface.stateCommands.suspend;
+	        #tempStateRequest.hmiInterface.%X6 := #hmiInterface.stateCommands.unsuspend;
+	        #tempStateRequest.hmiInterface.%X7 := #hmiInterface.stateCommands.abort;
+	        #tempStateRequest.hmiInterface.%X8 := #hmiInterface.stateCommands.clear;
+	        #tempStateRequest.hmiInterface.%X9 := #hmiInterface.stateCommands.complete;
+	        #tempStateRequest.hmiInterface.%X10 := #hmiInterface.stateCommands.stateComplete;
+	        #tempStateRequest.hmiInterface.%X11 :=
+	        #tempStateRequest.hmiInterface.%X12 :=
+	        #tempStateRequest.hmiInterface.%X13 :=
+	        #tempStateRequest.hmiInterface.%X14 :=
+	        #tempStateRequest.hmiInterface.%X15 := FALSE;
+	        //Remote Interface
+	        #tempStateRequest.remoteInterface.%X0 := #remoteInterface.stateCommands.reset;
+	        #tempStateRequest.remoteInterface.%X1 := #remoteInterface.stateCommands.start;
+	        #tempStateRequest.remoteInterface.%X2 := #remoteInterface.stateCommands.stop;
+	        #tempStateRequest.remoteInterface.%X3 := #remoteInterface.stateCommands.hold;
+	        #tempStateRequest.remoteInterface.%X4 := #remoteInterface.stateCommands.unhold;
+	        #tempStateRequest.remoteInterface.%X5 := #remoteInterface.stateCommands.suspend;
+	        #tempStateRequest.remoteInterface.%X6 := #remoteInterface.stateCommands.unsuspend;
+	        #tempStateRequest.remoteInterface.%X7 := #remoteInterface.stateCommands.abort;
+	        #tempStateRequest.remoteInterface.%X8 := #remoteInterface.stateCommands.clear;
+	        #tempStateRequest.remoteInterface.%X9 := #remoteInterface.stateCommands.complete;
+	        #tempStateRequest.remoteInterface.%X10 := #remoteInterface.stateCommands.stateComplete;
+	        #tempStateRequest.remoteInterface.%X11 :=
+	        #tempStateRequest.remoteInterface.%X12 :=
+	        #tempStateRequest.remoteInterface.%X13 :=
+	        #tempStateRequest.remoteInterface.%X14 :=
+	        #tempStateRequest.remoteInterface.%X15 := FALSE;
+	        
+	        // Mapping commands for mode change request
+	        GATHER(IN := #localInterface.modeRequests,
+	               OUT => #tempModeRequest.localInterface);
+	        GATHER(IN := #hmiInterface.modeRequests,
+	               OUT => #tempModeRequest.hmiInterface);
+	        GATHER(IN := #remoteInterface.modeRequests,
+	               OUT => #tempModeRequest.remoteInterface);
+	    END_REGION Mapping of inputs to temp
+	    
+	    REGION Command for state change
+	        // Process commands - Alway detect them (always enabled)
+	        #tempStateRequest.detectedEdgesProcess := #tempStateRequest.processInterface AND NOT #statPrevious.statesProcessInterface;
+	        // Local control interface
+	        // Detect edges (=new commands)
+	        #tempStateRequest.detectedEdgesLocal := #tempStateRequest.localInterface AND NOT #statPrevious.statesLocalInterface;
+	        // If edges detected but control not enabled, set error and reset detected edges
+	        IF NOT #tempEnableLocalControl AND (#tempStateRequest.detectedEdgesLocal <> #NO_EDGES_WORD) THEN
+	            #statStatus := #ERR_MISSING_LOCAL_CTRL_ENABLE;
+	            #tempStateRequest.detectedEdgesLocal := #NO_EDGES_WORD;
+	        END_IF;
+	        
+	        // Hmi control interface
+	        // Detect edges (=new commands)
+	        #tempStateRequest.detectedEdgesHmi := #tempStateRequest.hmiInterface AND NOT #statPrevious.statesHmiInterface;
+	        // If edges detected but control not enabled, set error and reset detected edges
+	        IF NOT #tempEnableHmiControl AND (#tempStateRequest.detectedEdgesHmi <> #NO_EDGES_WORD) THEN
+	            #statStatus := #ERR_MISSING_HMI_CTRL_ENABLE;
+	            #tempStateRequest.detectedEdgesHmi := #NO_EDGES_WORD;
+	        END_IF;
+	        
+	        // Remote control interface
+	        // Detect edges (=new commands)
+	        #tempStateRequest.detectedEdgesRemote := #tempStateRequest.remoteInterface AND NOT #statPrevious.statesRemoteInterface;
+	        // If edges detected but control not enabled, set error and reset detected edges
+	        IF NOT #enableRemoteInterface AND (#tempStateRequest.detectedEdgesRemote <> #NO_EDGES_WORD) THEN
+	            #statStatus := #ERR_MISSING_REMOTE_CTRL_ENABLE;
+	            #tempStateRequest.detectedEdgesRemote := #NO_EDGES_WORD;
+	        END_IF;
+	        
+	        // Summarize edges of all interfaces
+	        #tempStateRequest.detectedEdges := #tempStateRequest.detectedEdgesProcess OR #tempStateRequest.detectedEdgesLocal OR #tempStateRequest.detectedEdgesRemote OR #tempStateRequest.detectedEdgesHmi;
+	        
+	        // Copy input values to static for next cycle
+	        #statPrevious.statesProcessInterface := #tempStateRequest.processInterface;
+	        #statPrevious.statesLocalInterface := #tempStateRequest.localInterface;
+	        #statPrevious.statesHmiInterface := #tempStateRequest.hmiInterface;
+	        #statPrevious.statesRemoteInterface := #tempStateRequest.remoteInterface;
+	        
+	        // Detect first rising bit and convert it into DInt 
+	        // Init of the requested state variable in case there is no new command
+	        #statRequested.state := #LPMLV2022_CMD_UNDEFINED;
+	        // Abort command has priority
+	        IF #tempStateRequest.detectedEdges.%X7 THEN
+	            #statRequested.state := #LPMLV2022_CMD_ABORT;
+	            // Stop command has second priority
+	        ELSIF #tempStateRequest.detectedEdges.%X2 THEN
+	            #statRequested.state := #LPMLV2022_CMD_STOP;
+	        ELSE
+	            // In case of no abort or stop command priority is sorted by the value of the bits, least significant bit first
+	            FOR #tempIndex := 1 TO 16 DO
+	                IF #tempStateRequest.detectedEdges.%X0 THEN
+	                    #statRequested.state := #tempIndex;
+	                    EXIT;
+	                ELSE
+	                    #tempStateRequest.detectedEdges := SHR(IN := #tempStateRequest.detectedEdges, N := 1);
+	                END_IF;
+	            END_FOR;
+	        END_IF;
+	    END_REGION Commands for state change
+	    
+	    REGION Command for mode change
+	        // Local control interface
+	        // Detect edges (=new commands)
+	        #tempModeRequest.detectedEdgesLocal := (#tempModeRequest.localInterface AND NOT #statPrevious.modesLocalInterface);
+	        // If edges detected but control not enabled, set error and reset detected edges
+	        IF NOT #tempEnableLocalControl AND (#tempModeRequest.detectedEdgesLocal <> #NO_EDGES_BYTE) THEN
+	            #statStatus := #ERR_MISSING_LOCAL_CTRL_ENABLE;
+	            #tempModeRequest.detectedEdgesLocal := #NO_EDGES_BYTE;
+	        END_IF;
+	        
+	        // Hmi control interface
+	        // Detect edges (=new commands)
+	        #tempModeRequest.detectedEdgesHmi := (#tempModeRequest.hmiInterface AND NOT #statPrevious.modesHmiInterface);
+	        // If edges detected but control not enabled, set error and reset detected edges
+	        IF NOT #tempEnableHmiControl AND (#tempModeRequest.detectedEdgesHmi <> #NO_EDGES_BYTE) THEN
+	            #statStatus := #ERR_MISSING_HMI_CTRL_ENABLE;
+	            #tempModeRequest.detectedEdgesHmi := #NO_EDGES_BYTE;
+	        END_IF;
+	        
+	        // Remote control interface
+	        // Detect edges (=new commands)
+	        #tempModeRequest.detectedEdgesRemote := (#tempModeRequest.remoteInterface AND NOT #statPrevious.modesRemoteInterface);
+	        // If edges detected but control not enabled, set error and reset detected edges
+	        IF NOT #tempEnableRemoteControl AND (#tempModeRequest.detectedEdgesRemote <> #NO_EDGES_BYTE) THEN
+	            #statStatus := #ERR_MISSING_REMOTE_CTRL_ENABLE;
+	            #tempModeRequest.detectedEdgesRemote := #NO_EDGES_BYTE;
+	        END_IF;
+	        
+	        // Summarize edges of all interfaces
+	        #tempModeRequest.detectedEdges := #tempModeRequest.detectedEdgesLocal OR #tempModeRequest.detectedEdgesHmi OR #tempModeRequest.detectedEdgesRemote;
+	        
+	        // Copy input values to static for next cycle
+	        #statPrevious.modesLocalInterface := #tempModeRequest.localInterface;
+	        #statPrevious.modesHmiInterface := #tempModeRequest.hmiInterface;
+	        #statPrevious.modesRemoteInterface := #tempModeRequest.remoteInterface;
+	        
+	        // Init of the requested mode variable in case there is no new command
+	        #statRequested.mode := #LPMLV2022_CMD_UNDEFINED;
+	        // Detect first rising bit and convert it into DInt 
+	        // Search for the first rising bit
+	        FOR #tempIndex := 0 TO 7 DO
+	            IF #tempModeRequest.detectedEdges.%X0 THEN
+	                #statRequested.mode := #tempIndex + 1;
+	                EXIT;
+	            ELSE
+	                #tempModeRequest.detectedEdges := SHR(IN := #tempModeRequest.detectedEdges, N := 1);
+	            END_IF;
+	        END_FOR;
+	    END_REGION Command for mode change
+	    
+	    REGION Mapping state and mode change requests to LPMLV2022_UnitModeStateManager
+	        // Mapping of state change requests to the inputs of LPMLV2022_UnitModeStateManager 
+	        // Map the state request and ctrl command if the state request is not state complete.
+	        IF NOT (#statRequested.state = #LPMLV2022_CMD_UNDEFINED) THEN
+	            IF #statRequested.state = #LPMLV2022_CMD_STATE_COMPLETE THEN
+	                #SC := TRUE;
+	                #cmdChangeRequest := FALSE;
+	            ELSE
+	                #cntrlCmd := #statRequested.state;
+	                #cmdChangeRequest := TRUE;
+	                #SC := FALSE;
+	            END_IF;
+	        ELSE
+	            #cmdChangeRequest := FALSE;
+	            #SC := FALSE;
+	        END_IF;
+	        
+	        //Mapping of mode change requests to the inputs of LPMLV2022_UnitModeStateManager
+	        IF NOT (#statRequested.mode = #LPMLV2022_CMD_UNDEFINED) THEN
+	            #unitMode := #statRequested.mode;
+	            #unitModeChangeRequest := TRUE;
+	        ELSE
+	            #unitMode := #LPMLV2022_CMD_UNDEFINED;
+	            #unitModeChangeRequest := FALSE;
+	        END_IF;
+	    END_REGION Mapping state and mode change requests to LPMLV2022_UnitModeStateManager
+	END_REGION INPUTS / INITIALIZATION
+	
+	REGION OUTPUTS
+	    REGION Module interface
+	        // Copy process variables to the module interface
+	        #hmiControlEnabled := #tempEnableHmiControl;
+	        #remoteControlEnabled := #tempEnableRemoteControl;
+	        #localControlEnabled := #tempEnableLocalControl;
+	        #status := #statStatus;
+	        #error := #statStatus.%X15;
+	    END_REGION Module interface
+	END_REGION OUTPUTS
+	
+END_FUNCTION_BLOCK
+

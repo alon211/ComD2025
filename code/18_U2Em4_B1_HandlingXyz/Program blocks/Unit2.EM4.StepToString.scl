@@ -1,0 +1,35 @@
+﻿NAMESPACE Unit2.EM4
+FUNCTION StepToString : String
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+VERSION : 0.1
+   VAR_INPUT 
+      StepDINT : DInt;   // DINT value of the step
+   END_VAR
+
+
+BEGIN
+	// Translates the sequence step number to the step name
+	// This is an example and needs to be adjusted for the real use case
+	// 和Sequence里面的对应
+	CASE #StepDINT OF
+	    1:
+	        #StepToString := 'Idle';
+	    101:
+	        #StepToString := 'Job1 Step 1';
+	    102:
+	        #StepToString := 'Job1 Step 2';
+	    201:
+	        #StepToString := 'Job2 Step 1';
+	    202:
+	        #StepToString := 'Job2 Step 2';
+	    901:
+	        #StepToString := 'Immediate Stop';
+	        
+	    ELSE
+	        #StepToString := 'N/A';
+	        ;
+	END_CASE;
+	
+END_FUNCTION
+END_NAMESPACE
+

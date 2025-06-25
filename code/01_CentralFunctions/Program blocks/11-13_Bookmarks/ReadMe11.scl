@@ -1,0 +1,10 @@
+﻿FUNCTION "ReadMe11" : Void
+{ S7_Optimized_Access := 'TRUE' ; Published := 'FALSE' }
+VERSION : 0.1
+
+BEGIN
+	// The folder structure of the software unit CentralFunctions correlates with the main navigation in the HMI.
+	// For easier orientation, all folders are listed, but some are empty because there is no PLC logic needed, there is only content on the HMI side.
+	// Any PLC logic that should relate to the screens on the HMI for that chapter can be added in this folder.
+END_FUNCTION
+

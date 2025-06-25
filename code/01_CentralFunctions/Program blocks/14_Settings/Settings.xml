@@ -1,0 +1,103 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Document>
+  <Engineering version="V19" />
+  <SW.Blocks.GlobalDB ID="0">
+    <AttributeList>
+      <DBAccessibleFromOPCUA>false</DBAccessibleFromOPCUA>
+      <DBAccessibleFromWebserver>false</DBAccessibleFromWebserver>
+      <Interface><Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v5">
+  <Section Name="Static">
+    <Member Name="diagPlc" Datatype="&quot;LAF_typePlcDiag&quot;">
+      <Comment>
+        <MultiLanguageText Lang="en-US">HMI interface PLC diag</MultiLanguageText>
+        <MultiLanguageText Lang="de-DE">HMI Schnittstelle PLC Diagnose</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="checksum" Datatype="&quot;LAF_typeChecksum&quot;">
+      <Comment>
+        <MultiLanguageText Lang="en-US">HMI interface PLCChecksum</MultiLanguageText>
+        <MultiLanguageText Lang="de-DE">HMI Schnittstelle PLCChecksum</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="diagMemCard" Datatype="&quot;LAF_typeMemCardDiag&quot;">
+      <Comment>
+        <MultiLanguageText Lang="en-US">HMI interface SMCDiag</MultiLanguageText>
+        <MultiLanguageText Lang="de-DE">HMI Schnittstelle SMCDiag</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="cycleTimes" Datatype="&quot;LAF_typeGlobalRuntime&quot;" />
+    <Member Name="setLocalPlcTime" Datatype="&quot;LAF_typeSetPlcTime&quot;" />
+    <Member Name="ITConnection" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">Provides a visual representation of the connection with the IT systems.</MultiLanguageText>
+      </Comment>
+      <StartValue>FALSE</StartValue>
+    </Member>
+  </Section>
+</Sections></Interface>
+      <MemoryReserve>100</MemoryReserve>
+      <Name>Settings</Name>
+      <Namespace />
+      <Number>6</Number>
+      <ProgrammingLanguage>DB</ProgrammingLanguage>
+    </AttributeList>
+    <ObjectList>
+      <MultilingualText ID="1" CompositionName="Comment">
+        <ObjectList>
+          <MultilingualTextItem ID="2" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="3" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="4" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="5" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+      <MultilingualText ID="6" CompositionName="Title">
+        <ObjectList>
+          <MultilingualTextItem ID="7" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="8" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="9" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="A" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+    </ObjectList>
+  </SW.Blocks.GlobalDB>
+</Document>

@@ -1,0 +1,149 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Document>
+  <Engineering version="V19" />
+  <SW.Types.PlcStruct ID="0">
+    <AttributeList>
+      <Access>Published</Access>
+      <Interface><Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v5">
+  <Section Name="None">
+    <Member Name="enable" Datatype="Bool" />
+    <Member Name="referenceDesignator" Datatype="String[154]" />
+    <Member Name="enabled" Datatype="Bool" />
+    <Member Name="enableManualCmds" Datatype="Bool" />
+    <Member Name="enableAxis" Datatype="Bool" />
+    <Member Name="axisEnabled" Datatype="Bool" />
+    <Member Name="resetAxis" Datatype="Bool" />
+    <Member Name="home" Datatype="Bool" />
+    <Member Name="halt" Datatype="Bool" />
+    <Member Name="posAbsolute" Datatype="Bool" />
+    <Member Name="posRelative" Datatype="Bool" />
+    <Member Name="moveVelocity" Datatype="Bool" />
+    <Member Name="jogForward" Datatype="Bool" />
+    <Member Name="jogBackward" Datatype="Bool" />
+    <Member Name="stop" Datatype="Bool" />
+    <Member Name="enableTorque" Datatype="Bool" />
+    <Member Name="readValues" Datatype="Bool" />
+    <Member Name="resetDone" Datatype="Bool" />
+    <Member Name="resetBusy" Datatype="Bool" />
+    <Member Name="resetAborted" Datatype="Bool" />
+    <Member Name="homeDone" Datatype="Bool" />
+    <Member Name="homeBusy" Datatype="Bool" />
+    <Member Name="homeAborted" Datatype="Bool" />
+    <Member Name="haltDone" Datatype="Bool" />
+    <Member Name="haltBusy" Datatype="Bool" />
+    <Member Name="haltAborted" Datatype="Bool" />
+    <Member Name="posAbsoluteDone" Datatype="Bool" />
+    <Member Name="posAbsoluteBusy" Datatype="Bool" />
+    <Member Name="posAbsoluteAborted" Datatype="Bool" />
+    <Member Name="posRelativeDone" Datatype="Bool" />
+    <Member Name="posRelativeBusy" Datatype="Bool" />
+    <Member Name="posRelativeAborted" Datatype="Bool" />
+    <Member Name="inVelocity" Datatype="Bool" />
+    <Member Name="moveVelocityBusy" Datatype="Bool" />
+    <Member Name="moveVolocityAborted" Datatype="Bool" />
+    <Member Name="jogInVelocity" Datatype="Bool" />
+    <Member Name="jogBusy" Datatype="Bool" />
+    <Member Name="jogAborted" Datatype="Bool" />
+    <Member Name="torqueBusy" Datatype="Bool" />
+    <Member Name="InClamping" Datatype="Bool" />
+    <Member Name="InLimitation" Datatype="Bool" />
+    <Member Name="stopDone" Datatype="Bool" />
+    <Member Name="stopBusy" Datatype="Bool" />
+    <Member Name="stopAborted" Datatype="Bool" />
+    <Member Name="valid" Datatype="Bool" />
+    <Member Name="busy" Datatype="Bool" />
+    <Member Name="error" Datatype="Bool" />
+    <Member Name="status" Datatype="Word" />
+    <Member Name="subfunctionStatus" Datatype="Word" />
+    <Member Name="axisType" Datatype="UDInt" />
+    <Member Name="statusWord" Datatype="&quot;LBC_typeAxisSimpleControlStatusWord&quot;" />
+    <Member Name="warningWord" Datatype="&quot;LBC_typeAxisSimpleControlWarningWord&quot;">
+      <AttributeList>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+    </Member>
+    <Member Name="errorWord" Datatype="&quot;LBC_typeAxisSimpleControlErrorWord&quot;">
+      <AttributeList>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+    </Member>
+    <Member Name="errorNumber" Datatype="UDInt">
+      <AttributeList>
+        <BooleanAttribute Name="SetPoint" SystemDefined="true">true</BooleanAttribute>
+      </AttributeList>
+    </Member>
+    <Member Name="errorReaction" Datatype="DInt" />
+    <Member Name="position" Datatype="LReal" />
+    <Member Name="velocity" Datatype="LReal" />
+    <Member Name="actualPosition" Datatype="LReal" />
+    <Member Name="actualVelocity" Datatype="LReal" />
+    <Member Name="actualTorque" Datatype="LReal" />
+    <Member Name="targetPosition" Datatype="LReal" />
+    <Member Name="followingError" Datatype="LReal" />
+    <Member Name="lengthUnit" Datatype="UDInt" />
+    <Member Name="velocityUnit" Datatype="UDInt" />
+  </Section>
+</Sections></Interface>
+      <Name>LEXCHANGETRAY_typeAxisSimpleControlProcessValues_2</Name>
+      <Namespace />
+    </AttributeList>
+    <ObjectList>
+      <MultilingualText ID="1" CompositionName="Comment">
+        <ObjectList>
+          <MultilingualTextItem ID="2" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="3" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="4" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="5" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+      <MultilingualText ID="6" CompositionName="Title">
+        <ObjectList>
+          <MultilingualTextItem ID="7" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="8" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="9" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="A" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+    </ObjectList>
+  </SW.Types.PlcStruct>
+</Document>

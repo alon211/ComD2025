@@ -1,0 +1,235 @@
+﻿FUNCTION_BLOCK "LEXCHANGETRAY_NonRepeatingRandom"
+TITLE = EXCHANGETRAY_NonRepeatingRandom
+{ S7_Optimized_Access := 'TRUE' ; Published := 'TRUE' }
+AUTHOR : 'SUP/Zhang Shi Long'
+FAMILY : SUP
+VERSION : 0.1
+//Exchange Tray function
+   VAR_INPUT 
+      execute { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Execution command to generate random number
+      lowerLimit { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;   // Lower limit for random number range
+      upperLimit { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;   // Upper limit for random number range
+      callCount { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;   // Number of times the function has been called
+   END_VAR
+
+   VAR_OUTPUT 
+      randomNumber { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;   // Internal random number storage
+      history { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Array[0..99] of DInt;   // Internal history storage
+      error { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Internal error flag
+      errorID { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Int;   // Internal error ID
+      done { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Internal completion flag
+   END_VAR
+
+   VAR 
+      instRandomDint { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'False'} : "LEXCHANGETRAY_RandomDint";   // Random number generator instance
+      statCurrentPosition { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'; S7_SetPoint := 'True'} : DInt;   // Current position in history
+      statIndex { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;   // Current index status
+      statTempRandom { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;   // Temporary random number storage
+      statLastRepeated { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Last repeated value status
+      statAttempted { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Number of attempts made
+      statAttemptCount { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;   // Attempt counter status
+      statExecutePrev { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : Bool;   // Previous execution state
+      statIndex1 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;   // Index status 1
+      statIndex2 { ExternalAccessible := 'False'; ExternalVisible := 'False'; ExternalWritable := 'False'} : DInt;   // Index status 2
+   END_VAR
+
+   VAR_TEMP 
+      tempExecuteEdge : Bool;
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // Siemens / (c)Copyright 2020-2024
+	    //-------------------------------------------------------------------------------
+	    // Title:            Unique Random Number Generator Module
+	    // 标题:             不重复随机数生成模块
+	    // Comment/Function: This module generates unique random numbers within a specified range 
+	    //                    based on the call count. It handles edge detection, parameter validation, 
+	    //                    and collision avoidance for uniqueness.
+	    // 注释/功能:        此模块根据调用次数在指定范围内生成不重复随机数。
+	    //                    包含边沿检测、参数校验及唯一性冲突处理。
+	    // Library/Family:   EXCHANGETRAY - Library of Basic
+	    // 库/家族:         换盘机 - 基本控制模块库
+	    // Author:           Siemens Digital Industries
+	    // 作者:            西门子数字工业
+	    // Tested with:      S7-PLCSIM Advanced 6.0
+	    // 测试环境:        S7-PLCSIM Advanced 6.0
+	    // Engineering:      TIA Portal V19
+	    // 工程环境:        TIA Portal V19
+	    // Restrictions:     ENO mechanism is not used - forced to TRUE.
+	    // 限制条件:        不使用 ENO 机制 - 强制设置为 TRUE。
+	    // Requirements:     PLC (S7-1200 / S7-1500)
+	    // 要求:            PLC (S7-1200 / S7-1500)
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 17.04.2025 | SIMATIC Systems Support | Updated block info and comments following AIupdate.scl style.
+	    // 版本     | 日期       | 负责人                  | 更改内容
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 2025年4月17日 | SIMATIC系统支持        | 参照 LBC 风格更新块信息和注释。
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	    (/*
+	        This module generates unique random numbers within a specified range (#LowerLimit to #UpperLimit) 
+	        based on the input #CallCount. It ensures:
+	        - Detection of rising edge on #Execute trigger
+	        - Validation of input parameters (e.g., valid range, array size)
+	        - Collision-free random number generation using history tracking
+	        - Error handling for invalid configurations
+	        
+	        此模块根据调用次数 #CallCount 在指定范围（#LowerLimit 到 #UpperLimit）内生成不重复随机数。
+	        实现以下功能：
+	        - 检测 #Execute 信号的上升沿
+	        - 输入参数校验（如范围有效性、数组容量）
+	        - 通过历史记录跟踪实现无冲突随机数生成
+	        - 对无效配置的错误处理
+	        */)
+	END_REGION DESCRIPTION
+	
+	REGION INITIALISATION  
+	    // Initialize history array with default value (99)
+	    // 用默认值 99 初始化历史记录数组
+	    IF NOT #execute THEN
+	        FOR #statIndex := 0 TO 99 DO
+	            #history[#statIndex] := 99;
+	        END_FOR;
+	        #statCurrentPosition := 0;
+	        #done := FALSE;
+	    END_IF;
+	END_REGION INITIALISATION  
+	
+	REGION PROGRAM LOGIC
+	    REGION EXECUTE EDGE DETECTION
+	        // Detect rising edge of #Execute signal
+	        // 检测 #Execute 信号的上升沿
+	        #tempExecuteEdge := #execute AND NOT #statExecutePrev;
+	    END_REGION EXECUTE EDGE DETECTION
+	    
+	    REGION PARAMETER VALIDATION
+	        // Reset error flags
+	        // 重置错误标志
+	        #error := FALSE;
+	        #errorID := 0;
+	        #done := FALSE;
+	        
+	        // Validate input parameters
+	        // 输入参数校验
+	        IF #lowerLimit > #upperLimit THEN
+	            #error := TRUE;
+	            #errorID := 1;
+	            #statExecutePrev := #execute;
+	            RETURN;
+	        END_IF;
+	        
+	        // Check if range is sufficient for requested call count
+	        // 检查范围是否足够生成不重复随机数
+	        IF (#upperLimit - #lowerLimit + 1) < #callCount THEN
+	            #error := TRUE;
+	            #errorID := 2;
+	            #statExecutePrev := #execute;
+	            RETURN;
+	        END_IF;
+	        
+	        // Validate call count does not exceed array capacity or upperLimit
+	        // 检查调用次数是否超出数组容量或上限值
+	        IF #callCount > 100 OR #callCount > (#upperLimit - #lowerLimit + 1) THEN
+	            #error := TRUE;
+	            #errorID := 3;
+	            RETURN;
+	        END_IF;
+	    END_REGION PARAMETER VALIDATION
+	    
+	    REGION RANDOM NUMBER GENERATION
+	        // Main logic for generating unique random numbers
+	        // 生成不重复随机数的核心逻辑
+	        IF #tempExecuteEdge THEN
+	            #statIndex1 := 1;
+	            #statLastRepeated := TRUE;
+	            #statAttemptCount := 0;
+	            
+	            WHILE #statLastRepeated DO
+	                #statAttempted := FALSE;
+	                
+	                // Call random number generator function block
+	                // 调用随机数生成功能块
+	                #instRandomDint(
+	                                lowerLimit := #lowerLimit,
+	                                upperLimit := #upperLimit
+	                );
+	                
+	                // Handle generator errors
+	                // 处理随机数生成错误
+	                IF #instRandomDint.error THEN
+	                    #error := TRUE;
+	                    #errorID := 3;
+	                    #done := FALSE;
+	                    #statExecutePrev := #execute;
+	                    RETURN;
+	                END_IF;
+	                
+	                // First number assignment
+	                // 首个随机数赋值
+	                IF #statCurrentPosition = 0 THEN
+	                    #history[#statCurrentPosition] := #instRandomDint.randomNumber;
+	                    // Increment with boundary check (considering upperLimit)
+	                    // 递增位置并进行边界检查(考虑upperLimit)
+	                    IF #statCurrentPosition < 99 AND
+	                        #statCurrentPosition < (#upperLimit - #lowerLimit) THEN
+	                        #statCurrentPosition := #statCurrentPosition + 1;
+	                    END_IF;
+	                ELSE
+	                    // Check for collisions with history
+	                    // 检查与历史记录的冲突
+	                    // Check for collisions with history (using safe index range)
+	                    // 检查与历史记录的冲突（使用安全的索引范围）
+	                    FOR #statIndex2 := 0 TO #statCurrentPosition - 1 DO
+	                        IF #instRandomDint.randomNumber = #history[#statIndex2] THEN
+	                            #statAttempted := TRUE;
+	                            EXIT;
+	                        END_IF;
+	                    END_FOR;
+	                    
+	                    // Assign new unique number
+	                    // 分配新唯一随机数
+	                    IF NOT #statAttempted THEN
+	                        #history[#statCurrentPosition] := #instRandomDint.randomNumber;
+	                        // Increment with boundary check
+	                        // 递增位置并进行边界检查
+	                        IF #statCurrentPosition < 99 THEN
+	                            #statCurrentPosition := #statCurrentPosition + 1;
+	                        END_IF;
+	                    END_IF;
+	                END_IF;
+	                
+	                // Termination conditions
+	                // 终止条件：达到调用次数、尝试次数超限或超过上限限制
+	                IF #statCurrentPosition = #callCount OR #statAttemptCount > 999
+	                    OR #statCurrentPosition >= (#upperLimit - #lowerLimit + 1) THEN
+	                    #statLastRepeated := FALSE;
+	                END_IF;
+	                #statAttemptCount := #statAttemptCount + 1;
+	            END_WHILE;
+	            
+	            // Set completion flag
+	            // 设置完成标志
+	            #done := TRUE;
+	        END_IF;
+	    END_REGION RANDOM NUMBER GENERATION
+	END_REGION PROGRAM LOGIC
+	
+	REGION OUTPUTS
+	    // Update previous execute state for edge detection
+	    // 更新上一周期执行状态用于边沿检测
+	    #statExecutePrev := #execute;
+	    
+	    // ENO mechanism disabled, ENO - forced to TRUE
+	    // ENO 机制禁用，强制设置为 TRUE
+	    ENO := TRUE;
+	END_REGION OUTPUTS
+END_FUNCTION_BLOCK
+

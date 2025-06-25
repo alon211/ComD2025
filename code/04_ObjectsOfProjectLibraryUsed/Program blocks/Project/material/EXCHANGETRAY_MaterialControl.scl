@@ -1,0 +1,184 @@
+﻿FUNCTION_BLOCK "LEXCHANGETRAY_UpdateMaterialInfo"
+TITLE = EXCHANGETRAY_UpdateMaterialInfo
+{ S7_Optimized_Access := 'TRUE' ; Published := 'TRUE' }
+AUTHOR : 'SUP/Zhang Shi Long'
+FAMILY : SUP
+VERSION : 0.1
+//Exchange Tray function
+   VAR_IN_OUT 
+      materialInterface : "LEXCHANGETRAY_typeTrayInterface";   // Interface for material handling system
+   END_VAR
+
+   VAR 
+      lstPostion { S7_SetPoint := 'False'} : "LEXCHANGETRAY_typeTrayPosition";   // Last position record
+      I { S7_SetPoint := 'True'} : Int;   // Loop counter or index
+      upperBound : Int;   // Upper limit value for range
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER
+	    //===============================================================================
+	    // Siemens / (c)Copyright 2020-2024
+	    //-------------------------------------------------------------------------------
+	    // Title:            Tray Position and Barcode Handling Module
+	    // 标题:             托盘位置与条码处理模块
+	    // Comment/Function: This module initializes and manages tray position states and barcode information, 
+	    //                    including position transitions based on tray type.
+	    // 注释/功能:        此模块初始化并管理托盘位置状态和条码信息，
+	    //                    包括根据托盘类型切换位置状态。
+	    // Library/Family:   EXCHANGETRAY - Library of Basic
+	    // 库/家族:         换盘机 - 基本控制模块库
+	    // Author:           Siemens Digital Industries
+	    // 作者:            西门子数字工业
+	    // Tested with:      S7-PLCSIM Advanced 6.0
+	    // 测试环境:        S7-PLCSIM Advanced 6.0
+	    // Engineering:      TIA Portal V19
+	    // 工程环境:        TIA Portal V19
+	    // Restrictions:     ENO mechanism is not used - forced to TRUE.
+	    // 限制条件:        不使用 ENO 机制 - 强制设置为 TRUE。
+	    // Requirements:     PLC (S7-1200 / S7-1500)
+	    // 要求:            PLC (S7-1200 / S7-1500)
+	    //-------------------------------------------------------------------------------
+	    // Change log table:
+	    // Version  | Date       | Expert in charge        | Changes applied
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 17.04.2025 | SIMATIC Systems Support | Updated block info and comments following AIupdate.scl style.
+	    // 版本     | 日期       | 负责人                  | 更改内容
+	    //----------|------------|-------------------------|-----------------------------
+	    // 01.00.00 | 2025年4月17日 | SIMATIC系统支持        | 参照 LBC 风格更新块信息和注释。
+	    //===============================================================================
+	END_REGION BLOCK INFO HEADER
+	
+	REGION DESCRIPTION
+	    (/*
+	    This module initializes and manages tray position states and barcode data. It handles:
+	    - Position state initialization on system reset
+	    - Position transitions based on tray type (0 = Constraint, others = Plastic)
+	    - Status updates for cell information and constraint states
+	    - Output synchronization for position tracking
+	    
+	    此模块初始化并管理托盘位置状态和条码数据。实现以下功能：
+	    - 系统复位时初始化位置状态
+	    - 根据托盘类型（0=约束型，其他=塑料型）切换位置状态
+	    - 更新单元信息和约束状态
+	    - 同步位置跟踪输出
+	    */)
+	END_REGION DESCRIPTION
+	
+	REGION INITIALISATION  
+	    // Initialize tray position and barcode info on system reset
+	    // 系统复位时初始化托盘位置和条码信息
+	    IF #materialInterface.commands.init THEN
+	        // Reset all position flags
+	        // 重置所有位置标志
+	        #materialInterface.monitor.postion.EM2 := FALSE;
+	        #materialInterface.monitor.postion.EM1 := FALSE;
+	        #materialInterface.monitor.postion.EM5 := FALSE;
+	        #materialInterface.monitor.postion.EM6 := FALSE;
+	        
+	        // Set logistic position active
+	        // 启用物流位置标志
+	        #materialInterface.monitor.postion.logistic := TRUE;
+	        
+	        // Clear barcode and cell information
+	        // 清空条码和单元信息
+	        #materialInterface.monitor.trayCode := WSTRING#''; // 清空条码
+	        #materialInterface.monitor.cellsInfo.cellSize := 0; // 重置单元数量
+	        #materialInterface.monitor.cellsInfo.nextScratchCellIndex := 0; // 重置刮码单元索引
+	        
+	        // Handle tray type-specific initialization
+	        // 处理托盘类型初始化逻辑
+	        IF #materialInterface.commands.trayType = 0 THEN
+	            // Constraint tray: Set cell status to occupied (1)
+	            // 约束型托盘：单元状态设为占用 (1)
+	            #materialInterface.monitor.status.cellsStatus := 1;
+	            #materialInterface.monitor.status.contraintStatus := 0;
+	            
+	            // Reset cell results and codes
+	            // 重置单元结果和代码
+	            FOR #I := 0 TO 99 DO
+	                #materialInterface.monitor.cellsInfo.cellsResult[#I] := 0;
+	                #materialInterface.monitor.cellsInfo.cellsCode[#I] := 0;
+	            END_FOR;
+	        ELSE
+	            // Non-constraint tray: Set cell status to empty (0)
+	            // 非约束型托盘：单元状态设为空闲 (0)
+	            #materialInterface.monitor.status.cellsStatus := 0;
+	        END_IF;
+	        
+	        // Acknowledge initialization command
+	        // 确认初始化指令
+	        #materialInterface.commands.init := FALSE;
+	    END_IF;
+	END_REGION INITIALISATION  
+	
+	REGION PROGRAM LOGIC
+	    REGION PROCESS POSITION HANDLING
+	        // Handle position state transitions based on tray type
+	        // 根据托盘类型处理位置状态切换
+	        IF #materialInterface.commands.trayType = 0 THEN
+	            // Constraint tray logic: EM1 <-> EM2 <-> Logistic loop
+	            // 约束型托盘逻辑：EM1 <-> EM2 <-> Logistics 循环
+	            REGION CONSTRAINT TRAY HANDLING
+	                // EM1 → EM2 transition
+	                // EM1位置切换到EM2
+	                IF #materialInterface.monitor.postion.EM1 AND NOT #lstPostion.EM1 THEN
+	                    #materialInterface.monitor.postion.EM2 := FALSE;
+	                    #materialInterface.monitor.postion.logistic := FALSE;
+	                END_IF;
+	                
+	                // EM2 → Logistic transition
+	                // EM2位置切换到物流
+	                IF #materialInterface.monitor.postion.EM2 AND NOT #lstPostion.EM2 THEN
+	                    #materialInterface.monitor.postion.logistic := FALSE;
+	                    #materialInterface.monitor.postion.EM1 := FALSE;
+	                END_IF;
+	                
+	                // Logistic → EM1 transition
+	                // 物流位置切换到EM1
+	                IF #materialInterface.monitor.postion.logistic AND NOT #lstPostion.logistic THEN
+	                    #materialInterface.monitor.postion.EM1 := FALSE;
+	                    #materialInterface.monitor.postion.EM2 := FALSE;
+	                END_IF;
+	            END_REGION CONSTRAINT TRAY HANDLING
+	        ELSE
+	            // Plastic tray logic: EM5 <-> EM6 <-> Logistic loop
+	            // 塑料型托盘逻辑：EM5 <-> EM6 <-> Logistics 循环
+	            REGION PLASTIC TRAY HANDLING
+	                // EM6 → EM5 transition
+	                // EM6位置切换到EM5
+	                IF #materialInterface.monitor.postion.EM6 AND NOT #lstPostion.EM6 THEN
+	                    #materialInterface.monitor.postion.EM5 := FALSE;
+	                    #materialInterface.monitor.postion.logistic := FALSE;
+	                END_IF;
+	                
+	                // EM5 → EM6 transition
+	                // EM5位置切换到EM6
+	                IF #materialInterface.monitor.postion.EM5 AND NOT #lstPostion.EM5 THEN
+	                    #materialInterface.monitor.postion.EM6 := FALSE;
+	                    #materialInterface.monitor.postion.logistic := FALSE;
+	                END_IF;
+	                
+	                // Logistic → EM5/EM6 transition
+	                // 物流位置切换到EM5/EM6
+	                IF #materialInterface.monitor.postion.logistic AND NOT #lstPostion.logistic THEN
+	                    #materialInterface.monitor.postion.EM5 := FALSE;
+	                    #materialInterface.monitor.postion.EM6 := FALSE;
+	                END_IF;
+	            END_REGION PLASTIC TRAY HANDLING
+	        END_IF;
+	    END_REGION PROCESS POSITION HANDLING
+	END_REGION PROGRAM LOGIC
+	
+	REGION OUTPUTS
+	    // Save current position state for edge detection in next cycle
+	    // 保存当前位置状态用于下一周期的边沿检测
+	    #lstPostion := #materialInterface.monitor.postion;
+	    
+	    // ENO mechanism disabled, ENO - forced to TRUE
+	    // ENO 机制禁用，强制设置为 TRUE
+	    ENO := TRUE;
+	END_REGION OUTPUTS
+END_FUNCTION_BLOCK
+

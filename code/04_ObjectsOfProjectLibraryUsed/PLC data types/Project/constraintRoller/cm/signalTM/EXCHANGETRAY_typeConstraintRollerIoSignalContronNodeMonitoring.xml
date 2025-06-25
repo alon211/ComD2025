@@ -1,0 +1,114 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Document xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v5">
+  <Engineering version="V19" />
+  <SW.Types.PlcStruct ID="0">
+    <AttributeList>
+      <Access>Published</Access>
+      <Interface><Sections>
+  <Section Name="None">
+    <Member Name="simulated" Datatype="Bool" />
+    <Member Name="detectionBeforePalletPositioning" Datatype="Bool" />
+    <Member Name="positioningPinCylinderHomePositionDetection2" Datatype="Bool" />
+    <Member Name="cellLiftingCylinderHomePositionDetection2" Datatype="Bool" />
+    <Member Name="positioningPinCylinderWorkingPositionDetection2" Datatype="Bool" />
+    <Member Name="trayLiftingCylinderWorkingPositionDetection1" Datatype="Bool" />
+    <Member Name="cellLiftingCylinderWorkingPositionDetection2" Datatype="Bool" />
+    <Member Name="cellLiftingCylinderHomePositionDetection1" Datatype="Bool" />
+    <Member Name="trayEntryDetection" Datatype="Bool" />
+    <Member Name="trayLiftingCylinderHomePositionDetection1" Datatype="Bool" />
+    <Member Name="positiveLimitForCellJackingAndTransplanting" Datatype="Bool" />
+    <Member Name="negativeLimitForCellJackingAndTransplanting" Datatype="Bool" />
+    <Member Name="cellLiftingCylinderWorkingPositionDetection1" Datatype="Bool" />
+    <Member Name="positioningPinCylinderHomePositionDetection1" Datatype="Bool" />
+    <Member Name="positioningPinCylinderWorkingPositionDetection1" Datatype="Bool" />
+    <Member Name="trayInPlaceDetection" Datatype="Bool" />
+    <Member Name="originalForCellJackingAndTransplanting" Datatype="Bool" />
+    <Member Name="palletScrewAntiReverseDetection" Datatype="Bool" />
+    <Member Name="detectionAfterTrayPositioning" Datatype="Bool" />
+    <Member Name="trayLiftingCylinderHomePositionDetection2" Datatype="Bool" />
+    <Member Name="trayLiftingCylinderWorkingPositionDetection2" Datatype="Bool" />
+  </Section>
+</Sections></Interface>
+      <Name>LEXCHANGETRAY_typeConstraintRollerIoSignalContronNodeMonitoring</Name>
+      <Namespace />
+    </AttributeList>
+    <ObjectList>
+      <MultilingualText ID="1" CompositionName="Comment">
+        <ObjectList>
+          <MultilingualTextItem ID="2" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text>simulated: Bool
+detectionBeforePalletPositioning: Bool
+positioningPinCylinderHomePositionDetection2: Bool
+cellLiftingCylinderHomePositionDetection2: Bool
+positioningPinCylinderWorkingPositionDetection2: Bool
+trayLiftingCylinderWorkingPositionDetection1: Bool
+cellLiftingCylinderWorkingPositionDetection2: Bool
+cellLiftingCylinderHomePositionDetection1: Bool
+trayEntryDetection: Bool
+trayLiftingCylinderHomePositionDetection1: Bool
+positiveLimitForCellJackingAndTransplanting: Bool
+negativeLimitForCellJackingAndTransplanting: Bool
+cellLiftingCylinderWorkingPositionDetection1: Bool
+positioningPinCylinderHomePositionDetection1: Bool
+positioningPinCylinderWorkingPositionDetection1: Bool
+trayInPlaceDetection: Bool
+originalForCellJackingAndTransplanting: Bool
+palletScrewAntiReverseDetection: Bool
+detectionAfterTrayPositioning: Bool
+trayLiftingCylinderHomePositionDetection2: Bool
+trayLiftingCylinderWorkingPositionDetection2: Bool</Text>
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="3" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="4" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="5" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+      <MultilingualText ID="6" CompositionName="Title">
+        <ObjectList>
+          <MultilingualTextItem ID="7" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="8" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="9" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="A" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+    </ObjectList>
+  </SW.Types.PlcStruct>
+</Document>

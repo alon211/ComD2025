@@ -1,0 +1,683 @@
+﻿FUNCTION_BLOCK "LEXCHANGETRAY_Sr1000_Profinet"
+TITLE = EXCHANGETRAY_Sr1000_Profinet
+{ S7_Optimized_Access := 'TRUE' ; Published := 'TRUE' }
+AUTHOR : 'SUP/Zhang Shi Long'
+FAMILY : SUP
+VERSION : 0.1
+//Exchange Tray function
+   VAR_IN_OUT 
+      configuration : "LAF_typeSR1000Parameters";   // SR1000 configuration parameters for Profinet communication
+      moduleInterface : "LEXCHANGETRAY_typeSR1000Interface";   // SR1000 module interface for Profinet
+      controlNode : "LEXCHANGETRAY_typeSR1000ControlNode";   // SR1000 control node parameters
+   END_VAR
+
+   VAR 
+      statProcessCommands { S7_SetPoint := 'False'} : "LEXCHANGETRAY_typeSR1000ManualCommands";   // Status of process commands execution
+      statProcessValues { S7_SetPoint := 'False'} : "LEXCHANGETRAY_typeSR1000ProcessValues";   // Status of process values monitoring
+      statDiagnostics : "LBC_typeDiagnostics";   // Diagnostics information status
+      statSimError : Int;   // Simulation error status flag
+      statOnceSimError : Bool;   // One-time simulation error status
+      statRescanCounter : Int;   // Rescan operation counter
+      statSimActive : Bool;   // Simulation mode active status
+      statSimActivePrevious : Bool;   // Previous simulation mode status
+      statFbState : Word;   // Current function block state
+      statFbStatePrevious : Word;   // Previous function block state
+      statSimNumberLength : Int;   // Simulated barcode number length
+      statSimCurrentCode : USInt;   // Currently simulated barcode
+      statSimTrayCodeMax : DInt;   // Maximum simulated tray code value
+      statSimIndex : DInt;   // Simulation sequence index
+      statTime {InstructionName := 'TON_TIME'; LibVersion := '1.0'} : Array[0..5] of TON_TIME;   // Current operation time
+      statTimeIn : Array[0..5] of Bool;   // Input time parameter
+   END_VAR
+
+   VAR_TEMP 
+      tempSimResultStr : String;
+      tempSimZeroToAdd : DInt;
+      tempSimActiveEdge : Bool;
+      tempCheckSymbol : String;
+      tempSrReaderReady : Bool;
+      tempbusyStatusBits : Array[0..7] of Bool;
+      tempCompletionStatusBits : Array[0..7] of Bool;
+      tempErrorStatusBits : Array[0..7] of Bool;
+      tempHandshakAndGeneralErrorStatusBits : Array[0..7] of Bool;
+      tempMatchingLevelandTotalEvaluationGradeStatus : Array[0..2] of Word;
+      tempOperationResultStatus : Array[0..5] of Bool;
+      tempTerminalStatusBits : Array[0..7] of Bool;
+      tempUnstableReadStatusBits : Array[0..7] of Bool;
+      tempReadData128Byte : Array[0..15] of Byte;
+      tempCompletionClearControlBits : Array[0..7] of Bool;
+      tempOperationinstructionControlBits : Array[0..7] of Bool;
+      templatchandErrorClearControlBits : Array[0..7] of Bool;
+      tempSimCurrentCodeString : String;
+   END_VAR
+
+   VAR CONSTANT 
+      FB_STATE_NO_PROCESSING : Word := 16#0000;   // Function block state: Idle
+      FB_STATE_ERROR_HANDLER : Word := 16#0010;   // Function block state: Handling error仿真控制
+      FB_STATE_SIMULATIION_MODE : Word := 16#0020;   // Function block state: Simulation mode active
+      FB_STATE_SIMULATIION_CYCLE_STEP1 : Word := 16#0021;   // Function block state: Simulation step 1
+      FB_STATE_SIMULATIION_CYCLE_STEP2 : Word := 16#0022;   // Function block state: Simulation step 2
+      FB_STATE_SIMULATIION_CYCLE_STEP3 : Word := 16#0023;   // Function block state: Simulation step 3
+      FB_STATE_SIMULATIION_CYCLE_STEP4 : Word := 16#0024;   // Function block state: Simulation step 4
+      FB_STATE_SIMULATIION_CYCLE_STEP5 : Word := 16#0025;   // Function block state: Simulation step 5实际自动控制
+      FB_STATE_REAL_MODE : Word := 16#0040;   // Function block state: Real operation modeFB状态
+      SUB_STATUS_NO_ERROR : Word := 16#0000;   // Sub-status: No errors detected
+      ERR_INCORRECT_REFSPEED : Word := 16#8201;   // Error: Incorrect reference speed setting
+      ERR_INCORRECT_HIGHVEL : Word := 16#8202;   // Error: Incorrect high velocity setting
+   END_VAR
+
+
+BEGIN
+	REGION BLOCK INFO HEADER  
+	    //===============================================================================  
+	    // Siemens / (c)Copyright 2020-2024  
+	    //-----------------------------------------------------------------------------  
+	    // Title:            扫码枪信号处理模块 / Code Reader Signal Processing Module  
+	    // Comment/Function:  
+	    //                   - 处理扫码枪输入信号（模块接口/控制节点）  
+	    //                   - 根据模拟激活状态（simActive）选择信号源  
+	    //                   - 状态机驱动的模拟周期（启动/读取/完成）  
+	    //                   - 拆分/合并字节/位级数据用于状态解析（如忙标志、错误标志）  
+	    //                   - 模拟模式下生成动态响应（码值递增、错误注入）  
+	    //                   - 输出处理后的信号至模块接口和控制节点  
+	    // Library/Family:   EXCHANGETRAY - 基本控制模块库  
+	    // Author:           西门子数字工业  
+	    // Tested with:      S7-PLCSIM Advanced 6.0  
+	    // Engineering:      TIA Portal V19  
+	    // Restrictions:     不使用 ENO 机制 - 强制设置为 TRUE  
+	    // Requirements:     PLC (S7-1200 / S7-1500)  
+	    //-----------------------------------------------------------------------------  
+	    // Change log table:  
+	    // Version  | Date       | Expert in charge        | Changes applied  
+	    //----------|------------|-------------------------|-----------------------------  
+	    // 01.00.00 | 2025年4月17日 | SIMATIC系统支持        | 基于扫码枪逻辑更新块信息和注释  
+	    //===============================================================================  
+	END_REGION BLOCK INFO HEADER  
+	
+	REGION DESCRIPTION  
+	    (/*  
+	        中文描述：  
+	        本代码块实现了一个扫码枪信号处理模块，主要功能包括：  
+	        1. 处理模块接口（ModuleInterface）和控制节点（ControlNode）的输入信号，优先级由 `enableManualCmds` 控制；  
+	        2. 根据配置参数 `simActive` 进入模拟模式，触发状态机逻辑（模拟启动/读取/完成周期）；  
+	        3. 拆分/合并字节/位级数据，解析扫码枪状态字节（如 busyStatusBits、errorStatusBits）并映射到布尔信号；  
+	        4. 在模拟模式下生成动态响应（如模拟码值递增、错误注入、状态反馈）；  
+	        5. 将处理后的信号输出到模块接口和控制节点的监控结构，同步状态（如错误标志、模拟激活状态）。  
+	        应用场景：工业自动化中扫码枪的信号仿真与实际控制切换，支持手动调试和自动运行模式。  
+	
+	        English Description:  
+	        This code block implements a code reader signal processing module, including:  
+	        1. Processing input signals from ModuleInterface and ControlNode, with priority determined by `enableManualCmds`;  
+	        2. Entering simulation mode based on `simActive`, triggering state machine logic (simulation start/read/complete cycle);  
+	        3. Splitting/merging byte/bit-level data to parse code reader status bytes (e.g., busyStatusBits, errorStatusBits) into boolean signals;  
+	        4. Generating dynamic responses in simulation mode (e.g., simulated code increment, error injection, status feedback);  
+	        5. Outputting processed signals to ModuleInterface and ControlNode monitoring structures, synchronizing status (e.g., error flags, simulation activation).  
+	        Application: Signal simulation and real-time control switching for code readers in industrial automation, supporting manual debugging and auto-run modes.  
+	    */)
+	END_REGION DESCRIPTION  
+	
+	REGION PROCESS INPUT SIGNALS
+	    REGION Input configuration parameter
+	        // Assign the simulation activation status from the configuration to the static variable
+	        // 将配置中的模拟激活状态赋值给静态变量
+	        
+	        #statSimActive :=
+	        #statProcessValues.simulated := #configuration.simActive;
+	        #statProcessValues.busyStatusBits := #configuration.telegram.in.busyStatusBits;
+	        #statProcessValues.completionStatusBits := #configuration.telegram.in.completionStatusBits;
+	        #statProcessValues.errorStatusBits := #configuration.telegram.in.errorStatusBits;
+	        #statProcessValues.handshakAndGeneralErrorStatusBits := #configuration.telegram.in.handshakAndGeneralErrorStatusBits;
+	        #statProcessValues.matchingLevelandTotalEvaluationGradeStatus := #configuration.telegram.in.matchingLevelandTotalEvaluationGradeStatus;
+	        #statProcessValues.operationResultStatus := #configuration.telegram.in.operationResultStatus;
+	        #statProcessValues.terminalStatusBits := #configuration.telegram.in.terminalStatusBits;
+	        #statProcessValues.unstableReadStatusBits := #configuration.telegram.in.unstableReadStatusBits;
+	        #statProcessValues.readData128Byte := #configuration.telegram.in.readData128Byte;
+	        REGION handling busyStatusBits 
+	            "LGF_SplitByteToBits"(
+	                                  "byte" := #statProcessValues.busyStatusBits.statusByte,
+	                                  bit7 => #tempbusyStatusBits[7],
+	                                  bit6 => #tempbusyStatusBits[6],
+	                                  bit5 => #statProcessValues.busyStatusBits.fileBusy,
+	                                  bit4 => #statProcessValues.busyStatusBits.errBusy,
+	                                  bit3 => #statProcessValues.busyStatusBits.modeBusy,
+	                                  bit2 => #statProcessValues.busyStatusBits.lockBusy,
+	                                  bit1 => #statProcessValues.busyStatusBits.trgBusy,
+	                                  bit0 => #statProcessValues.busyStatusBits.busy
+	            );
+	        END_REGION
+	        
+	        REGION handling completionStatusBits
+	            "LGF_SplitByteToBits"(
+	                                  "byte" := #statProcessValues.completionStatusBits.statusByte,
+	                                  bit0 => #statProcessValues.completionStatusBits.readComplete,
+	                                  bit1 => #statProcessValues.completionStatusBits.presetComplete,
+	                                  bit2 => #statProcessValues.completionStatusBits.registerPresetComplete,
+	                                  bit3 => #statProcessValues.completionStatusBits.tuneComplete,
+	                                  bit4 => #tempCompletionStatusBits[4],
+	                                  bit5 => #tempCompletionStatusBits[5],
+	                                  bit6 => #tempCompletionStatusBits[6],
+	                                  bit7 => #statProcessValues.completionStatusBits.extRequestComplete
+	            );
+	        END_REGION
+	        
+	        REGION handling errorStatusBits
+	            "LGF_SplitByteToBits"(
+	                                  "byte" := #statProcessValues.errorStatusBits.statusByte,
+	                                  bit0 => #statProcessValues.errorStatusBits.readFailure,
+	                                  bit1 => #statProcessValues.errorStatusBits.presetFailure,
+	                                  bit2 => #statProcessValues.errorStatusBits.registPresetFailure,
+	                                  bit3 => #statProcessValues.errorStatusBits.tuneFailure,
+	                                  bit4 => #tempErrorStatusBits[4],
+	                                  bit5 => #tempErrorStatusBits[5],
+	                                  bit6 => #tempErrorStatusBits[6],
+	                                  bit7 => #statProcessValues.errorStatusBits.extReqFailure
+	            );
+	        END_REGION
+	        
+	        REGION handling handshakAndGeneralErrorStatusBits
+	            "LGF_SplitByteToBits"(
+	                                  "byte" := #statProcessValues.handshakAndGeneralErrorStatusBits.statusByte,
+	                                  bit0 => #statProcessValues.handshakAndGeneralErrorStatusBits.error,
+	                                  bit1 => #statProcessValues.handshakAndGeneralErrorStatusBits.resultDataAvailable,
+	                                  bit2 => #statProcessValues.handshakAndGeneralErrorStatusBits.resultDataStrobe,
+	                                  bit3 => #tempHandshakAndGeneralErrorStatusBits[3],
+	                                  bit4 => #tempHandshakAndGeneralErrorStatusBits[4],
+	                                  bit5 => #tempHandshakAndGeneralErrorStatusBits[5],
+	                                  bit6 => #statProcessValues.handshakAndGeneralErrorStatusBits.bufferOverflowError,
+	                                  bit7 => #statProcessValues.handshakAndGeneralErrorStatusBits.generalError
+	            );
+	        END_REGION
+	        
+	        REGION handling terminalStatusBits
+	            "LGF_SplitByteToBits"(
+	                                  "byte" := #statProcessValues.terminalStatusBits.statusByte,
+	                                  bit0 => #statProcessValues.terminalStatusBits.in1,
+	                                  bit1 => #statProcessValues.terminalStatusBits.in2,
+	                                  bit2 => #tempTerminalStatusBits[2],
+	                                  bit3 => #tempTerminalStatusBits[3],
+	                                  bit4 => #statProcessValues.terminalStatusBits.out1,
+	                                  bit5 => #statProcessValues.terminalStatusBits.out2,
+	                                  bit6 => #statProcessValues.terminalStatusBits.out3,
+	                                  bit7 => #tempTerminalStatusBits[7]
+	            );
+	        END_REGION
+	        
+	        REGION handling unstableReadStatusBits
+	            "LGF_SplitByteToBits"(
+	                                  "byte" := #statProcessValues.unstableReadStatusBits.statusByte,
+	                                  bit0 => #statProcessValues.unstableReadStatusBits.unstable,
+	                                  bit1 => #statProcessValues.unstableReadStatusBits.matchingLevelUnstable,
+	                                  bit2 => #statProcessValues.unstableReadStatusBits.isoIec15415Unstable,
+	                                  bit3 => #statProcessValues.unstableReadStatusBits.aimdpmUnstable,
+	                                  bit4 => #statProcessValues.unstableReadStatusBits.saeAs9132Unstable,
+	                                  bit5 => #tempTerminalStatusBits[5],
+	                                  bit6 => #tempTerminalStatusBits[6],
+	                                  bit7 => #tempTerminalStatusBits[7]
+	            );
+	        END_REGION
+	        
+	        REGION handling MatchingLevelandTotalEvaluationGradeStatus
+	            #statProcessValues.matchingLevelandTotalEvaluationGradeStatus.matchingLevel := "LGF_MergeBytesToWord"(
+	                                                                                                                  byte1 := #statProcessValues.matchingLevelandTotalEvaluationGradeStatus.statusBytes[1],
+	                                                                                                                  byte0 := #statProcessValues.matchingLevelandTotalEvaluationGradeStatus.statusBytes[0]
+	            );
+	            #statProcessValues.matchingLevelandTotalEvaluationGradeStatus.isoIec15415 := "LGF_MergeBytesToWord"(
+	                                                                                                                byte1 := #statProcessValues.matchingLevelandTotalEvaluationGradeStatus.statusBytes[3],
+	                                                                                                                byte0 := #statProcessValues.matchingLevelandTotalEvaluationGradeStatus.statusBytes[2]
+	            );
+	            #statProcessValues.matchingLevelandTotalEvaluationGradeStatus.aimdpmGrade := "LGF_MergeBytesToWord"(
+	                                                                                                                byte1 := #statProcessValues.matchingLevelandTotalEvaluationGradeStatus.statusBytes[5],
+	                                                                                                                byte0 := #statProcessValues.matchingLevelandTotalEvaluationGradeStatus.statusBytes[4]
+	            );
+	        END_REGION
+	        
+	        REGION handling readData128Byte
+	            #statProcessValues.readData128Byte.resultDataReadyCount := "LGF_MergeBytesToWord"(
+	                                                                                              byte1 := #statProcessValues.readData128Byte.dataBytes[1],
+	                                                                                              byte0 := #statProcessValues.readData128Byte.dataBytes[0]
+	            );
+	            #statProcessValues.readData128Byte.resultDataUpdateCount := "LGF_MergeBytesToWord"(
+	                                                                                               byte1 := #statProcessValues.readData128Byte.dataBytes[3],
+	                                                                                               byte0 := #statProcessValues.readData128Byte.dataBytes[2]
+	            );
+	            #statProcessValues.readData128Byte.resultDataSize := "LGF_MergeBytesToWord"(
+	                                                                                        byte1 := #statProcessValues.readData128Byte.dataBytes[5],
+	                                                                                        byte0 := #statProcessValues.readData128Byte.dataBytes[4]
+	            );
+	            #statProcessValues.readData128Byte.resultData0 := BYTE_TO_CHAR(IN := #statProcessValues.readData128Byte.dataBytes[6]);
+	            #statProcessValues.readData128Byte.resultData1 := BYTE_TO_CHAR(IN := #statProcessValues.readData128Byte.dataBytes[7]);
+	            #statProcessValues.readData128Byte.resultData2 := BYTE_TO_CHAR(IN := #statProcessValues.readData128Byte.dataBytes[8]);
+	            #statProcessValues.readData128Byte.resultData3 := BYTE_TO_CHAR(IN := #statProcessValues.readData128Byte.dataBytes[9]);
+	            #statProcessValues.readData128Byte.resultData4 := BYTE_TO_CHAR(IN := #statProcessValues.readData128Byte.dataBytes[10]);
+	            #statProcessValues.readData128Byte.resultData5 := BYTE_TO_CHAR(IN := #statProcessValues.readData128Byte.dataBytes[11]);
+	            #statProcessValues.readData128Byte.resultData6 := BYTE_TO_CHAR(IN := #statProcessValues.readData128Byte.dataBytes[12]);
+	            #statProcessValues.readData128Byte.resultData7 := BYTE_TO_CHAR(IN := #statProcessValues.readData128Byte.dataBytes[13]);
+	            #statProcessValues.readData128Byte.resultData8 := BYTE_TO_CHAR(IN := #statProcessValues.readData128Byte.dataBytes[14]);
+	            #statProcessValues.readData128Byte.resultData9 := BYTE_TO_CHAR(IN := #statProcessValues.readData128Byte.dataBytes[15]);
+	            #statProcessValues.readData128Byte.resultData10 := BYTE_TO_CHAR(IN := #statProcessValues.readData128Byte.dataBytes[16]);
+	            #statProcessValues.readData128Byte.resultData11 := BYTE_TO_CHAR(IN := #statProcessValues.readData128Byte.dataBytes[17]);
+	            #statProcessValues.readData128Byte.resultData12 := BYTE_TO_CHAR(IN := #statProcessValues.readData128Byte.dataBytes[18]);
+	            #statProcessValues.readData128Byte.resultData13 := BYTE_TO_CHAR(IN := #statProcessValues.readData128Byte.dataBytes[19]);
+	            #statProcessValues.readData128Byte.resultData14 := BYTE_TO_CHAR(IN := #statProcessValues.readData128Byte.dataBytes[20]);
+	            #statProcessValues.readData128Byte.resultData15 := BYTE_TO_CHAR(IN := #statProcessValues.readData128Byte.dataBytes[21]);
+	        END_REGION
+	        
+	        REGION handling OperationResultStatus
+	            #statProcessValues.operationResultStatus.readResultCode := "LGF_MergeBytesToWord"(
+	                                                                                              byte1 := #statProcessValues.operationResultStatus.statusBytes[1],
+	                                                                                              byte0 := #statProcessValues.operationResultStatus.statusBytes[0]
+	            );
+	            #statProcessValues.operationResultStatus.presetResultCode := "LGF_MergeBytesToWord"(
+	                                                                                                byte1 := #statProcessValues.operationResultStatus.statusBytes[3],
+	                                                                                                byte0 := #statProcessValues.operationResultStatus.statusBytes[2]
+	            );
+	            #statProcessValues.operationResultStatus.registerPresetDataResultCode := "LGF_MergeBytesToWord"(
+	                                                                                                            byte1 := #statProcessValues.operationResultStatus.statusBytes[5],
+	                                                                                                            byte0 := #statProcessValues.operationResultStatus.statusBytes[4]
+	            );
+	            #statProcessValues.operationResultStatus.tuneResultCode := "LGF_MergeBytesToWord"(
+	                                                                                              byte1 := #statProcessValues.operationResultStatus.statusBytes[7],
+	                                                                                              byte0 := #statProcessValues.operationResultStatus.statusBytes[6]
+	            );
+	            #statProcessValues.operationResultStatus.extReqResultCode := "LGF_MergeBytesToWord"(
+	                                                                                                byte1 := #statProcessValues.operationResultStatus.statusBytes[9],
+	                                                                                                byte0 := #statProcessValues.operationResultStatus.statusBytes[8]
+	            );
+	            #statProcessValues.operationResultStatus.generalErrorCode := "LGF_MergeBytesToWord"(
+	                                                                                                byte1 := #statProcessValues.operationResultStatus.statusBytes[11],
+	                                                                                                byte0 := #statProcessValues.operationResultStatus.statusBytes[10]
+	            );
+	        END_REGION
+	        
+	        // Merge the commands from the module interface and controlnode to the process commands
+	        // 将模块接口的命令映射到手动命令
+	        IF #moduleInterface.commands.enableManualCmds THEN
+	            #statProcessCommands.completionClearControlBits := #moduleInterface.commands.completionClearControlBits;
+	            #statProcessCommands.latchandErrorClearControlBits := #moduleInterface.commands.latchandErrorClearControlBits;
+	            #statProcessCommands.operationinstructionControlBits := #moduleInterface.commands.operationinstructionControlBits;
+	            #statProcessCommands.parameterBankNumber := #moduleInterface.commands.parameterBankNumber;
+	            #statProcessCommands.userData128Byte := #moduleInterface.commands.userData128Byte;
+	        ELSE
+	            #statProcessCommands.completionClearControlBits := #controlNode.commands.completionClearControlBits;
+	            #statProcessCommands.latchandErrorClearControlBits := #controlNode.commands.latchandErrorClearControlBits;
+	            #statProcessCommands.operationinstructionControlBits := #controlNode.commands.operationinstructionControlBits;
+	            #statProcessCommands.parameterBankNumber := #controlNode.commands.parameterBankNumber;
+	            #statProcessCommands.userData128Byte := #controlNode.commands.userData128Byte;
+	            
+	        END_IF;
+	        #statProcessCommands.start := #moduleInterface.commands.start OR #controlNode.commands.start;
+	        #statProcessCommands.reset := #moduleInterface.commands.reset OR #controlNode.commands.reset;
+	        REGION handling completionClearControlBits
+	            "LGF_SplitByteToBits"(
+	                                  "byte" := #statProcessCommands.completionClearControlBits.controlByte,
+	                                  bit0 => #statProcessCommands.completionClearControlBits.readCompleteClear,
+	                                  bit1 => #statProcessCommands.completionClearControlBits.presetCompleteClear,
+	                                  bit2 => #statProcessCommands.completionClearControlBits.registerPresetDataCmpltClr,
+	                                  bit3 => #statProcessCommands.completionClearControlBits.tuneCmpltClr,
+	                                  bit4 => #tempCompletionClearControlBits[4],
+	                                  bit5 => #tempCompletionClearControlBits[5],
+	                                  bit6 => #tempCompletionClearControlBits[6],
+	                                  bit7 => #statProcessCommands.completionClearControlBits.extReqCmpltClr
+	            );
+	            
+	        END_REGION
+	        REGION handling operationinstructionControlBits
+	            "LGF_SplitByteToBits"(
+	                                  "byte" := #statProcessCommands.operationinstructionControlBits.controlByte,
+	                                  bit0 => #statProcessCommands.operationinstructionControlBits.readRequest,
+	                                  bit1 => #statProcessCommands.operationinstructionControlBits.presetRequest,
+	                                  bit2 => #statProcessCommands.operationinstructionControlBits.registerPresetDataReq,
+	                                  bit3 => #statProcessCommands.operationinstructionControlBits.tuneRequest,
+	                                  bit4 => #tempOperationinstructionControlBits[4],
+	                                  bit5 => #tempOperationinstructionControlBits[5],
+	                                  bit6 => #tempOperationinstructionControlBits[6],
+	                                  bit7 => #tempOperationinstructionControlBits[7]
+	            );
+	        END_REGION
+	        REGION handling latchandErrorClearControlBits
+	            "LGF_SplitByteToBits"(
+	                                  "byte" := #statProcessCommands.latchandErrorClearControlBits.controlByte,
+	                                  bit0 => #templatchandErrorClearControlBits[0],
+	                                  bit1 => #statProcessCommands.latchandErrorClearControlBits.resultDataLatch,
+	                                  bit2 => #templatchandErrorClearControlBits[2],
+	                                  bit3 => #templatchandErrorClearControlBits[3],
+	                                  bit4 => #templatchandErrorClearControlBits[4],
+	                                  bit5 => #templatchandErrorClearControlBits[5],
+	                                  bit6 => #templatchandErrorClearControlBits[6],
+	                                  bit7 => #statProcessCommands.latchandErrorClearControlBits.errorClear
+	            );
+	        END_REGION
+	        REGION handling parameterBankNumber
+	            (* #statProcessCommands.parameterBankNumber.  := "LGF_MergeBytesToWord"(
+	                                                                                                                  byte1 := #statProcessValues.matchingLevelandTotalEvaluationGradeStatus.statusBytes[1],
+	                                                                                                                  byte0 := #statProcessValues.matchingLevelandTotalEvaluationGradeStatus.statusBytes[0]
+	            ); *)
+	            
+	        END_REGION
+	        REGION handling userData128Byte
+	            #statProcessCommands.userData128Byte.userDataSize := "LGF_MergeBytesToWord"(
+	                                                                                        byte1 := #statProcessCommands.userData128Byte.dataBytes[1],
+	                                                                                        byte0 := #statProcessCommands.userData128Byte.dataBytes[0]
+	            );
+	            #statProcessCommands.userData128Byte.userData0 := #statProcessCommands.userData128Byte.dataBytes[2];
+	            #statProcessCommands.userData128Byte.userData1 := #statProcessCommands.userData128Byte.dataBytes[3];
+	            #statProcessCommands.userData128Byte.userData2 := #statProcessCommands.userData128Byte.dataBytes[4];
+	            #statProcessCommands.userData128Byte.userData3 := #statProcessCommands.userData128Byte.dataBytes[5];
+	            #statProcessCommands.userData128Byte.userData4 := #statProcessCommands.userData128Byte.dataBytes[6];
+	            #statProcessCommands.userData128Byte.userData5 := #statProcessCommands.userData128Byte.dataBytes[7];
+	            #statProcessCommands.userData128Byte.userData6 := #statProcessCommands.userData128Byte.dataBytes[8];
+	            #statProcessCommands.userData128Byte.userData7 := #statProcessCommands.userData128Byte.dataBytes[9];
+	            #statProcessCommands.userData128Byte.userData8 := #statProcessCommands.userData128Byte.dataBytes[10];
+	            #statProcessCommands.userData128Byte.userData9 := #statProcessCommands.userData128Byte.dataBytes[11];
+	            #statProcessCommands.userData128Byte.userData10 := #statProcessCommands.userData128Byte.dataBytes[12];
+	            #statProcessCommands.userData128Byte.userData11 := #statProcessCommands.userData128Byte.dataBytes[13];
+	            #statProcessCommands.userData128Byte.userData12 := #statProcessCommands.userData128Byte.dataBytes[14];
+	            #statProcessCommands.userData128Byte.userData13 := #statProcessCommands.userData128Byte.dataBytes[15];
+	            #statProcessCommands.userData128Byte.userData14 := #statProcessCommands.userData128Byte.dataBytes[16];
+	            #statProcessCommands.userData128Byte.userData15 := #statProcessCommands.userData128Byte.dataBytes[17];
+	        END_REGION
+	        
+	        // Map input signals based on the simulation activation status
+	        // 根据模拟激活状态映射输入信号
+	        
+	        REGION SIMULATE MODE
+	            // Simulation mode logic can be added here
+	            // 模拟模式逻辑可在此处添加
+	            IF #configuration.simActive AND NOT #statFbState.%X5 THEN
+	                #statFbState := #FB_STATE_SIMULATIION_MODE;
+	            END_IF;
+	            IF NOT #configuration.simActive AND NOT #statFbState.%X6 THEN
+	                #statFbState := #FB_STATE_REAL_MODE;
+	            END_IF;
+	        END_REGION SIMULATE MODE
+	        REGION Interlock dependent edge commands
+	            // Detect the rising edge of the simulation activation signal
+	            // 检测模拟激活信号的上升沿
+	            
+	        END_REGION Interlock dependent edge commands
+	    END_REGION PROCESS INPUT SIGNALS
+	END_REGION PROCESS INPUT SIGNALS
+	REGION RESET
+	    // Reset relevant manual commands when the simulation is inactive
+	    // 模拟未激活时，重置相关的手动命令
+	    IF #statProcessCommands.reset THEN
+	        #statProcessCommands.reset := FALSE;
+	        #statRescanCounter := 0;
+	        #statSimError := 0;
+	        #statProcessValues.complete := FALSE;
+	        #statProcessValues.error := FALSE;
+	        #statProcessValues.code := '';
+	    END_IF;
+	    
+	END_REGION RESET
+	
+	REGION PARAMETER CHECK
+	    // Parameter check logic can be added here
+	    // 参数检查逻辑可在此处添加
+	END_REGION PARAMETER CHECK
+	
+	REGION ENABLING/DISABLING
+	    // Enabling and disabling logic can be added here
+	    // 启用和禁用逻辑可在此处添加
+	END_REGION ENABLING/DISABLING
+	
+	REGION STATE MACHINE
+	    // State machine logic can be added here
+	    // 状态机逻辑可在此处添加
+	    REPEAT
+	        #statFbStatePrevious := #statFbState;
+	        CASE #statFbState OF
+	            #FB_STATE_NO_PROCESSING:
+	                ;
+	            #FB_STATE_SIMULATIION_MODE:
+	                #statSimCurrentCode := 0;
+	                #statProcessCommands.operationinstructionControlBits.readRequest := FALSE;
+	                #statProcessValues.errorStatusBits.statusByte := 0;
+	                #statProcessValues.handshakAndGeneralErrorStatusBits.statusByte := 0;
+	                
+	                #statSimError := 0;
+	                #statFbState := #FB_STATE_SIMULATIION_CYCLE_STEP1;
+	            #FB_STATE_SIMULATIION_CYCLE_STEP1:
+	                IF #statProcessCommands.start THEN
+	                    #statProcessCommands.start := FALSE;
+	                    #statFbState := #FB_STATE_SIMULATIION_CYCLE_STEP2;
+	                END_IF;
+	                
+	            #FB_STATE_SIMULATIION_CYCLE_STEP2:
+	                #statTimeIn[0] := false;
+	                IF #statSimCurrentCode >= #statSimTrayCodeMax THEN
+	                    #statSimCurrentCode := 0;
+	                END_IF;
+	                #statProcessCommands.operationinstructionControlBits.readRequest := TRUE;
+	                IF #statProcessCommands.operationinstructionControlBits.readRequest THEN
+	                    #statProcessValues.completionStatusBits.readComplete := FALSE;
+	                    #statProcessCommands.operationinstructionControlBits.readRequest := FALSE;
+	                    #statRescanCounter := 0;
+	                    #statSimError := 0;
+	                    
+	                    #statFbState := #FB_STATE_SIMULATIION_CYCLE_STEP3;
+	                    
+	                END_IF;
+	                
+	            #FB_STATE_SIMULATIION_CYCLE_STEP3:
+	                
+	                #statTimeIn[0] := true;
+	                #statProcessValues.busyStatusBits.busy := true;
+	                IF #statTime[0].Q THEN
+	                    #statRescanCounter := #statRescanCounter + 1;
+	                    #statFbState := #FB_STATE_SIMULATIION_CYCLE_STEP4;
+	                END_IF;
+	            #FB_STATE_SIMULATIION_CYCLE_STEP4:
+	                #statTimeIn[0] := FALSE;
+	                #statSimCurrentCode := #statSimCurrentCode + 1;
+	                #tempSimCurrentCodeString := USINT_TO_STRING(IN := #statSimCurrentCode);
+	                #tempCheckSymbol := LEFT(IN := #tempSimCurrentCodeString, L := 1);
+	                IF #tempCheckSymbol = '+' OR #tempCheckSymbol = '-' THEN
+	                    #statSimNumberLength := LEN(IN := #tempSimCurrentCodeString);
+	                    #tempSimCurrentCodeString := RIGHT(IN := #tempSimCurrentCodeString, L := #statSimNumberLength - 1);
+	                END_IF;
+	                
+	                #tempSimZeroToAdd := 5 - #statSimNumberLength;
+	                #statSimIndex := 0;
+	                WHILE #statSimIndex < #tempSimZeroToAdd DO
+	                    #tempSimResultStr := CONCAT_STRING(IN1 := #tempSimResultStr, IN2 := '0');
+	                    #statSimIndex := #statSimIndex + 1;
+	                END_WHILE;
+	                #statOnceSimError := #statSimError < #configuration.simError;
+	                #statProcessValues.code := CONCAT_STRING(IN1 := #tempSimResultStr,
+	                                                         IN2 := #tempSimCurrentCodeString);
+	                #statProcessValues.completionStatusBits.readComplete := TRUE;
+	                IF #statProcessValues.completionStatusBits.readComplete THEN
+	                    #statFbState := #FB_STATE_SIMULATIION_CYCLE_STEP5;
+	                END_IF;
+	                ;
+	            #FB_STATE_SIMULATIION_CYCLE_STEP5:
+	                #statProcessValues.busyStatusBits.busy := FALSE;
+	                IF #statOnceSimError THEN
+	                    IF #statSimError < #configuration.simError THEN
+	                        #statSimError := #statSimError + 1;
+	                        ;
+	                    END_IF;
+	                    
+	                    IF #statRescanCounter < #configuration.preRescanCounter THEN
+	                        
+	                        #statFbState := #FB_STATE_SIMULATIION_CYCLE_STEP3;
+	                    ELSE
+	                        #statProcessValues.error :=
+	                        #statProcessValues.complete := TRUE;
+	                        #statProcessValues.code := '';
+	                        #statFbState := #FB_STATE_NO_PROCESSING;
+	                    END_IF;
+	                ELSE
+	                    #statProcessValues.error := FALSE;
+	                    #statProcessValues.complete := TRUE;
+	                    #statFbState := #FB_STATE_NO_PROCESSING;
+	                    #statProcessValues.code := CONCAT_STRING(IN1 := 'SR',
+	                                                             IN2 := #statProcessValues.code);
+	                END_IF;
+	                
+	            #FB_STATE_REAL_MODE:
+	                #statFbState := #FB_STATE_NO_PROCESSING;
+	                
+	            #FB_STATE_ERROR_HANDLER:
+	                REGION Error handling
+	                    
+	                    ;
+	                END_REGION ;
+	            ELSE
+	                #statFbState := #FB_STATE_NO_PROCESSING;
+	        END_CASE;
+	    UNTIL (#statFbStatePrevious = #statFbState OR #statDiagnostics.status.%X15)
+	    END_REPEAT;
+	END_REGION CONFIGURATION HANDLING
+	
+	REGION Setting previous values for edge detection
+	    // Save the previous value of the simulation activation signal for edge detection
+	    // 保存模拟激活信号的上一个值用于边沿检测
+	    
+	END_REGION Setting previous values for edge detection
+	REGION Call instance
+	    #statTime[0](IN := #statTimeIn[0],
+	                 PT := T#1S);
+	    
+	END_REGION
+	
+	REGION PROCESS OUTPUT SIGNALS
+	    REGION Disabling
+	        // Disabling logic can be added here
+	        // 禁用逻辑可在此处添加
+	    END_REGION Disabling
+	    REGION Error user cleared
+	        // Error user cleared logic can be added here
+	        // 用户清除错误的逻辑可在此处添加
+	    END_REGION Error user cleared
+	    REGION Error auto cleared
+	        // Error auto cleared logic can be added here
+	        // 自动清除错误的逻辑可在此处添加
+	    END_REGION Error auto cleared
+	    REGION Write monitoring structure
+	        // Assign the simulation activation status to the monitoring structure
+	        // 将模拟激活状态赋值给监控结构
+	        
+	    END_REGION Write monitoring structure
+	    REGION Write Process data to module interface
+	        // Write the manual commands to the module interface
+	        // 将手动命令写入模块接口
+	        #moduleInterface.commands := #statProcessCommands;
+	        // Write the process values to the module interface monitoring
+	        // 将过程值写入模块接口监控
+	        #moduleInterface.monitoring := #statProcessValues;
+	    END_REGION Write Process data to module interface
+	    REGION Write work data to interface and outputs
+	        // Write the simulation status and processed signals to the control node monitoring
+	        // 将模拟状态和处理后的信号写入控制节点监控
+	        #controlNode.monitoring.busyStatusBits := #statProcessValues.busyStatusBits;
+	        #controlNode.monitoring.completionStatusBits := #statProcessValues.completionStatusBits;
+	        #controlNode.monitoring.errorStatusBits := #statProcessValues.errorStatusBits;
+	        #controlNode.monitoring.handshakAndGeneralErrorStatusBits := #statProcessValues.handshakAndGeneralErrorStatusBits;
+	        #controlNode.monitoring.matchingLevelandTotalEvaluationGradeStatus := #statProcessValues.matchingLevelandTotalEvaluationGradeStatus;
+	        #controlNode.monitoring.operationResultStatus := #statProcessValues.operationResultStatus;
+	        #controlNode.monitoring.terminalStatusBits := #statProcessValues.terminalStatusBits;
+	        #controlNode.monitoring.unstableReadStatusBits := #statProcessValues.unstableReadStatusBits;
+	        #controlNode.monitoring.readData128Byte := #statProcessValues.readData128Byte;
+	        #controlNode.monitoring.code := #statProcessValues.code;
+	        #controlNode.monitoring.error := #statProcessValues.error;
+	        #controlNode.monitoring.complete := #statProcessValues.complete;
+	        #controlNode.monitoring.simulated := #statProcessValues.simulated;
+	        #controlNode.commands.start := #statProcessCommands.start;
+	        #controlNode.commands.reset := #statProcessCommands.reset;
+	    END_REGION Write static values to outputs
+	    
+	END_REGION PROCESS OUTPUT SIGNALS
+	
+	(*
+	
+	REGION mapping input
+	    
+	END_REGION
+	
+	REGION "Main Program Sweep (Cycle)"
+	    REGION Check SR Reader is Ready
+	        #tempSrReaderReady := NOT #statProcessValues.busyStatusBits.busy AND NOT #error;
+	    END_REGION
+	    REGION Requst Start Reading
+	        IF #tempSrReaderReady AND #triggerInput AND NOT #readRequest AND NOT #readComplete THEN
+	            #readRequest := true;
+	        END_IF;
+	        IF NOT #triggerInput AND #readRequest THEN
+	            #readRequest := false;
+	            ;
+	        END_IF;
+	        
+	    END_REGION
+	    REGION Detect Read Complete & Access Result Data (Data Handshake Disable)
+	        IF #tempSrReaderReady AND NOT #handShakeEnable THEN
+	            IF #readComplete THEN
+	                #readResult.ret_val := DPRD_DAT(LADDR := #hdw, RECORD => #tmpdata);
+	                #readResult.#ResultDataSize := #resultDataSize;
+	                MOVE_BLK(IN := #tmpdata[8],
+	                         COUNT := #resultDataSize,
+	                         OUT => #readResult.ResultData[0]);
+	                IF NOT #readFailure THEN
+	                    #ReadIsSuccess := TRUE;
+	                ELSE
+	                    #ReadIsSuccess := FALSE;
+	                    ;
+	                END_IF;
+	                #readCompleteClear := TRUE;
+	            END_IF;
+	            IF #readCompleteClear AND NOT #readComplete THEN
+	                #readCompleteClear := FALSE;
+	            END_IF;
+	            
+	        END_IF;
+	        
+	    END_REGION
+	    REGION Detect Read Complete (Data Handshake Enable)
+	        IF #tempSrReaderReady AND #handShakeEnable THEN
+	            IF #readComplete THEN
+	                
+	                IF NOT #readFailure THEN
+	                    #ReadIsSuccess := TRUE;
+	                ELSE
+	                    #ReadIsSuccess := FALSE;
+	                END_IF;
+	                #readCompleteClear := TRUE;
+	            END_IF;
+	            IF #readCompleteClear AND NOT #readComplete THEN
+	                #readCompleteClear := FALSE;
+	            END_IF;
+	            
+	        END_IF;
+	        
+	    END_REGION
+	    REGION Access Result Data (Data Handshake Enable)
+	        IF #tempSrReaderReady AND #handShakeEnable THEN
+	            IF #retrieveResultData AND NOT #resultDataLatch AND NOT #resultDataStrobe AND #resultDataAvailable THEN
+	                #resultDataLatch := true;
+	                ;
+	            END_IF;
+	            IF #resultDataAvailable AND #resultDataStrobe THEN
+	                #readResult.ret_val := DPRD_DAT(LADDR := #hdw, RECORD => #tmpdata);
+	                #readResult.#ResultDataSize := #resultDataSize;
+	                MOVE_BLK(IN := #tmpdata[8],
+	                         COUNT := #resultDataSize,
+	                         OUT => #readResult.ResultData[0]);
+	                #resultDataLatch :=
+	                #retrieveResultData := false;
+	                ;
+	            END_IF;
+	            ;
+	            
+	        END_IF;
+	        
+	    END_REGION
+	    REGION Count Pending Read Result Data 
+	        #pendingReadResultDataCount := #ResultDataReadyCount - #ResultDataUpdateCount;
+	        
+	    END_REGION
+	    
+	END_REGION *)
+	
+END_FUNCTION_BLOCK
+

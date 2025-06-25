@@ -1,0 +1,174 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Document>
+  <Engineering version="V19" />
+  <SW.Types.PlcStruct ID="0">
+    <AttributeList>
+      <Access>Published</Access>
+      <Interface><Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v5">
+  <Section Name="None">
+    <Member Name="simulationed" Datatype="Bool" />
+    <Member Name="hookClawCylinderWorkPositionDetection2" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">钩爪气缸2工作位检测</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="slideCylinderMedianPositionDetection1" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">滑台气缸中位检测1</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="slideCylinderWorkPositionDetection1" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">滑台气缸工作位检测1</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="motorConstraintPot2" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">拘束电机2正限</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="motorConstraintNot2" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">拘束电机2负限</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="motorConstraintPot1" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">拘束电机1正限</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="motorConstraintOrg2" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">拘束电机2原点</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="hookClawCylinderWorkPositionDetection1" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">钩爪气缸1工作位检测</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="hookClawCylinderHomePositionDetection1" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">钩爪气缸1原位检测</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="pressureGaugeSetValueDetection2_2" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">压力表2设定值检测2</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="motorConstraintNot1" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">拘束电机1负限</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="slideCylinderHomePositionDetection1" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">滑台气缸原位检测1</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="motorConstraintOrg1" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">拘束电机1原点</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="slideCylinderHomePositionDetection2" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">滑台气缸原位检测2</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="pressureGaugeSetValueDetection1_2" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">压力表1设定值检测2</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="pressureGaugeSetValueDetection2_1" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">压力表2设定值检测1</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="slideCylinderWorkPositionDetection2" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">滑台气缸工作位检测2</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="hookClawCylinderHomePositionDetection2" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">钩爪气缸2原位检测</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="pressureGaugeSetValueDetection1_1" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">压力表1设定值检测1</MultiLanguageText>
+      </Comment>
+    </Member>
+    <Member Name="slideCylinderMedianPositionDetection2" Datatype="Bool">
+      <Comment>
+        <MultiLanguageText Lang="en-US">滑台气缸中位检测2</MultiLanguageText>
+      </Comment>
+    </Member>
+  </Section>
+</Sections></Interface>
+      <Name>LEXCHANGETRAY_typeNgConveyor_signalTM_Monitor</Name>
+      <Namespace />
+    </AttributeList>
+    <ObjectList>
+      <MultilingualText ID="1" CompositionName="Comment">
+        <ObjectList>
+          <MultilingualTextItem ID="2" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="3" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="4" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="5" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+      <MultilingualText ID="6" CompositionName="Title">
+        <ObjectList>
+          <MultilingualTextItem ID="7" CompositionName="Items">
+            <AttributeList>
+              <Culture>en-US</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="8" CompositionName="Items">
+            <AttributeList>
+              <Culture>fr-FR</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="9" CompositionName="Items">
+            <AttributeList>
+              <Culture>zh-CN</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+          <MultilingualTextItem ID="A" CompositionName="Items">
+            <AttributeList>
+              <Culture>de-DE</Culture>
+              <Text />
+            </AttributeList>
+          </MultilingualTextItem>
+        </ObjectList>
+      </MultilingualText>
+    </ObjectList>
+  </SW.Types.PlcStruct>
+</Document>
